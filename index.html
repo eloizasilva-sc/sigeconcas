@@ -479,6 +479,8 @@
         allTecnicos=mesclarExerciciosLocais(mesclarTecnicosLocais(data.filter(d=>d.tipo==="tecnico"||d.tipo==="exercicio")));
         if(usuarioAutenticado && currentTab){
           renderContent();
+        } else {
+          aplicarSessaoSalva();
         }
       }
     };
@@ -503,24 +505,31 @@
 
     
     // ─── SESSÃO PERSISTENTE ───
+    const CHAVE_SESSAO_SIGECON="sigecon_sessao_ativa";
+
     function salvarSessao(){
       if(!usuarioAutenticado) return;
-      localStorage.setItem("sigecon_sessao",JSON.stringify({
+
+      const sessao={
         usuario:usuarioAutenticado,
-        perfil:currentProfile,
-        exercicio:exercicioAtivo,
+        perfil:currentProfile||usuarioAutenticado.perfil||"gestor",
+        exercicio:exercicioAtivo||2026,
         aba:currentTab||"dashboard",
         salvaEm:new Date().toISOString()
-      }));
+      };
+
+      localStorage.setItem(CHAVE_SESSAO_SIGECON,JSON.stringify(sessao));
+      localStorage.setItem("sigecon_sessao",JSON.stringify(sessao)); // compatibilidade com versões anteriores
     }
 
     function limparSessao(){
+      localStorage.removeItem(CHAVE_SESSAO_SIGECON);
       localStorage.removeItem("sigecon_sessao");
     }
 
     function carregarSessao(){
       try{
-        return JSON.parse(localStorage.getItem("sigecon_sessao")||"null");
+        return JSON.parse(localStorage.getItem(CHAVE_SESSAO_SIGECON)||localStorage.getItem("sigecon_sessao")||"null");
       }catch(e){
         return null;
       }
@@ -528,23 +537,37 @@
 
     function aplicarSessaoSalva(){
       const sessao=carregarSessao();
-      if(!sessao || !sessao.usuario || !sessao.perfil || !sessao.exercicio) return false;
+      if(!sessao || !sessao.usuario) return false;
 
       usuarioAutenticado=sessao.usuario;
-      currentProfile=sessao.perfil;
+      currentProfile=sessao.perfil||sessao.usuario.perfil||"gestor";
       exercicioAtivo=parseInt(sessao.exercicio)||2026;
       currentTab=sessao.aba||"dashboard";
 
-      document.getElementById("login-screen").classList.add("hidden");
-      document.getElementById("app").classList.remove("hidden");
-      document.getElementById("exercicio-badge").textContent=exercicioAtivo;
+      const loginScreen=document.getElementById("login-screen");
+      const app=document.getElementById("app");
+      const badge=document.getElementById("exercicio-badge");
+
+      if(loginScreen) loginScreen.classList.add("hidden");
+      if(app) app.classList.remove("hidden");
+      if(badge) badge.textContent=exercicioAtivo;
+
+      try{
+        document.getElementById("login-exercicio").value=String(exercicioAtivo);
+      }catch(e){}
 
       updateProfileUI();
+      buildNav();
       renderContent();
+      salvarSessao();
       return true;
     }
 
-function autenticar(){
+    window.addEventListener("beforeunload",()=>{
+      if(usuarioAutenticado) salvarSessao();
+    });
+
+    function autenticar(){
       const exercicio=document.getElementById("login-exercicio").value;
       const perfil=document.getElementById("login-perfil").value;
       const input=document.getElementById("login-input").value;
@@ -619,6 +642,8 @@ function autenticar(){
         document.getElementById("app").classList.remove("hidden");
         document.getElementById("exercicio-badge").textContent=exercicio;
         updateProfileUI();
+        buildNav();
+        renderContent();
         salvarSessao();
         showInlineAlert("✅ Bem-vindo, "+usuario.nome+"!","info");
       }
@@ -1115,7 +1140,6 @@ function autenticar(){
 
     // ─── CONTENT RENDERER ───
     function renderContent(){
-      if(usuarioAutenticado) salvarSessao();
       const el=document.getElementById("content-area");
       const renderers={
         dashboard:renderDashboard,
@@ -1135,6 +1159,7 @@ function autenticar(){
         btn.style.display=hasPermission("edit")||hasPermission("create")?"":"none";
       });
       lucide.createIcons();
+      if(usuarioAutenticado) salvarSessao();
     }
 
     // ─── ALERTAS DE VIGÊNCIA ───
@@ -4820,6 +4845,9 @@ async function salvarConfiguracoes(){
       carregarConfiguracoesLocais();
       allTecnicos=mesclarExerciciosLocais(allTecnicos);
       carregarExerciciosCadastrados();
+
+      // Restaura imediatamente a sessão salva antes de qualquer espera do SDK.
+      aplicarSessaoSalva();
       let attempts=0;
       while(!window.dataSdk && attempts<100){
         await new Promise(r=>setTimeout(r,50));
@@ -4856,6 +4884,8 @@ async function salvarConfiguracoes(){
       }
       
       lucide.createIcons();
+
+      // Reforço final: após SDK e ícones carregarem, mantém a sessão aberta.
       aplicarSessaoSalva();
     }
 
