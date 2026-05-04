@@ -501,7 +501,50 @@
       });
     }
 
-    function autenticar(){
+    
+    // ─── SESSÃO PERSISTENTE ───
+    function salvarSessao(){
+      if(!usuarioAutenticado) return;
+      localStorage.setItem("sigecon_sessao",JSON.stringify({
+        usuario:usuarioAutenticado,
+        perfil:currentProfile,
+        exercicio:exercicioAtivo,
+        aba:currentTab||"dashboard",
+        salvaEm:new Date().toISOString()
+      }));
+    }
+
+    function limparSessao(){
+      localStorage.removeItem("sigecon_sessao");
+    }
+
+    function carregarSessao(){
+      try{
+        return JSON.parse(localStorage.getItem("sigecon_sessao")||"null");
+      }catch(e){
+        return null;
+      }
+    }
+
+    function aplicarSessaoSalva(){
+      const sessao=carregarSessao();
+      if(!sessao || !sessao.usuario || !sessao.perfil || !sessao.exercicio) return false;
+
+      usuarioAutenticado=sessao.usuario;
+      currentProfile=sessao.perfil;
+      exercicioAtivo=parseInt(sessao.exercicio)||2026;
+      currentTab=sessao.aba||"dashboard";
+
+      document.getElementById("login-screen").classList.add("hidden");
+      document.getElementById("app").classList.remove("hidden");
+      document.getElementById("exercicio-badge").textContent=exercicioAtivo;
+
+      updateProfileUI();
+      renderContent();
+      return true;
+    }
+
+function autenticar(){
       const exercicio=document.getElementById("login-exercicio").value;
       const perfil=document.getElementById("login-perfil").value;
       const input=document.getElementById("login-input").value;
@@ -576,12 +619,16 @@
         document.getElementById("app").classList.remove("hidden");
         document.getElementById("exercicio-badge").textContent=exercicio;
         updateProfileUI();
+        salvarSessao();
         showInlineAlert("✅ Bem-vindo, "+usuario.nome+"!","info");
       }
     }
 
     function fazerLogout(){
+      limparSessao();
       usuarioAutenticado=null;
+      currentProfile="gestor";
+      currentTab="dashboard";
       exercicioAtivo=2026;
       document.getElementById("login-screen").classList.remove("hidden");
       document.getElementById("app").classList.add("hidden");
@@ -1068,6 +1115,7 @@
 
     // ─── CONTENT RENDERER ───
     function renderContent(){
+      if(usuarioAutenticado) salvarSessao();
       const el=document.getElementById("content-area");
       const renderers={
         dashboard:renderDashboard,
@@ -4808,6 +4856,7 @@ async function salvarConfiguracoes(){
       }
       
       lucide.createIcons();
+      aplicarSessaoSalva();
     }
 
     if(document.readyState==="loading"){
