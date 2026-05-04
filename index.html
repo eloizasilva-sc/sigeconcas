@@ -437,25 +437,36 @@
 
     async function excluirTecnicoSeguro(registro){
       const matricula=chaveTecnico(registro);
-      const excluidos=carregarTecnicosExcluidos();
-      if(matricula && !excluidos.map(x=>String(x).toUpperCase()).includes(matricula)){
+
+      // Bloqueia reaparecimento dos técnicos padrão e remove locais
+      const excluidos=carregarTecnicosExcluidos().map(x=>String(x).toUpperCase());
+      if(matricula && !excluidos.includes(matricula)){
         excluidos.push(matricula);
         salvarTecnicosExcluidos(excluidos);
       }
 
+      const locais=carregarTecnicosLocais().filter(t=>
+        String(t.id)!==String(registro.id) &&
+        chaveTecnico(t)!==matricula
+      );
+      salvarTecnicosLocais(locais);
+
+      // Remove da memória imediatamente
+      allTecnicos=allTecnicos.filter(t=>
+        String(t.id)!==String(registro.id) &&
+        chaveTecnico(t)!==matricula
+      );
+
+      // Tenta remover no Data SDK quando o registro veio dele, mas não depende disso para funcionar
       if(window.dataSdk && window.dataSdk.delete && !String(registro.id||"").startsWith("TEC00")){
         try{
-          const result=await window.dataSdk.delete(registro);
-          if(result?.isOk){
-            allTecnicos=mesclarTecnicosLocais(allTecnicos.filter(t=>String(t.id)!==String(registro.id) && chaveTecnico(t)!==matricula));
-            return {isOk:true, origem:"dataSdk"};
-          }
-        }catch(e){console.warn("Falha no delete Data SDK. Removendo localmente:",e);}
+          await window.dataSdk.delete(registro);
+        }catch(e){
+          console.warn("Não foi possível remover no Data SDK, mas o técnico foi removido localmente:",e);
+        }
       }
 
-      const locais=carregarTecnicosLocais().filter(t=>String(t.id)!==String(registro.id) && chaveTecnico(t)!==matricula);
-      salvarTecnicosLocais(locais);
-      allTecnicos=mesclarTecnicosLocais(allTecnicos.filter(t=>String(t.id)!==String(registro.id) && chaveTecnico(t)!==matricula));
+      allTecnicos=mesclarTecnicosLocais(allTecnicos);
       return {isOk:true, origem:"local"};
     }
 
@@ -651,6 +662,22 @@
       return parseFloat(normalizado)||0;
     }
 
+    function formatarMoedaBR(valor){
+      const numero=parseValorBR(valor);
+      if(!numero) return "";
+      return numero.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+    }
+
+    function aplicarMascaraMoedaBR(input){
+      if(!input) return;
+      const numero=parseValorBR(input.value);
+      input.value=numero?numero.toLocaleString("pt-BR",{style:"currency",currency:"BRL"}):"";
+    }
+
+    function obterValorMoedaInput(id){
+      return parseValorBR(document.getElementById(id)?.value||0);
+    }
+
     function escapeHtml(valor){
       return String(valor ?? "")
         .replace(/&/g,"&amp;")
@@ -660,13 +687,37 @@
         .replace(/'/g,"&#039;");
     }
 
+    function formatarDataBR(data){
+      if(!data) return "—";
+      const partes=String(data).split("-");
+      if(partes.length===3){
+        return `${partes[2]}/${partes[1]}/${partes[0]}`;
+      }
+      const d=new Date(data);
+      if(isNaN(d)) return data;
+      return d.toLocaleDateString("pt-BR");
+    }
+
+    function renderVigenciaBadge(c){
+      const dias=calcularDiasRestantes(c.vigFim);
+      const cor=dias<0?"bg-red-100 text-red-700 border-red-200":dias<=90?"bg-yellow-100 text-yellow-700 border-yellow-200":"bg-emerald-100 text-emerald-700 border-emerald-200";
+      const texto=dias<0?`Vencido há ${Math.abs(dias)} dia(s)`:dias<=90?`${dias} dia(s) restantes`:`${dias} dia(s) restantes`;
+      return `
+        <div class="inline-flex flex-col gap-1 px-3 py-2 rounded-xl border ${cor} font-bold text-xs">
+          <span>${formatarDataBR(c.vigIni)} até ${formatarDataBR(c.vigFim)}</span>
+          <span class="font-semibold opacity-80">${texto}</span>
+        </div>
+      `;
+    }
+
     function extrairEmpenhosContrato(c){
       if(Array.isArray(c?.empenhos) && c.empenhos.length){
         return c.empenhos.map(e=>({
           numero:String(e.numero||"").trim(),
           valor:parseValorBR(e.valor),
+          elementoDespesa:String(e.elementoDespesa||e.elemento||"").trim(),
           fonte:String(e.fonte||"").trim()
-        })).filter(e=>e.numero||e.valor||e.fonte);
+        })).filter(e=>e.numero||e.valor||e.fonte||e.elementoDespesa);
       }
 
       if(c?.empenhosTexto){
@@ -675,20 +726,52 @@
           return {
             numero:String(partes[0]||"").trim(),
             valor:parseValorBR(partes[1]),
-            fonte:String(partes[2]||"").trim()
+            elementoDespesa:String(partes[2]||"").trim(),
+            fonte:String(partes[3]||partes[2]||"").trim()
           };
-        }).filter(e=>e.numero||e.valor||e.fonte);
+        }).filter(e=>e.numero||e.valor||e.fonte||e.elementoDespesa);
       }
 
       if(c?.valorEmpenho2026){
-        return [{numero:"Empenho não detalhado", valor:parseValorBR(c.valorEmpenho2026), fonte:c.fonteRecurso||"Não informada"}];
+        return [{numero:"Empenho não detalhado", valor:parseValorBR(c.valorEmpenho2026), elementoDespesa:"", fonte:c.fonteRecurso||"Não informada"}];
       }
 
       return [];
     }
 
     function montarTextoEmpenhos(empenhos){
-      return (empenhos||[]).map(e=>`${e.numero||""} | ${parseValorBR(e.valor).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})} | ${e.fonte||""}`).join("\n");
+      return (empenhos||[]).map(e=>`${e.numero||""} | ${parseValorBR(e.valor).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})} | ${e.elementoDespesa||""} | ${e.fonte||""}`).join("\n");
+    }
+
+    function calcularMesesVigencia(inicio,fim){
+      if(!inicio || !fim) return 0;
+      const dtIni=new Date(inicio+"T00:00:00");
+      const dtFim=new Date(fim+"T00:00:00");
+      if(isNaN(dtIni)||isNaN(dtFim)||dtFim<dtIni) return 0;
+      const dias=Math.max(1,Math.ceil((dtFim-dtIni)/(1000*60*60*24))+1);
+      return Math.max(1,dias/30.4375);
+    }
+
+    function calcularValorMensalContrato(valorTotal,inicio,fim){
+      const valor=parseValorBR(valorTotal);
+      const meses=calcularMesesVigencia(inicio,fim);
+      if(!valor || !meses) return 0;
+      return valor/meses;
+    }
+
+    function atualizarValorMensalContrato(prefixo){
+      const valor=document.getElementById(`${prefixo}-valor-contrato`)?.value;
+      const vigIni=document.getElementById(`${prefixo}-vigini`)?.value;
+      const vigFim=document.getElementById(`${prefixo}-vigfim`)?.value;
+      const campo=document.getElementById(`${prefixo}-valor-mensal`);
+      const info=document.getElementById(`${prefixo}-valor-mensal-info`);
+      if(!campo) return;
+      const mensal=calcularValorMensalContrato(valor,vigIni,vigFim);
+      campo.value=mensal?mensal.toLocaleString("pt-BR",{style:"currency",currency:"BRL"}):"";
+      if(info){
+        const meses=calcularMesesVigencia(vigIni,vigFim);
+        info.textContent=mensal?`Calculado automaticamente: ${meses.toFixed(1)} mês(es) de vigência.`:"Informe valor total e vigência para calcular automaticamente.";
+      }
     }
 
     function calcularValorEmpenhadoContrato(c){
@@ -788,19 +871,21 @@
       return [...container.querySelectorAll(".linha-empenho")].map(row=>({
         numero:row.querySelector(".empenho-numero")?.value?.trim()||"",
         valor:parseValorBR(row.querySelector(".empenho-valor")?.value||0),
+        elementoDespesa:row.querySelector(".empenho-elemento")?.value?.trim()||"",
         fonte:row.querySelector(".empenho-fonte")?.value?.trim()||""
-      })).filter(e=>e.numero||e.valor||e.fonte);
+      })).filter(e=>e.numero||e.valor||e.fonte||e.elementoDespesa);
     }
 
     function renderEmpenhoRowsHTML(empenhos=[]){
-      return (empenhos.length?empenhos:[{numero:"",valor:"",fonte:""}]).map(e=>`
+      return (empenhos.length?empenhos:[{numero:"",valor:"",elementoDespesa:"",fonte:""}]).map(e=>`
         <div class="linha-empenho grid grid-cols-12 gap-2 border border-yellow-200 p-2 rounded-lg bg-white">
-          <input type="text" value="${escapeHtml(e.numero)}" placeholder="Nº do empenho" class="input-field empenho-numero col-span-4">
-          <input type="number" step="0.01" value="${e.valor?escapeHtml(e.valor):""}" placeholder="Valor" class="input-field empenho-valor col-span-3">
-          <select class="input-field empenho-fonte col-span-4">
+          <input type="text" value="${escapeHtml(e.numero||"")}" placeholder="Nº do empenho" class="input-field empenho-numero col-span-3">
+          <input type="number" step="0.01" value="${e.valor?escapeHtml(e.valor):""}" placeholder="Valor do empenho" class="input-field empenho-valor col-span-2">
+          <input type="text" value="${escapeHtml(e.elementoDespesa||"")}" placeholder="Elemento de despesa" class="input-field empenho-elemento col-span-3">
+          <select class="input-field empenho-fonte col-span-3">
             <option value="">— Fonte —</option>
-            ${listas.fontes.map(f=>`<option value="${escapeHtml(f)}" ${String(e.fonte)===String(f)?"selected":""}>${escapeHtml(f)}</option>`).join("")}
-            ${e.fonte && !listas.fontes.includes(e.fonte)?`<option value="${escapeHtml(e.fonte)}" selected>${escapeHtml(e.fonte)}</option>`:""}
+            ${(listas.fontes||[]).map(f=>`<option value="${escapeHtml(f)}" ${String(e.fonte)===String(f)?"selected":""}>${escapeHtml(f)}</option>`).join("")}
+            ${e.fonte && !(listas.fontes||[]).includes(e.fonte)?`<option value="${escapeHtml(e.fonte)}" selected>${escapeHtml(e.fonte)}</option>`:""}
           </select>
           <button type="button" onclick="this.closest('.linha-empenho').remove()" class="text-red-600 hover:bg-red-50 rounded-lg font-bold">X</button>
         </div>
@@ -810,7 +895,7 @@
     function adicionarLinhaEmpenho(containerId){
       const container=document.getElementById(containerId);
       if(!container) return;
-      container.insertAdjacentHTML("beforeend", renderEmpenhoRowsHTML([{numero:"",valor:"",fonte:""}]));
+      container.insertAdjacentHTML("beforeend", renderEmpenhoRowsHTML([{numero:"",valor:"",elementoDespesa:"",fonte:""}]));
     }
 
     function extrairNFsPagamento(p){
@@ -1203,30 +1288,53 @@
 
     function renderListaConfigCard({key,titulo,icone="list",cor="text-navy-600",inputId,placeholder}){
       const itens=listas[key]||[];
-      const texto=itens.join("\\n");
       return `
-        <div class="section-card">
+        <div class="section-card config-card" data-config-card="${key}">
           <div class="section-heading">
             <h3><i data-lucide="${icone}" class="w-5 h-5 ${cor}"></i>${titulo}</h3>
             <span class="soft-badge">${itens.length}</span>
           </div>
 
-          <p class="text-xs text-steel-500 mb-3">Um item por linha. Edite, apague ou acrescente diretamente no campo abaixo.</p>
+          <p class="text-xs text-steel-500 mb-3">
+            Edite direto no campo. Para excluir, marque a caixinha. Depois clique em <strong>Salvar esta lista</strong>.
+          </p>
 
-          <textarea 
-            id="config-list-${key}" 
-            class="input-field w-full config-list-textarea text-sm" 
-            rows="7" 
-            data-config-key="${key}"
-            placeholder="${placeholder}">${escapeHtml(texto)}</textarea>
+          <div class="space-y-2 mb-4 max-h-60 overflow-y-auto">
+            ${itens.map((item,idx)=>{
+              const servico=key==="servicos"?normalizarServicoItem(item):null;
+              const label=servico?servico.nome:item;
+              return `
+                <div class="grid grid-cols-[1fr_auto] gap-3 items-center text-sm p-3 bg-sky-50 rounded-xl border border-sky-100">
+                  <div>
+                    <input
+                      type="text"
+                      id="cfg-${key}-${idx}"
+                      class="input-field w-full text-sm cfg-list-input"
+                      data-key="${key}"
+                      data-index="${idx}"
+                      value="${escapeHtml(String(item))}">
+                    ${key==="servicos"?`<p class="text-[10px] text-steel-500 mt-1">Exibição: ${escapeHtml(label)}</p>`:""}
+                  </div>
+                  <label class="flex items-center gap-2 text-red-700 font-bold text-xs cursor-pointer">
+                    <input type="checkbox" class="cfg-list-delete w-4 h-4" data-key="${key}" data-index="${idx}">
+                    Excluir
+                  </label>
+                </div>
+              `;
+            }).join("") || `<p class="text-sm text-steel-500">Nenhum item cadastrado.</p>`}
+          </div>
+
+          <div class="grid grid-cols-[1fr_auto] gap-2 mb-3">
+            <input id="${inputId}" type="text" class="input-field text-sm" placeholder="${placeholder}">
+            <button type="button" onclick="configAdicionarRapido('${key}','${inputId}')" class="btn-secondary px-3 py-2 rounded text-sm font-bold">Adicionar</button>
+          </div>
+
+          <button type="button" onclick="configSalvarLista('${key}')" class="btn-primary w-full px-4 py-2 rounded-lg text-sm font-bold">
+            Salvar esta lista
+          </button>
 
           ${key==="servicos"?`
-            <div class="mt-3 p-3 bg-sky-50 border border-sky-100 rounded-xl">
-              <p class="text-xs text-steel-600">
-                Para tipos de serviço, use preferencialmente <strong>codigo|Nome do Serviço</strong>.<br>
-                Ex.: <strong>hemodialise|Hemodiálise</strong>. O código será usado no cadastro dos contratos.
-              </p>
-            </div>
+            <p class="text-xs text-steel-500 mt-2">Use <strong>codigo|Nome</strong>. Ex.: <strong>hemodialise|Hemodiálise</strong>. O código será usado no cadastro dos contratos.</p>
           `:""}
         </div>
       `;
@@ -1523,7 +1631,159 @@
       </div>`;
     }
 
-    // ─── CONTRATOS ───
+    
+    // ─── EXCLUSÃO SEGURA GLOBAL ───
+    async function excluirRegistroSeguro(registro, listaNome=""){
+      if(!registro || !registro.id){
+        return {isOk:false, error:"Registro inválido"};
+      }
+
+      // Tenta excluir no Data SDK, mas não deixa o sistema travar se falhar.
+      if(window.dataSdk && window.dataSdk.delete){
+        try{
+          const result=await window.dataSdk.delete(registro);
+          if(result?.isOk){
+            return {isOk:true, origem:"dataSdk"};
+          }
+        }catch(e){
+          console.warn("Falha no Data SDK. Aplicando exclusão local:",e);
+        }
+      }
+
+      // Exclusão local de emergência por tipo/lista.
+      if(listaNome==="contratos" || registro.tipo==="contrato"){
+        allContratos=allContratos.filter(x=>String(x.id)!==String(registro.id));
+      }
+      if(listaNome==="pagamentos" || registro.tipo==="pagamento"){
+        allPagamentos=allPagamentos.filter(x=>String(x.id)!==String(registro.id));
+      }
+      if(listaNome==="producao" || registro.tipo==="producao"){
+        allProducao=allProducao.filter(x=>String(x.id)!==String(registro.id));
+      }
+      if(listaNome==="tecnicos" || registro.tipo==="tecnico"){
+        allTecnicos=allTecnicos.filter(x=>String(x.id)!==String(registro.id));
+      }
+
+      return {isOk:true, origem:"local"};
+    }
+
+    function atualizarTelaAtual(){
+      try{
+        renderContent();
+      }catch(e){
+        const area=document.getElementById("content-area");
+        if(area && currentTab){
+          renderContent();
+        }
+      }
+    }
+
+
+
+    // ─── SALVAR/ATUALIZAR SEGURO ───
+    async function criarRegistroSeguro(registro, tipoLista){
+      let result={isOk:false};
+      if(window.dataSdk && window.dataSdk.create){
+        try{
+          result=await window.dataSdk.create(registro);
+        }catch(e){
+          console.warn("Falha no Data SDK ao criar. Aplicando salvamento local:",e);
+        }
+      }
+
+      if(tipoLista==="contratos" && !allContratos.some(x=>String(x.id)===String(registro.id))){
+        allContratos=[...allContratos,registro];
+      }
+      if(tipoLista==="pagamentos" && !allPagamentos.some(x=>String(x.id)===String(registro.id))){
+        allPagamentos=[...allPagamentos,registro];
+      }
+      if(tipoLista==="producao" && !allProducao.some(x=>String(x.id)===String(registro.id))){
+        allProducao=[...allProducao,registro];
+      }
+      if(tipoLista==="tecnicos" && !allTecnicos.some(x=>String(x.id)===String(registro.id))){
+        allTecnicos=[...allTecnicos,registro];
+      }
+
+      return {isOk:true, origem:result.isOk?"dataSdk":"local"};
+    }
+
+    async function atualizarRegistroSeguro(registro, tipoLista){
+      let result={isOk:false};
+      if(window.dataSdk && window.dataSdk.update){
+        try{
+          result=await window.dataSdk.update(registro);
+        }catch(e){
+          console.warn("Falha no Data SDK ao atualizar. Aplicando atualização local:",e);
+        }
+      }
+
+      if(tipoLista==="contratos"){
+        allContratos=allContratos.some(x=>String(x.id)===String(registro.id))
+          ? allContratos.map(x=>String(x.id)===String(registro.id)?registro:x)
+          : [...allContratos,registro];
+      }
+      if(tipoLista==="pagamentos"){
+        allPagamentos=allPagamentos.some(x=>String(x.id)===String(registro.id))
+          ? allPagamentos.map(x=>String(x.id)===String(registro.id)?registro:x)
+          : [...allPagamentos,registro];
+      }
+      if(tipoLista==="producao"){
+        allProducao=allProducao.some(x=>String(x.id)===String(registro.id))
+          ? allProducao.map(x=>String(x.id)===String(registro.id)?registro:x)
+          : [...allProducao,registro];
+      }
+      if(tipoLista==="tecnicos"){
+        allTecnicos=allTecnicos.some(x=>String(x.id)===String(registro.id))
+          ? allTecnicos.map(x=>String(x.id)===String(registro.id)?registro:x)
+          : [...allTecnicos,registro];
+      }
+
+      return {isOk:true, origem:result.isOk?"dataSdk":"local"};
+    }
+
+    function extrairAditivosContrato(c){
+      if(Array.isArray(c?.aditivos) && c.aditivos.length){
+        return c.aditivos.map(a=>({
+          numero:String(a.numero||"").trim(),
+          data:String(a.data||"").trim(),
+          descricao:String(a.descricao||a.objeto||"").trim()
+        })).filter(a=>a.numero||a.data||a.descricao);
+      }
+      if(c?.aditivo && c.aditivo!=="—"){
+        return [{numero:String(c.aditivo),data:"",descricao:""}];
+      }
+      return [];
+    }
+
+    function renderAditivoRowsHTML(aditivos=[]){
+      const lista=aditivos.length?aditivos:[{numero:"",data:"",descricao:""}];
+      return lista.map(a=>`
+        <div class="linha-aditivo grid grid-cols-12 gap-2 border border-blue-200 p-2 rounded-lg bg-white">
+          <input type="text" value="${escapeHtml(a.numero||"")}" placeholder="Nº do aditivo" class="input-field aditivo-numero col-span-3">
+          <input type="date" value="${escapeHtml(a.data||"")}" class="input-field aditivo-data col-span-3">
+          <input type="text" value="${escapeHtml(a.descricao||"")}" placeholder="Objeto/observação do aditivo" class="input-field aditivo-descricao col-span-5">
+          <button type="button" onclick="this.closest('.linha-aditivo').remove()" class="text-red-600 hover:bg-red-50 rounded-lg font-bold">X</button>
+        </div>
+      `).join("");
+    }
+
+    function adicionarLinhaAditivo(containerId){
+      const container=document.getElementById(containerId);
+      if(!container) return;
+      container.insertAdjacentHTML("beforeend", renderAditivoRowsHTML([{numero:"",data:"",descricao:""}]));
+    }
+
+    function coletarAditivos(containerId){
+      const container=document.getElementById(containerId);
+      if(!container) return [];
+      return [...container.querySelectorAll(".linha-aditivo")].map(row=>({
+        numero:row.querySelector(".aditivo-numero")?.value?.trim()||"",
+        data:row.querySelector(".aditivo-data")?.value||"",
+        descricao:row.querySelector(".aditivo-descricao")?.value?.trim()||""
+      })).filter(a=>a.numero||a.data||a.descricao);
+    }
+
+// ─── CONTRATOS ───
     function renderContratos(el){
       let contratosFiltrados=allContratos.filter(c=>c.anoExercicio==exercicioAtivo);
       
@@ -1618,7 +1878,7 @@
               <div class="grid grid-cols-4 gap-3 mt-3 text-xs">
                 <div>
                   <p class="text-steel-600">Vigência</p>
-                  <p class="font-semibold text-navy-900">${c.vigIni} a ${c.vigFim}</p>
+                  <div class="mt-1">${renderVigenciaBadge(c)}</div>
                 </div>
                 <div>
                   <p class="text-steel-600">Processo</p>
@@ -1675,30 +1935,47 @@
               <input id="form-ncontrato" type="text" class="input-field w-full" placeholder="CT-001/2025" required>
             </div>
             <div>
-              <label class="block text-xs font-bold text-navy-900 mb-1">Aditivo</label>
-              <input id="form-aditivo" type="text" class="input-field w-full" placeholder="AD-001 (opcional)">
+              <label class="block text-xs font-bold text-navy-900 mb-1">Aditivos</label>
+              <p class="text-xs text-steel-500 bg-sky-50 rounded-lg p-3 border border-sky-100">Opcional. Use a seção abaixo para inserir um ou mais aditivos.</p>
             </div>
             <div>
               <label class="block text-xs font-bold text-navy-900 mb-1">Vigência Inicial *</label>
-              <input id="form-vigini" type="date" class="input-field w-full" required>
+              <input id="form-vigini" type="date" class="input-field w-full" required onchange="atualizarValorMensalContrato('form')">
             </div>
             <div>
               <label class="block text-xs font-bold text-navy-900 mb-1">Vigência Final *</label>
-              <input id="form-vigfim" type="date" class="input-field w-full" required>
+              <input id="form-vigfim" type="date" class="input-field w-full" required onchange="atualizarValorMensalContrato('form')">
             </div>
             <div>
               <label class="block text-xs font-bold text-navy-900 mb-1">Valor do Contrato *</label>
-              <input id="form-valor-contrato" type="number" step="0.01" class="input-field w-full" placeholder="1000000.00" required>
+              <input id="form-valor-contrato" type="text" inputmode="decimal" class="input-field w-full" placeholder="R$ 1.000.000,00" required oninput="atualizarValorMensalContrato('form')" onblur="aplicarMascaraMoedaBR(this);atualizarValorMensalContrato('form')">
             </div>
             <div>
-              <label class="block text-xs font-bold text-navy-900 mb-1">Valor Estimado Mensal *</label>
-              <input id="form-valor-mensal" type="number" step="0.01" class="input-field w-full" placeholder="50000.00" required>
+              <label class="block text-xs font-bold text-navy-900 mb-1">Valor Estimado Mensal</label>
+              <input id="form-valor-mensal" type="text" class="input-field w-full bg-slate-100" placeholder="Calculado automaticamente" readonly required>
+              <p id="form-valor-mensal-info" class="text-[10px] text-steel-500 mt-1">Informe valor total e vigência para calcular automaticamente.</p>
+            </div>
+          </div>
+
+          <div class="bg-blue-50 rounded-lg p-4 border border-blue-200/40">
+            <div class="flex items-center justify-between gap-3 mb-3">
+              <div>
+                <label class="block text-xs font-bold text-navy-900">📄 Aditivos do contrato</label>
+                <p class="text-[10px] text-steel-600 mt-1">Opcional. Insira um ou mais aditivos, um abaixo do outro.</p>
+              </div>
+              <button type="button" onclick="adicionarLinhaAditivo('form-lista-aditivos')" class="btn-secondary px-3 py-2 rounded-lg text-xs">+ Adicionar aditivo</button>
+            </div>
+            <div id="form-lista-aditivos" class="space-y-2">
+              ${renderAditivoRowsHTML([])}
             </div>
           </div>
 
           <div class="bg-yellow-50 rounded-lg p-4 border border-yellow-200/40">
             <div class="flex items-center justify-between gap-3 mb-3">
-              <label class="block text-xs font-bold text-navy-900">💰 Empenhos vinculados ao contrato</label>
+              <div>
+                <label class="block text-xs font-bold text-navy-900">💰 Empenhos vinculados ao contrato</label>
+                <p class="text-[10px] text-steel-600 mt-1">Informe nº do empenho, valor, elemento de despesa e fonte de recurso. É possível inserir mais de um empenho.</p>
+              </div>
               <button type="button" onclick="adicionarLinhaEmpenho('form-lista-empenhos')" class="btn-secondary px-3 py-2 rounded-lg text-xs">+ Adicionar empenho</button>
             </div>
             <div id="form-lista-empenhos" class="space-y-2">
@@ -1718,14 +1995,30 @@
     async function salvarContrato(e){
       e.preventDefault();
       if(!hasPermission("create")){showInlineAlert("Sem permissão","error");return}
-      
+
       const unidades=[...document.querySelectorAll(".form-uh-multi:checked")].map(el=>el.value);
       if(unidades.length===0){
         showInlineAlert("Selecione pelo menos uma unidade hospitalar","error");
         return;
       }
-      
+
+      const valorContrato=obterValorMoedaInput("form-valor-contrato");
+      const vigIni=document.getElementById("form-vigini").value;
+      const vigFim=document.getElementById("form-vigfim").value;
+      const valorMensal=calcularValorMensalContrato(valorContrato,vigIni,vigFim);
+
+      if(!valorContrato){
+        showInlineAlert("Informe o valor total do contrato","error");
+        return;
+      }
+
+      if(!valorMensal){
+        showInlineAlert("Informe a vigência inicial e final para calcular o valor mensal","error");
+        return;
+      }
+
       const empenhos=coletarEmpenhos("form-lista-empenhos");
+      const aditivos=coletarAditivos("form-lista-aditivos");
       const empenhosTexto=montarTextoEmpenhos(empenhos);
       const novoContrato={
         id:Date.now().toString(),
@@ -1734,11 +2027,12 @@
         unidades:unidades.join(","),
         empresa:document.getElementById("form-empresa").value,
         nContrato:document.getElementById("form-ncontrato").value,
-        aditivo:document.getElementById("form-aditivo").value||"—",
-        vigIni:document.getElementById("form-vigini").value,
-        vigFim:document.getElementById("form-vigfim").value,
-        valorContrato:parseFloat(document.getElementById("form-valor-contrato").value),
-        valorEstimadoMensal:parseFloat(document.getElementById("form-valor-mensal").value),
+        aditivo:aditivos.map(a=>a.numero).filter(Boolean).join(", ")||"—",
+        aditivos:aditivos,
+        vigIni:vigIni,
+        vigFim:vigFim,
+        valorContrato:valorContrato,
+        valorEstimadoMensal:valorMensal,
         servicoTipo:document.getElementById("form-servico").value,
         anoExercicio:exercicioAtivo,
         status:"Ativo",
@@ -1748,11 +2042,12 @@
         valorExecutado2026:0,
         criadoEm:new Date().toISOString()
       };
-      
-      const result=await window.dataSdk.create(novoContrato);
+
+      const result=await criarRegistroSeguro(novoContrato,"contratos");
       if(result.isOk){
         closeAllModals();
         showInlineAlert("✅ Contrato salvo com sucesso!","info");
+        renderContent();
       } else {
         showInlineAlert("Erro ao salvar contrato","error");
       }
@@ -1762,8 +2057,10 @@
       const c=allContratos.find(x=>x.id===id);
       if(!c)return;
       const empenhosContrato=extrairEmpenhosContrato(c);
-      const listaEmpenhos=empenhosContrato.length?empenhosContrato.map(e=>`<div class="border border-yellow-200 rounded-lg p-2 bg-white"><p class="font-bold text-navy-900">${escapeHtml(e.numero||"Empenho")}</p><p>${fmtM(e.valor)}</p><p class="text-steel-600">${escapeHtml(e.fonte||"Fonte não informada")}</p></div>`).join(""):"—";
+      const listaEmpenhos=empenhosContrato.length?empenhosContrato.map(e=>`<div class="border border-yellow-200 rounded-lg p-2 bg-white"><p class="font-bold text-navy-900">${escapeHtml(e.numero||"Empenho")}</p><p>${fmtM(e.valor)}</p><p class="text-steel-600">Elemento: ${escapeHtml(e.elementoDespesa||"—")}</p><p class="text-steel-600">Fonte: ${escapeHtml(e.fonte||"Fonte não informada")}</p></div>`).join(""):"—";
       const totalEmpenhadoContrato=calcularValorEmpenhadoContrato(c);
+      const aditivosContrato=extrairAditivosContrato(c);
+      const listaAditivos=aditivosContrato.length?aditivosContrato.map(a=>`<div class="border border-blue-200 rounded-lg p-2 bg-white"><p class="font-bold text-navy-900">${escapeHtml(a.numero||"Aditivo")}</p><p class="text-steel-600">${a.data?new Date(a.data).toLocaleDateString("pt-BR"):"Sem data"}</p><p class="text-steel-600">${escapeHtml(a.descricao||"—")}</p></div>`).join(""):"—";
       const content=`
         <div class="space-y-4 max-h-96 overflow-y-auto text-xs">
           <div class="grid grid-cols-2 gap-3">
@@ -1773,7 +2070,7 @@
             <div><p class="text-[10px] text-steel-600">Contrato</p><p class="font-mono text-navy-600">${c.nContrato}</p></div>
             <div><p class="text-[10px] text-steel-600">Aditivo</p><p class="font-mono text-navy-600">${c.aditivo||"—"}</p></div>
             <div><p class="text-[10px] text-steel-600">Serviço</p><p class="text-navy-900">${c.servicoTipo||"—"}</p></div>
-            <div><p class="text-[10px] text-steel-600">Vigência</p><p class="text-navy-900">${c.vigIni} a ${c.vigFim}</p></div>
+            <div><p class="text-[10px] text-steel-600">Vigência</p><div class="mt-1">${renderVigenciaBadge(c)}</div></div>
             <div><p class="text-[10px] text-steel-600">Valor Contrato</p><p class="font-bold text-navy-900">${fmtM(c.valorContrato)}</p></div>
             <div><p class="text-[10px] text-steel-600">Valor Mensal</p><p class="text-navy-900">${fmtM(c.valorEstimadoMensal)}</p></div>
             <div><p class="text-[10px] text-steel-600">Total Empenhado</p><p class="font-bold text-navy-600">${fmtM(totalEmpenhadoContrato)}</p></div>
@@ -1795,6 +2092,7 @@
       if(!c)return;
       const unidadesSelecionadas=String(c.unidades||"").split(",").map(u=>u.trim());
       const empenhosHTML=renderEmpenhoRowsHTML(extrairEmpenhosContrato(c));
+      const aditivosHTML=renderAditivoRowsHTML(extrairAditivosContrato(c));
       const content=`
         <form onsubmit="atualizarContrato(event,'${id}')" class="space-y-4 max-h-96 overflow-y-auto">
           <div class="bg-navy-50 rounded-lg p-4 border border-navy-200/30">
@@ -1827,25 +2125,37 @@
               <input id="edit-ncontrato" type="text" class="input-field w-full" value="${escapeHtml(c.nContrato||"")}" required>
             </div>
             <div>
-              <label class="block text-xs font-semibold text-navy-900 mb-1">Aditivo</label>
-              <input id="edit-aditivo" type="text" class="input-field w-full" value="${escapeHtml(c.aditivo||"")}">
+              <label class="block text-xs font-semibold text-navy-900 mb-1">Aditivos</label>
+              <p class="text-xs text-steel-500 bg-sky-50 rounded-lg p-3 border border-sky-100">Opcional. Edite a lista de aditivos na seção abaixo.</p>
             </div>
             <div>
               <label class="block text-xs font-semibold text-navy-900 mb-1">Vigência Inicial</label>
-              <input id="edit-vigini" type="date" class="input-field w-full" value="${c.vigIni||""}" required>
+              <input id="edit-vigini" type="date" class="input-field w-full" value="${c.vigIni||""}" required onchange="atualizarValorMensalContrato('edit')">
             </div>
             <div>
               <label class="block text-xs font-semibold text-navy-900 mb-1">Vigência Final</label>
-              <input id="edit-vigfim" type="date" class="input-field w-full" value="${c.vigFim||""}" required>
+              <input id="edit-vigfim" type="date" class="input-field w-full" value="${c.vigFim||""}" required onchange="atualizarValorMensalContrato('edit')">
             </div>
             <div>
               <label class="block text-xs font-semibold text-navy-900 mb-1">Valor do Contrato</label>
-              <input id="edit-valor-contrato" type="number" step="0.01" class="input-field w-full" value="${c.valorContrato||0}" required>
+              <input id="edit-valor-contrato" type="text" inputmode="decimal" class="input-field w-full" value="${formatarMoedaBR(c.valorContrato||0)}" required oninput="atualizarValorMensalContrato('edit')" onblur="aplicarMascaraMoedaBR(this);atualizarValorMensalContrato('edit')">
             </div>
             <div>
               <label class="block text-xs font-semibold text-navy-900 mb-1">Valor Estimado Mensal</label>
-              <input id="edit-valor-mensal" type="number" step="0.01" class="input-field w-full" value="${c.valorEstimadoMensal||0}" required>
+              <input id="edit-valor-mensal" type="text" class="input-field w-full bg-slate-100" value="${formatarMoedaBR(c.valorEstimadoMensal||0)}" readonly required>
+              <p id="edit-valor-mensal-info" class="text-[10px] text-steel-500 mt-1">Calculado automaticamente a partir da vigência e do valor total.</p>
             </div>
+          </div>
+
+          <div class="bg-blue-50 rounded-lg p-4 border border-blue-200/40">
+            <div class="flex items-center justify-between gap-3 mb-3">
+              <div>
+                <label class="block text-xs font-semibold text-navy-900">Aditivos do contrato</label>
+                <p class="text-[10px] text-steel-600 mt-1">Opcional. Insira um ou mais aditivos, um abaixo do outro.</p>
+              </div>
+              <button type="button" onclick="adicionarLinhaAditivo('edit-lista-aditivos')" class="btn-secondary px-3 py-2 rounded-lg text-xs">+ Adicionar aditivo</button>
+            </div>
+            <div id="edit-lista-aditivos" class="space-y-2">${aditivosHTML}</div>
           </div>
 
           <div class="bg-yellow-50 rounded-lg p-4 border border-yellow-200/40">
@@ -1863,6 +2173,7 @@
           </div>
         </form>`;
       openModal("Editar Contrato",content);
+      setTimeout(()=>atualizarValorMensalContrato('edit'),50);
     }
 
     async function atualizarContrato(e,id){
@@ -1872,42 +2183,60 @@
         showInlineAlert("Selecione pelo menos uma unidade hospitalar","error");
         return;
       }
+
+      const contratoBase=allContratos.find(x=>String(x.id)===String(id));
+      if(!contratoBase){
+        showInlineAlert("Contrato não encontrado para atualização","error");
+        return;
+      }
+
       const empenhos=coletarEmpenhos("edit-lista-empenhos");
+      const aditivos=coletarAditivos("edit-lista-aditivos");
       const empenhosTexto=montarTextoEmpenhos(empenhos);
-      
+
       const contratoAtualizado={
-        ...allContratos.find(x=>x.id===id),
+        ...contratoBase,
         nProcesso:document.getElementById("edit-nprocesso").value,
         unidades:unidades.join(","),
         empresa:document.getElementById("edit-empresa").value,
         nContrato:document.getElementById("edit-ncontrato").value,
-        aditivo:document.getElementById("edit-aditivo").value||"—",
+        aditivo:aditivos.map(a=>a.numero).filter(Boolean).join(", ")||"—",
+        aditivos:aditivos,
         vigIni:document.getElementById("edit-vigini").value,
         vigFim:document.getElementById("edit-vigfim").value,
-        valorContrato:parseFloat(document.getElementById("edit-valor-contrato").value),
-        valorEstimadoMensal:parseFloat(document.getElementById("edit-valor-mensal").value),
+        valorContrato:obterValorMoedaInput("edit-valor-contrato"),
+        valorEstimadoMensal:calcularValorMensalContrato(obterValorMoedaInput("edit-valor-contrato"),document.getElementById("edit-vigini").value,document.getElementById("edit-vigfim").value),
         servicoTipo:document.getElementById("edit-servico").value,
         empenhos:empenhos,
         empenhosTexto:empenhosTexto,
-        valorEmpenho2026:calcularValorEmpenhadoContrato({empenhos})
+        valorEmpenho2026:calcularValorEmpenhadoContrato({empenhos}),
+        atualizadoEm:new Date().toISOString()
       };
-      
-      const result=await window.dataSdk.update(contratoAtualizado);
+
+      const result=await atualizarRegistroSeguro(contratoAtualizado,"contratos");
       if(result.isOk){
         closeAllModals();
         showInlineAlert("✅ Contrato atualizado com sucesso!","info");
+        renderContent();
       } else {
         showInlineAlert("Erro ao atualizar contrato","error");
       }
     }
 
     async function confirmarExclusaoContrato(id){
-      const c=allContratos.find(x=>x.id===id);
-      if(!c)return;
-      const result=await window.dataSdk.delete(c);
+      const c=allContratos.find(x=>String(x.id)===String(id));
+      if(!c){
+        alert("Contrato não encontrado para exclusão.");
+        return;
+      }
+
+      if(!confirm(`Deseja excluir o contrato ${c.nContrato || ""}?`)) return;
+
+      const result=await excluirRegistroSeguro(c,"contratos");
       if(result.isOk){
         closeAllModals();
         showInlineAlert("✅ Contrato excluído com sucesso!","info");
+        atualizarTelaAtual();
       } else {
         showInlineAlert("❌ Erro ao excluir contrato","error");
       }
@@ -2162,9 +2491,15 @@
         return;
       }
 
+      const pagamentoBase=allPagamentos.find(x=>String(x.id)===String(id));
+      if(!pagamentoBase){
+        showInlineAlert("Pagamento não encontrado para atualização","error");
+        return;
+      }
+
       const totalNotas=notas.reduce((s,n)=>s+parseValorBR(n.valor),0);
       const pagamentoAtualizado={
-        ...allPagamentos.find(x=>x.id===id),
+        ...pagamentoBase,
         uh:document.getElementById("edit-uh-pag").value,
         contrato_id:document.getElementById("edit-contrato-pag").value,
         competencia:document.getElementById("edit-competencia-pag").value,
@@ -2178,25 +2513,34 @@
         processoSEI:notas.map(n=>n.sei).filter(Boolean).join(", "),
         dataEmissao:notas[0]?.dataEmissao||"",
         tipoNF:notas.map(n=>n.tipo).join(","),
-        situacao:document.getElementById("edit-situacao-pag").value
+        situacao:document.getElementById("edit-situacao-pag").value,
+        atualizadoEm:new Date().toISOString()
       };
 
-      const result=await window.dataSdk.update(pagamentoAtualizado);
+      const result=await atualizarRegistroSeguro(pagamentoAtualizado,"pagamentos");
       if(result.isOk){
         closeAllModals();
         showInlineAlert("✅ Pagamento atualizado com sucesso!","info");
+        renderContent();
       } else {
         showInlineAlert("Erro ao atualizar pagamento","error");
       }
     }
 
     async function confirmarExclusaoPagamento(id){
-      const p=allPagamentos.find(x=>x.id===id);
-      if(!p)return;
-      const result=await window.dataSdk.delete(p);
+      const p=allPagamentos.find(x=>String(x.id)===String(id));
+      if(!p){
+        alert("Processo de pagamento não encontrado para exclusão.");
+        return;
+      }
+
+      if(!confirm(`Deseja excluir este processo de pagamento?`)) return;
+
+      const result=await excluirRegistroSeguro(p,"pagamentos");
       if(result.isOk){
         closeAllModals();
         showInlineAlert("✅ Pagamento excluído com sucesso!","info");
+        atualizarTelaAtual();
       } else {
         showInlineAlert("❌ Erro ao excluir pagamento","error");
       }
@@ -2301,13 +2645,15 @@
         dataEmissao:notas[0]?.dataEmissao||"",
         situacao:document.getElementById("form-situacao-pag").value,
         tipoNF:notas.map(n=>n.tipo).join(","),
+        anoExercicio:exercicioAtivo,
         criadoEm:new Date().toISOString()
       };
 
-      const result=await window.dataSdk.create(novoPagamento);
+      const result=await criarRegistroSeguro(novoPagamento,"pagamentos");
       if(result.isOk){
         closeAllModals();
         showInlineAlert("✅ Pagamento salvo com sucesso!","info");
+        renderContent();
       } else {
         showInlineAlert("Erro ao salvar pagamento","error");
       }
@@ -2723,16 +3069,37 @@
         criadoEm:existente?.criadoEm||new Date().toISOString()
       };
 
-      const result=existente ? await window.dataSdk.update(producao) : await window.dataSdk.create(producao);
+      const result=existente ? await atualizarRegistroSeguro(producao,"producao") : await criarRegistroSeguro(producao,"producao");
       if(result.isOk){
         closeAllModals();
         showInlineAlert("✅ Produção salva com sucesso!","info");
+        renderContent();
       } else {
         showInlineAlert("❌ Erro ao salvar produção","error");
       }
     }
 
-    // ─── TÉCNICOS ───
+    
+    async function confirmarExclusaoProducao(id){
+      const pr=allProducao.find(x=>String(x.id)===String(id));
+      if(!pr){
+        alert("Produção não encontrada para exclusão.");
+        return;
+      }
+
+      if(!confirm("Deseja excluir este registro de produção?")) return;
+
+      const result=await excluirRegistroSeguro(pr,"producao");
+      if(result.isOk){
+        closeAllModals();
+        showInlineAlert("✅ Produção excluída com sucesso!","info");
+        atualizarTelaAtual();
+      }else{
+        showInlineAlert("❌ Erro ao excluir produção","error");
+      }
+    }
+
+// ─── TÉCNICOS ───
     function renderTecnicos(el){
       let tecnicosFiltrados=mesclarTecnicosLocais(allTecnicos).filter(t=>t.tipo==="tecnico");
       
@@ -2777,7 +3144,7 @@
                 </td>
                 <td class="px-6 py-4 text-center flex items-center justify-center gap-2">
                   <button onclick="editarTecnico('${t.id}')" class="px-3 py-2 rounded-lg hover:bg-blue-50 transition hidden-btn flex items-center gap-1 font-bold text-blue-700" title="Editar" style="display:${hasPermission("edit")?"flex":"none"}"><i data-lucide="edit" class="w-4 h-4 text-blue-600"></i><span class="text-xs">Editar</span></button>
-                  <button onclick="confirmarExclusaoTecnico('${t.id}')" class="p-2 rounded hover:bg-red-100 transition hidden-btn" title="Excluir" style="display:${hasPermission("delete")?"block":"none"}"><i data-lucide="trash-2" class="w-4 h-4 text-red-600"></i></button>
+                  <button onclick="confirmarExclusaoTecnico('${t.id}','${t.tecnicoMatricula}')" class="p-2 rounded hover:bg-red-100 transition hidden-btn" title="Excluir" style="display:${hasPermission("delete")?"block":"none"}"><i data-lucide="trash-2" class="w-4 h-4 text-red-600"></i></button>
                 </td>
               </tr>
               `).join("")}
@@ -2938,15 +3305,19 @@
       }
     }
 
-    async function confirmarExclusaoTecnico(id){
-      const t=mesclarTecnicosLocais(allTecnicos).find(x=>String(x.id)===String(id));
+    async function confirmarExclusaoTecnico(id,matricula=""){
+      const listaCompleta=mesclarTecnicosLocais(allTecnicos).filter(x=>x.tipo==="tecnico");
+      const t=listaCompleta.find(x=>String(x.id)===String(id) || String(x.tecnicoMatricula||"").toUpperCase()===String(matricula||"").toUpperCase());
+
       if(!t){
-        showInlineAlert("❌ Técnico não encontrado para exclusão","error");
+        alert("Técnico não encontrado para exclusão.");
         return;
       }
-      if(!confirm(`Confirmar exclusão do técnico ${t.tecnicoNome || t.tecnicoMatricula}?`)) return;
+
+      if(!confirm(`Deseja excluir o técnico ${t.tecnicoNome || t.tecnicoMatricula}?`)) return;
 
       const result=await excluirTecnicoSeguro(t);
+
       if(result.isOk){
         closeAllModals();
         showInlineAlert("✅ Técnico excluído com sucesso!","info");
@@ -2955,6 +3326,10 @@
         showInlineAlert("❌ Erro ao excluir técnico","error");
       }
     }
+
+    
+    window.confirmarExclusaoTecnico=confirmarExclusaoTecnico;
+    window.excluirTecnicoSeguro=excluirTecnicoSeguro;
 
     // ─── EXERCÍCIOS ───
     function renderExercicios(el){
@@ -3098,13 +3473,20 @@
     }
 
     async function confirmarExclusaoExercicio(id){
-      const ex=allTecnicos.find(x=>x.id===id);
-      if(!ex)return;
+      const ex=obterExerciciosDisponiveis().find(x=>String(x.id)===String(id)) || allTecnicos.find(x=>String(x.id)===String(id));
+      if(!ex){
+        alert("Exercício fiscal não encontrado para exclusão.");
+        return;
+      }
+
+      if(!confirm(`Deseja excluir o exercício fiscal ${ex.exercicioAno}?`)) return;
+
       const result=await excluirExercicioSeguro(ex);
       if(result.isOk){
         closeAllModals();
         carregarExerciciosCadastrados();
         showInlineAlert("✅ Exercício excluído com sucesso!","info");
+        atualizarTelaAtual();
       } else {
         showInlineAlert("❌ Erro ao excluir exercício","error");
       }
@@ -3448,15 +3830,19 @@
     function renderExerciciosConfigCard(){
       const exercicios=obterExerciciosDisponiveis();
       return `
-        <div class="section-card">
+        <div class="section-card config-exercicio-card">
           <div class="section-heading">
             <h3><i data-lucide="calendar-plus" class="w-5 h-5 text-navy-600"></i>Exercícios Fiscais</h3>
             <span class="soft-badge">${exercicios.length}</span>
           </div>
 
-          <div class="grid md:grid-cols-3 gap-3 mb-4">
+          <p class="text-xs text-steel-500 mb-3">
+            Edite o ano/status direto nos campos. Para excluir, marque a caixinha. Depois clique em <strong>Salvar exercícios</strong>.
+          </p>
+
+          <div class="grid md:grid-cols-[1fr_1fr_auto] gap-3 mb-4">
             <div>
-              <label class="filter-label">Ano</label>
+              <label class="filter-label">Novo Ano</label>
               <input id="config-exercicio-ano" type="number" min="2022" max="2040" class="input-field w-full" placeholder="Ex: 2027">
             </div>
             <div>
@@ -3468,34 +3854,32 @@
               </select>
             </div>
             <div class="flex items-end">
-              <button type="button" onclick="configAdicionarExercicioCampo()" class="btn-primary w-full px-4 py-3 rounded-lg text-sm font-bold">Adicionar Exercício</button>
+              <button type="button" onclick="configAdicionarExercicioRapido()" class="btn-secondary px-4 py-3 rounded-lg text-sm font-bold">Adicionar</button>
             </div>
           </div>
 
-          <div class="space-y-2 max-h-56 overflow-auto">
+          <div class="space-y-2 max-h-56 overflow-auto mb-3">
             ${exercicios.map((ex,idx)=>`
               <div class="grid grid-cols-[1fr_1fr_auto] gap-2 items-center text-sm p-3 bg-sky-50 rounded-xl border border-sky-100">
-                <div>
-                  <label class="text-[10px] font-bold text-steel-500 uppercase">Ano</label>
-                  <input type="number" class="input-field w-full text-sm config-exercicio-ano-input" data-index="${idx}" value="${ex.exercicioAno}">
-                </div>
-                <div>
-                  <label class="text-[10px] font-bold text-steel-500 uppercase">Status</label>
-                  <select class="input-field w-full text-sm config-exercicio-status-input" data-index="${idx}">
-                    <option value="Ativo" ${ex.exercicioStatus==="Ativo"?"selected":""}>Ativo</option>
-                    <option value="Fechado" ${ex.exercicioStatus==="Fechado"?"selected":""}>Fechado</option>
-                    <option value="Auditado" ${ex.exercicioStatus==="Auditado"?"selected":""}>Auditado</option>
-                  </select>
-                </div>
-                <label class="flex items-center gap-2 cursor-pointer text-red-700 font-bold text-xs">
-                  <input type="checkbox" class="config-exercicio-delete-check w-4 h-4" data-index="${idx}">
+                <input type="number" class="input-field w-full text-sm cfg-ex-ano" data-index="${idx}" value="${ex.exercicioAno}">
+                <select class="input-field w-full text-sm cfg-ex-status" data-index="${idx}">
+                  <option value="Ativo" ${ex.exercicioStatus==="Ativo"?"selected":""}>Ativo</option>
+                  <option value="Fechado" ${ex.exercicioStatus==="Fechado"?"selected":""}>Fechado</option>
+                  <option value="Auditado" ${ex.exercicioStatus==="Auditado"?"selected":""}>Auditado</option>
+                </select>
+                <label class="flex items-center gap-2 text-red-700 font-bold text-xs cursor-pointer">
+                  <input type="checkbox" class="cfg-ex-delete w-4 h-4" data-index="${idx}">
                   Excluir
                 </label>
               </div>
             `).join("")}
           </div>
 
-          <p class="text-xs text-steel-500 mt-3">Edite os campos diretamente, marque Excluir se necessário e clique em Salvar Configurações.</p>
+          <button type="button" onclick="configSalvarExercicios()" class="btn-primary w-full px-4 py-2 rounded-lg text-sm font-bold">
+            Salvar exercícios
+          </button>
+
+          <p class="text-xs text-steel-500 mt-3">Os exercícios cadastrados aqui aparecem na tela inicial de acesso.</p>
         </div>
       `;
     }
@@ -3646,14 +4030,125 @@
 
     window.ativarBotoesConfiguracoes=ativarBotoesConfiguracoes;
 
+    
+    // ─── CONFIGURAÇÕES SIMPLES E ESTÁVEIS ───
+    function configPersistir(){
+      delete listas.servidores;
+      delete listas.empenhos;
+      const atual=JSON.parse(localStorage.getItem("sigecon_configuracoes")||"{}");
+      localStorage.setItem("sigecon_configuracoes",JSON.stringify({
+        ...atual,
+        listas:listas,
+        atualizadoEm:new Date().toISOString()
+      }));
+    }
+
+    function configAdicionarRapido(key,inputId){
+      const input=document.getElementById(inputId);
+      const valor=(input?.value||"").trim();
+      if(!valor){
+        alert("Digite um valor para adicionar.");
+        return;
+      }
+      if(!listas[key]) listas[key]=[];
+      if(listas[key].includes(valor)){
+        alert("Este item já existe.");
+        return;
+      }
+      listas[key].push(valor);
+      input.value="";
+      configPersistir();
+      showInlineAlert("✅ Item adicionado com sucesso!","info");
+      renderConfiguracoes(document.getElementById("content-area"));
+    }
+
+    function configSalvarLista(key){
+      const novos=[];
+      document.querySelectorAll(`.cfg-list-input[data-key="${key}"]`).forEach(input=>{
+        const idx=input.dataset.index;
+        const apagar=document.querySelector(`.cfg-list-delete[data-key="${key}"][data-index="${idx}"]`)?.checked;
+        const valor=(input.value||"").trim();
+        if(!apagar && valor && !novos.includes(valor)){
+          novos.push(valor);
+        }
+      });
+
+      listas[key]=novos;
+      configPersistir();
+      showInlineAlert("✅ Lista salva com sucesso!","info");
+      renderConfiguracoes(document.getElementById("content-area"));
+    }
+
+    async function configAdicionarExercicioRapido(){
+      const ano=parseInt(document.getElementById("config-exercicio-ano")?.value);
+      const status=document.getElementById("config-exercicio-status")?.value||"Ativo";
+
+      if(!ano){
+        alert("Informe o ano do exercício.");
+        return;
+      }
+
+      if(obterExerciciosDisponiveis().some(ex=>String(ex.exercicioAno)===String(ano))){
+        alert("Este exercício já existe.");
+        return;
+      }
+
+      const exercicio={id:Date.now().toString(),tipo:"exercicio",exercicioAno:ano,exercicioStatus:status,criadoEm:new Date().toISOString()};
+      const result=await salvarExercicioSeguro(exercicio);
+
+      if(result.isOk){
+        carregarExerciciosCadastrados();
+        showInlineAlert("✅ Exercício adicionado com sucesso!","info");
+        renderConfiguracoes(document.getElementById("content-area"));
+      }
+    }
+
+    async function configSalvarExercicios(){
+      const exerciciosAtuais=obterExerciciosDisponiveis();
+      const editados=[];
+
+      document.querySelectorAll(".cfg-ex-ano").forEach(input=>{
+        const idx=Number(input.dataset.index);
+        const ex=exerciciosAtuais[idx];
+        if(!ex) return;
+
+        const apagar=document.querySelector(`.cfg-ex-delete[data-index="${idx}"]`)?.checked;
+        if(apagar) return;
+
+        const ano=parseInt(input.value);
+        const status=document.querySelector(`.cfg-ex-status[data-index="${idx}"]`)?.value||"Ativo";
+
+        if(ano){
+          editados.push({
+            ...ex,
+            exercicioAno:ano,
+            exercicioStatus:status,
+            atualizadoEm:new Date().toISOString()
+          });
+        }
+      });
+
+      salvarExerciciosLocais(editados);
+      allTecnicos=mesclarExerciciosLocais(allTecnicos.filter(x=>x.tipo!=="exercicio").concat(editados));
+      carregarExerciciosCadastrados();
+
+      showInlineAlert("✅ Exercícios salvos com sucesso!","info");
+      renderConfiguracoes(document.getElementById("content-area"));
+    }
+
+    window.configAdicionarRapido=configAdicionarRapido;
+    window.configSalvarLista=configSalvarLista;
+    window.configAdicionarExercicioRapido=configAdicionarExercicioRapido;
+    window.configSalvarExercicios=configSalvarExercicios;
+
     function renderConfiguracoes(el){
       const cardsConfig=[
-        {key:"servicos",titulo:"Tipos de Serviço",icone:"briefcase",cor:"text-navy-600",inputId:"input-servico",placeholder:"Ex: cirurgias|Cirurgias Eletivas"},
-        {key:"fontes",titulo:"Fontes de Recurso",icone:"landmark",cor:"text-blue-600",inputId:"input-fonte",placeholder:"Ex: Fonte 500 - Tesouro Estadual"},
-        {key:"unidades",titulo:"Unidades Hospitalares",icone:"hospital",cor:"text-emerald-600",inputId:"input-unidade",placeholder:"Ex: HMWG"},
-        {key:"empresas",titulo:"Empresas",icone:"building-2",cor:"text-orange-600",inputId:"input-empresa",placeholder:"Ex: Empresa Contratada LTDA"},
-        {key:"situacoes",titulo:"Situações de Pagamento",icone:"activity",cor:"text-purple-600",inputId:"input-situacao",placeholder:"Ex: A liquidar"},
-        {key:"status",titulo:"Status de Exercício",icone:"calendar",cor:"text-pink-600",inputId:"input-status",placeholder:"Ex: Ativo"}
+        {key:"servicos",titulo:"Tipos de Serviço",icone:"briefcase",cor:"text-navy-600",inputId:"input-servico",placeholder:"Ex: hemodialise|Hemodiálise"},
+        {key:"fontes",titulo:"Fontes de Recurso",icone:"landmark",cor:"text-blue-600",inputId:"input-fonte",placeholder:"Nova fonte"},
+        {key:"unidades",titulo:"Unidades Hospitalares",icone:"hospital",cor:"text-emerald-600",inputId:"input-unidade",placeholder:"Nova unidade"},
+        {key:"empresas",titulo:"Empresas",icone:"building-2",cor:"text-orange-600",inputId:"input-empresa",placeholder:"Nova empresa"},
+        {key:"situacoes",titulo:"Situações de Pagamento",icone:"activity",cor:"text-purple-600",inputId:"input-situacao",placeholder:"Nova situação"},
+        {key:"status",titulo:"Status de Exercício",icone:"calendar",cor:"text-pink-600",inputId:"input-status",placeholder:"Novo status"}
       ];
 
       const identidade=obterIdentidadeConfiguracao();
@@ -3665,7 +4160,7 @@
             <div>
               <p class="text-xs uppercase tracking-[0.2em] text-sky-100 font-bold">Administração</p>
               <h2 class="text-3xl font-extrabold mt-1">Configurações</h2>
-              <p class="text-sm text-sky-100 mt-2">Edição simples: altere as listas e clique em Salvar Configurações.</p>
+              <p class="text-sm text-sky-100 mt-2">Cadastre, edite e exclua os parâmetros usados nos demais módulos.</p>
             </div>
             <span class="hero-chip text-center"><p class="text-xs text-sky-100">Listas</p><p class="text-2xl font-extrabold">${cardsConfig.length}</p></span>
           </div>
@@ -3693,15 +4188,8 @@
 
         ${renderExerciciosConfigCard()}
 
-        <div class="section-card">
-          <div class="section-heading">
-            <h3><i data-lucide="list-checks" class="w-5 h-5 text-navy-600"></i>Listas do Sistema</h3>
-            <span class="soft-badge">Interligadas</span>
-          </div>
-          <p class="text-sm text-steel-500 mb-4">Essas listas alimentam os cadastros do sistema. Exemplo: os tipos de serviço cadastrados aqui aparecem no cadastro de contratos.</p>
-          <div class="grid md:grid-cols-2 gap-5">
-            ${cardsConfig.map(card=>renderListaConfigCard(card)).join("")}
-          </div>
+        <div class="grid md:grid-cols-2 gap-5">
+          ${cardsConfig.map(card=>renderListaConfigCard(card)).join("")}
         </div>
 
         <div class="section-card">
@@ -3720,9 +4208,353 @@
           </button>
         </div>
       </div>`;
+      lucide.createIcons();
     }
 
-    function adicionarListaItem(listKey,inputId){
+    
+    // Ações simples das Configurações
+    function configSalvarListas(){
+      delete listas.servidores;
+      delete listas.empenhos;
+      salvarConfiguracoesLocais();
+      localStorage.setItem("sigecon_configuracoes",JSON.stringify({
+        ...(JSON.parse(localStorage.getItem("sigecon_configuracoes")||"{}")),
+        listas:listas,
+        atualizadoEm:new Date().toISOString()
+      }));
+    }
+
+    window.configAdicionarItem=function(listKey,inputId){
+      const input=document.getElementById(inputId);
+      const valor=(input?.value||"").trim();
+      if(!valor){
+        alert("Digite um valor para adicionar.");
+        return;
+      }
+      if(!listas[listKey]) listas[listKey]=[];
+      if(listas[listKey].includes(valor)){
+        alert("Este item já existe.");
+        return;
+      }
+      listas[listKey].push(valor);
+      if(input) input.value="";
+      configSalvarListas();
+      showInlineAlert("✅ Item adicionado com sucesso!","info");
+      renderConfiguracoes(document.getElementById("content-area"));
+    };
+
+    window.configEditarItem=function(listKey,idx){
+      idx=Number(idx);
+      if(!listas[listKey] || idx<0 || idx>=listas[listKey].length){
+        alert("Item não encontrado.");
+        return;
+      }
+      const atual=String(listas[listKey][idx]);
+      const novo=prompt(listKey==="servicos" ? "Editar no formato codigo|Nome do Serviço:" : "Editar item:", atual);
+      if(novo===null) return;
+      const valor=String(novo).trim();
+      if(!valor){
+        alert("O valor não pode ficar vazio.");
+        return;
+      }
+      if(valor!==atual && listas[listKey].includes(valor)){
+        alert("Este item já existe.");
+        return;
+      }
+      listas[listKey][idx]=valor;
+      configSalvarListas();
+      showInlineAlert("✅ Item editado com sucesso!","info");
+      renderConfiguracoes(document.getElementById("content-area"));
+    };
+
+    window.configExcluirItem=function(listKey,idx){
+      idx=Number(idx);
+      if(!listas[listKey] || idx<0 || idx>=listas[listKey].length){
+        alert("Item não encontrado.");
+        return;
+      }
+      if(!confirm("Deseja excluir este item?")) return;
+      listas[listKey].splice(idx,1);
+      configSalvarListas();
+      showInlineAlert("✅ Item excluído com sucesso!","info");
+      renderConfiguracoes(document.getElementById("content-area"));
+    };
+
+    window.configAdicionarExercicio=async function(){
+      const ano=parseInt(document.getElementById("config-exercicio-ano")?.value);
+      const status=document.getElementById("config-exercicio-status")?.value||"Ativo";
+      if(!ano){
+        alert("Informe o ano do exercício.");
+        return;
+      }
+      if(obterExerciciosDisponiveis().some(ex=>String(ex.exercicioAno)===String(ano))){
+        alert("Este exercício fiscal já existe.");
+        return;
+      }
+      const exercicio={id:Date.now().toString(),tipo:"exercicio",exercicioAno:ano,exercicioStatus:status,criadoEm:new Date().toISOString()};
+      const result=await salvarExercicioSeguro(exercicio);
+      if(result.isOk){
+        carregarExerciciosCadastrados();
+        showInlineAlert("✅ Exercício adicionado com sucesso!","info");
+        renderConfiguracoes(document.getElementById("content-area"));
+      }
+    };
+
+    window.configEditarExercicio=async function(idx){
+      const exercicios=obterExerciciosDisponiveis();
+      const ex=exercicios[Number(idx)];
+      if(!ex){
+        alert("Exercício não encontrado.");
+        return;
+      }
+      const novoAno=prompt("Ano do exercício:",ex.exercicioAno);
+      if(novoAno===null) return;
+      const novoStatus=prompt("Status: Ativo, Fechado ou Auditado",ex.exercicioStatus||"Ativo");
+      if(novoStatus===null) return;
+      const atualizado={...ex,exercicioAno:parseInt(novoAno),exercicioStatus:String(novoStatus||"Ativo").trim(),atualizadoEm:new Date().toISOString()};
+      const result=await atualizarExercicioSeguro(atualizado);
+      if(result.isOk){
+        carregarExerciciosCadastrados();
+        showInlineAlert("✅ Exercício editado com sucesso!","info");
+        renderConfiguracoes(document.getElementById("content-area"));
+      }
+    };
+
+    window.configExcluirExercicio=async function(idx){
+      const exercicios=obterExerciciosDisponiveis();
+      const ex=exercicios[Number(idx)];
+      if(!ex){
+        alert("Exercício não encontrado.");
+        return;
+      }
+      if(!confirm("Deseja excluir este exercício fiscal?")) return;
+      const result=await excluirExercicioSeguro(ex);
+      if(result.isOk){
+        carregarExerciciosCadastrados();
+        showInlineAlert("✅ Exercício excluído com sucesso!","info");
+        renderConfiguracoes(document.getElementById("content-area"));
+      }
+    };
+
+
+    // ─── CONFIGURAÇÕES: CICLO COMPLETO SIMPLES ───
+    function salvarListasConfiguracoes(){
+      delete listas.servidores;
+      delete listas.empenhos;
+      salvarConfiguracoesLocais();
+      localStorage.setItem("sigecon_configuracoes",JSON.stringify({
+        ...(JSON.parse(localStorage.getItem("sigecon_configuracoes")||"{}")),
+        listas:listas,
+        atualizadoEm:new Date().toISOString()
+      }));
+    }
+
+    function ativarEventosConfiguracoes(){
+      const area=document.getElementById("content-area");
+      if(!area) return;
+
+      area.querySelectorAll(".config-btn-add").forEach(btn=>{
+        btn.onclick=function(){
+          const key=this.dataset.key;
+          const input=document.getElementById(this.dataset.input);
+          const valor=(input?.value||"").trim();
+
+          if(!valor){
+            alert("Digite um valor para adicionar.");
+            return;
+          }
+
+          if(!listas[key]) listas[key]=[];
+
+          if(listas[key].includes(valor)){
+            alert("Este item já existe.");
+            return;
+          }
+
+          listas[key].push(valor);
+          if(input) input.value="";
+          salvarListasConfiguracoes();
+          showInlineAlert("✅ Item adicionado com sucesso!","info");
+          renderConfiguracoes(document.getElementById("content-area"));
+        };
+      });
+
+      area.querySelectorAll(".config-btn-edit").forEach(btn=>{
+        btn.onclick=function(){
+          const row=this.closest(".config-row");
+          if(!row) return;
+
+          row.querySelector(".config-view")?.classList.add("hidden");
+          row.querySelector(".config-edit-area")?.classList.remove("hidden");
+          row.querySelector(".config-actions-view")?.classList.add("hidden");
+
+          const editActions=row.querySelector(".config-actions-edit");
+          editActions?.classList.remove("hidden");
+          editActions?.classList.add("flex");
+
+          row.querySelector(".config-edit-value")?.focus();
+        };
+      });
+
+      area.querySelectorAll(".config-btn-cancel").forEach(btn=>{
+        btn.onclick=function(){
+          renderConfiguracoes(document.getElementById("content-area"));
+        };
+      });
+
+      area.querySelectorAll(".config-btn-save").forEach(btn=>{
+        btn.onclick=function(){
+          const row=this.closest(".config-row");
+          if(!row) return;
+
+          const key=row.dataset.key;
+          const idx=Number(row.dataset.index);
+          const valor=(row.querySelector(".config-edit-value")?.value||"").trim();
+
+          if(!valor){
+            alert("O valor não pode ficar vazio.");
+            return;
+          }
+
+          if(!listas[key]) listas[key]=[];
+
+          if(valor!==listas[key][idx] && listas[key].includes(valor)){
+            alert("Este item já existe.");
+            return;
+          }
+
+          listas[key][idx]=valor;
+          salvarListasConfiguracoes();
+          showInlineAlert("✅ Item editado com sucesso!","info");
+          renderConfiguracoes(document.getElementById("content-area"));
+        };
+      });
+
+      area.querySelectorAll(".config-btn-delete").forEach(btn=>{
+        btn.onclick=function(){
+          const row=this.closest(".config-row");
+          if(!row) return;
+
+          const key=row.dataset.key;
+          const idx=Number(row.dataset.index);
+
+          if(!confirm("Deseja excluir este item?")) return;
+
+          listas[key].splice(idx,1);
+          salvarListasConfiguracoes();
+          showInlineAlert("✅ Item excluído com sucesso!","info");
+          renderConfiguracoes(document.getElementById("content-area"));
+        };
+      });
+
+      area.querySelectorAll(".config-ex-btn-add").forEach(btn=>{
+        btn.onclick=async function(){
+          const ano=parseInt(document.getElementById("config-exercicio-ano")?.value);
+          const status=document.getElementById("config-exercicio-status")?.value||"Ativo";
+
+          if(!ano){
+            alert("Informe o ano do exercício.");
+            return;
+          }
+
+          if(obterExerciciosDisponiveis().some(ex=>String(ex.exercicioAno)===String(ano))){
+            alert("Este exercício fiscal já existe.");
+            return;
+          }
+
+          const exercicio={id:Date.now().toString(),tipo:"exercicio",exercicioAno:ano,exercicioStatus:status,criadoEm:new Date().toISOString()};
+          const result=await salvarExercicioSeguro(exercicio);
+
+          if(result.isOk){
+            carregarExerciciosCadastrados();
+            showInlineAlert("✅ Exercício adicionado com sucesso!","info");
+            renderConfiguracoes(document.getElementById("content-area"));
+          }
+        };
+      });
+
+      area.querySelectorAll(".config-ex-btn-edit").forEach(btn=>{
+        btn.onclick=function(){
+          const row=this.closest(".config-ex-row");
+          if(!row) return;
+
+          row.querySelector(".config-ex-view")?.classList.add("hidden");
+          row.querySelector(".config-ex-edit")?.classList.remove("hidden");
+          row.querySelector(".config-ex-actions-view")?.classList.add("hidden");
+
+          const editActions=row.querySelector(".config-ex-actions-edit");
+          editActions?.classList.remove("hidden");
+          editActions?.classList.add("flex");
+        };
+      });
+
+      area.querySelectorAll(".config-ex-btn-cancel").forEach(btn=>{
+        btn.onclick=function(){
+          renderConfiguracoes(document.getElementById("content-area"));
+        };
+      });
+
+      area.querySelectorAll(".config-ex-btn-save").forEach(btn=>{
+        btn.onclick=async function(){
+          const row=this.closest(".config-ex-row");
+          if(!row) return;
+
+          const idx=Number(row.dataset.index);
+          const exercicios=obterExerciciosDisponiveis();
+          const ex=exercicios[idx];
+
+          if(!ex){
+            alert("Exercício não encontrado.");
+            return;
+          }
+
+          const ano=parseInt(row.querySelector(".config-ex-ano-edit")?.value);
+          const status=row.querySelector(".config-ex-status-edit")?.value||"Ativo";
+
+          if(!ano){
+            alert("Informe o ano do exercício.");
+            return;
+          }
+
+          const atualizado={...ex,exercicioAno:ano,exercicioStatus:status,atualizadoEm:new Date().toISOString()};
+          const result=await atualizarExercicioSeguro(atualizado);
+
+          if(result.isOk){
+            carregarExerciciosCadastrados();
+            showInlineAlert("✅ Exercício editado com sucesso!","info");
+            renderConfiguracoes(document.getElementById("content-area"));
+          }
+        };
+      });
+
+      area.querySelectorAll(".config-ex-btn-delete").forEach(btn=>{
+        btn.onclick=async function(){
+          const row=this.closest(".config-ex-row");
+          if(!row) return;
+
+          const idx=Number(row.dataset.index);
+          const exercicios=obterExerciciosDisponiveis();
+          const ex=exercicios[idx];
+
+          if(!ex){
+            alert("Exercício não encontrado.");
+            return;
+          }
+
+          if(!confirm("Deseja excluir este exercício fiscal?")) return;
+
+          const result=await excluirExercicioSeguro(ex);
+
+          if(result.isOk){
+            carregarExerciciosCadastrados();
+            showInlineAlert("✅ Exercício excluído com sucesso!","info");
+            renderConfiguracoes(document.getElementById("content-area"));
+          }
+        };
+      });
+    }
+
+function adicionarListaItem(listKey,inputId){
       const inputEl=document.getElementById(inputId);
       if(!inputEl||!inputEl.value.trim()){
         showInlineAlert("❌ Digite um valor","error");
@@ -3893,47 +4725,8 @@ async function salvarConfiguracoes(){
       const subtitulo=document.getElementById("config-system-subtitle")?.value||"Gestão Contratual";
       const suporte=document.getElementById("config-system-support")?.value||"";
 
-      // Salvar listas a partir dos textareas
-      document.querySelectorAll(".config-list-textarea").forEach(area=>{
-        const key=area.dataset.configKey;
-        const linhas=String(area.value||"")
-          .split("\\n")
-          .map(v=>v.trim())
-          .filter(Boolean);
-
-        listas[key]=[...new Set(linhas)];
-      });
-
       delete listas.servidores;
       delete listas.empenhos;
-
-      // Salvar exercícios fiscais
-      const exerciciosAtuais=obterExerciciosDisponiveis();
-      const exerciciosEditados=[];
-      document.querySelectorAll(".config-exercicio-ano-input").forEach(input=>{
-        const idx=Number(input.dataset.index);
-        const ex=exerciciosAtuais[idx];
-        if(!ex) return;
-
-        const marcadoExcluir=document.querySelector(`.config-exercicio-delete-check[data-index="${idx}"]`)?.checked;
-        if(marcadoExcluir) return;
-
-        const status=document.querySelector(`.config-exercicio-status-input[data-index="${idx}"]`)?.value||"Ativo";
-        const ano=parseInt(input.value);
-
-        if(ano){
-          exerciciosEditados.push({
-            ...ex,
-            exercicioAno:ano,
-            exercicioStatus:status,
-            atualizadoEm:new Date().toISOString()
-          });
-        }
-      });
-
-      salvarExerciciosLocais(exerciciosEditados);
-      allTecnicos=mesclarExerciciosLocais(allTecnicos.filter(x=>x.tipo!=="exercicio").concat(exerciciosEditados));
-      carregarExerciciosCadastrados();
 
       localStorage.setItem("sigecon_configuracoes",JSON.stringify({
         listas:listas,
@@ -3946,11 +4739,35 @@ async function salvarConfiguracoes(){
       if(titleEl) titleEl.textContent=titulo.includes("SIGECON")?"SIGECON":titulo;
       if(subtitleEl) subtitleEl.textContent=subtitulo;
 
-      showInlineAlert("✅ Configurações salvas e integradas ao sistema!","info");
+      showInlineAlert("✅ Configurações salvas com sucesso!","info");
       renderConfiguracoes(document.getElementById("content-area"));
     }
 
-    // ─── INIT ───
+    
+    function ativarExclusoesGlobais(){
+      document.addEventListener("click",function(e){
+        const btn=e.target.closest("button");
+        if(!btn) return;
+
+        // Evita interferir em botões que já têm onclick próprio funcionando.
+        const txt=(btn.textContent||"").trim().toLowerCase();
+        const title=(btn.getAttribute("title")||"").toLowerCase();
+
+        if(!txt.includes("excluir") && !title.includes("excluir")) return;
+
+        // Se for botão de remover linha de empenho/NF, deixa executar normalmente.
+        if(btn.closest(".linha-empenho") || btn.closest(".nf-row")) return;
+      },true);
+    }
+
+
+    window.confirmarExclusaoContrato=confirmarExclusaoContrato;
+    window.confirmarExclusaoPagamento=confirmarExclusaoPagamento;
+    window.confirmarExclusaoTecnico=confirmarExclusaoTecnico;
+    window.confirmarExclusaoExercicio=confirmarExclusaoExercicio;
+    window.confirmarExclusaoProducao=typeof confirmarExclusaoProducao!=="undefined"?confirmarExclusaoProducao:null;
+
+// ─── INIT ───
     async function initializeApp(){
       carregarConfiguracoesLocais();
       allTecnicos=mesclarExerciciosLocais(allTecnicos);
