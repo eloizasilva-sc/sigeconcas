@@ -1,4 +1,40 @@
-R$ 150.000,00    .btn-secondary:hover{background:#b8d9ff;transform:translateY(-1px)}
+<!doctype html>
+<html lang="pt-BR" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIGECON - SESAP RN</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="/_sdk/data_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+  <script>
+    tailwind.config={theme:{extend:{colors:{navy:{'950':'#0a1628','900':'#0d1f3c','800':'#122b50','700':'#173a6a','600':'#1c4a85','500':'#2563a8','400':'#3b82c4','300':'#6ba3d6','200':'#93c0e8','100':'#c2ddf4','50':'#e8f1fb'},sky:{'50':'#f8fafc','100':'#f0f6ff','200':'#e0ecff','300':'#c2dff4'},steel:{'900':'#1a2332','800':'#243044','700':'#2e3f57','600':'#3a4f6a','500':'#4a6380','400':'#6b8298','300':'#8ea2b5','200':'#b3c3d1','100':'#d5dee6','50':'#edf1f5'}},fontFamily:{sans:['DM Sans','sans-serif'],mono:['Space Mono','monospace']}}}}
+  </script>
+  <style>
+    html,body{height:100%;margin:0;overflow:hidden;background:#f8fafc;font-size:16px}
+    *{scrollbar-width:thin;scrollbar-color:#3b82c4 #f0f6ff}
+    ::-webkit-scrollbar{width:8px;height:8px}
+    ::-webkit-scrollbar-track{background:#f0f6ff}
+    ::-webkit-scrollbar-thumb{background:#3b82c4;border-radius:4px}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes slideIn{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+    .fade-in{animation:fadeIn .4s ease both}
+    .slide-in{animation:slideIn .35s ease both}
+    .card-hover{transition:all .25s ease}
+    .card-hover:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(37,99,168,0.1)}
+    .tab-active{background:linear-gradient(135deg,#1c4a85,#2563a8);color:#fff;box-shadow:0 2px 10px rgba(37,99,168,0.3)}
+    .progress-bar{background:linear-gradient(90deg,#1c4a85,#3b82c4,#6ba3d6)}
+    .badge{font-size:12px;padding:6px 12px;border-radius:8px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+    .row-hover:hover{background:rgba(37,99,168,0.08)}
+    .glass{background:rgba(255,255,255,0.9);backdrop-filter:blur(12px);border:2px solid rgba(37,99,168,0.12);box-shadow:0 8px 24px rgba(0,0,0,0.08)}
+    .topbar-gradient{background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%);border-bottom:2px solid rgba(37,99,168,0.15)}
+    .sidebar-gradient{background:linear-gradient(180deg,#f0f6ff 0%,#e8f1fb 60%,#f0f6ff 100%)}
+    .btn-primary{background:linear-gradient(135deg,#1c4a85,#2563a8);color:white;font-weight:700;font-size:16px;transition:all .25s;border-radius:10px;padding:12px 20px;border:none;cursor:pointer}
+    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(37,99,168,0.35);background:linear-gradient(135deg,#0f3461,#1c4a85)}
+    .btn-secondary{background:#d4e6ff;color:#1c4a85;font-weight:700;font-size:15px;transition:all .25s;border-radius:10px;padding:11px 18px;border:none;cursor:pointer}
+    .btn-secondary:hover{background:#b8d9ff;transform:translateY(-1px)}
     .input-field{background:#fff;border:2px solid rgba(37,99,168,0.2);border-radius:10px;padding:14px 16px;font-size:16px;color:#1a2332;transition:all .25s;font-weight:500}
     .input-field:focus{border-color:#2563a8;box-shadow:0 0 0 4px rgba(37,99,168,0.15);outline:none}
     .modal-bg{background:rgba(0,0,0,0.5);backdrop-filter:blur(5px)}
@@ -2771,10 +2807,201 @@ function openNovoContratoModal(){
       return "bg-slate-100 text-slate-700 border-slate-200";
     }
 
-    async function alterarSituacaoPagamentoRapido(id,novaSituacao){
+    
+    function normalizarSituacaoTexto(valor){
+      return String(valor||"")
+        .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+        .toLowerCase().trim();
+    }
+
+    function precisaNotaLancamento(situacao){
+      return normalizarSituacaoTexto(situacao).includes("liquidado");
+    }
+
+    function precisaOrdemBancaria(situacao){
+      return normalizarSituacaoTexto(situacao).includes("pago");
+    }
+
+    function normalizarListaFinanceira(lista=[]){
+      return (Array.isArray(lista)?lista:[]).map(item=>({
+        numero:String(item.numero||"").trim(),
+        data:String(item.data||"").trim()
+      })).filter(item=>item.numero||item.data);
+    }
+
+    function renderLinhasFinanceirasHTML(tipo,itens=[]){
+      const lista=normalizarListaFinanceira(itens);
+      const base=lista.length?lista:[{numero:"",data:""}];
+      const label=tipo==="nl"?"Nº da Nota de Lançamento":"Nº da OB";
+      return base.map(item=>`
+        <div class="linha-financeira grid grid-cols-12 gap-2 items-center bg-white border border-sky-100 rounded-xl p-2">
+          <input type="text" class="input-field fin-numero col-span-6" placeholder="${label}" value="${escapeHtml(item.numero||"")}">
+          <input type="date" class="input-field fin-data col-span-5" value="${escapeHtml(item.data||"")}">
+          <button type="button" onclick="this.closest('.linha-financeira').remove()" class="col-span-1 text-red-600 hover:bg-red-50 rounded-lg font-bold h-10">×</button>
+        </div>
+      `).join("");
+    }
+
+    function adicionarLinhaFinanceira(containerId,tipo){
+      const el=document.getElementById(containerId);
+      if(!el) return;
+      el.insertAdjacentHTML("beforeend",renderLinhasFinanceirasHTML(tipo,[{numero:"",data:""}]));
+    }
+
+    function coletarLinhasFinanceiras(containerId){
+      const el=document.getElementById(containerId);
+      if(!el) return [];
+      return [...el.querySelectorAll(".linha-financeira")].map(row=>({
+        numero:row.querySelector(".fin-numero")?.value?.trim()||"",
+        data:row.querySelector(".fin-data")?.value||""
+      })).filter(item=>item.numero||item.data);
+    }
+
+    function renderComplementosPagamentoForm(prefix,p={}){
+      const situacaoAtual=p.situacao||"";
+      const mostrarNL=precisaNotaLancamento(situacaoAtual);
+      const mostrarOB=precisaOrdemBancaria(situacaoAtual);
+      return `
+        <div id="${prefix}-nl-section" class="${mostrarNL?"":"hidden"} bg-orange-50 rounded-xl p-4 border border-orange-100">
+          <div class="flex items-center justify-between gap-3 mb-3">
+            <div>
+              <p class="font-bold text-navy-900">Notas de Lançamento (NL)</p>
+              <p class="text-[10px] text-steel-500">Obrigatório quando a situação for Liquidado. Pode inserir mais de uma.</p>
+            </div>
+            <button type="button" onclick="adicionarLinhaFinanceira('${prefix}-nl-list','nl')" class="btn-secondary px-3 py-2 rounded-lg text-xs">+ Adicionar NL</button>
+          </div>
+          <div id="${prefix}-nl-list" class="space-y-2">
+            ${renderLinhasFinanceirasHTML("nl",p.notasLancamento||[])}
+          </div>
+        </div>
+
+        <div id="${prefix}-ob-section" class="${mostrarOB?"":"hidden"} bg-emerald-50 rounded-xl p-4 border border-emerald-100">
+          <div class="flex items-center justify-between gap-3 mb-3">
+            <div>
+              <p class="font-bold text-navy-900">Ordens Bancárias (OB)</p>
+              <p class="text-[10px] text-steel-500">Obrigatório quando a situação for Pago. Pode inserir mais de uma.</p>
+            </div>
+            <button type="button" onclick="adicionarLinhaFinanceira('${prefix}-ob-list','ob')" class="btn-secondary px-3 py-2 rounded-lg text-xs">+ Adicionar OB</button>
+          </div>
+          <div id="${prefix}-ob-list" class="space-y-2">
+            ${renderLinhasFinanceirasHTML("ob",p.ordensBancarias||[])}
+          </div>
+        </div>
+      `;
+    }
+
+    function atualizarComplementosStatusPagamento(prefix){
+      const situacao=document.getElementById(`${prefix}-situacao-pag`)?.value||"";
+      const nl=document.getElementById(`${prefix}-nl-section`);
+      const ob=document.getElementById(`${prefix}-ob-section`);
+      if(nl) nl.classList.toggle("hidden",!precisaNotaLancamento(situacao));
+      if(ob) ob.classList.toggle("hidden",!precisaOrdemBancaria(situacao));
+    }
+
+    function renderResumoComplementosFinanceiros(p){
+      const nls=normalizarListaFinanceira(p?.notasLancamento||[]);
+      const obs=normalizarListaFinanceira(p?.ordensBancarias||[]);
+      if(!nls.length && !obs.length) return "";
+      return `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3">
+          ${nls.length?`
+            <div class="rounded-xl bg-orange-50 border border-orange-100 p-3">
+              <p class="text-[10px] uppercase tracking-wide font-black text-orange-700">Nota(s) de Lançamento</p>
+              <div class="mt-2 space-y-1">
+                ${nls.map(n=>`<p class="text-xs text-navy-900 font-semibold">${escapeHtml(n.numero||"—")} <span class="text-steel-500 font-normal">• ${n.data?formatarDataBR(n.data):"sem data"}</span></p>`).join("")}
+              </div>
+            </div>
+          `:""}
+          ${obs.length?`
+            <div class="rounded-xl bg-emerald-50 border border-emerald-100 p-3">
+              <p class="text-[10px] uppercase tracking-wide font-black text-emerald-700">Ordem(ns) Bancária(s)</p>
+              <div class="mt-2 space-y-1">
+                ${obs.map(o=>`<p class="text-xs text-navy-900 font-semibold">${escapeHtml(o.numero||"—")} <span class="text-steel-500 font-normal">• ${o.data?formatarDataBR(o.data):"sem data"}</span></p>`).join("")}
+              </div>
+            </div>
+          `:""}
+        </div>
+      `;
+    }
+
+    function abrirComplementoSituacaoPagamento(id,novaSituacao){
+      const p=allPagamentos.find(x=>String(x.id)===String(id));
+      if(!p) return;
+
+      const tipo=precisaOrdemBancaria(novaSituacao)?"ob":"nl";
+      const titulo=tipo==="ob"?"Informar Ordem Bancária (OB)":"Informar Nota de Lançamento (NL)";
+      const descricao=tipo==="ob"
+        ?"Ao marcar como Pago, registre uma ou mais Ordens Bancárias e suas datas."
+        :"Ao marcar como Liquidado, registre uma ou mais Notas de Lançamento e suas datas.";
+      const listaAtual=tipo==="ob"?(p.ordensBancarias||[]):(p.notasLancamento||[]);
+      const cor=tipo==="ob"?"emerald":"orange";
+
+      const content=`
+        <form onsubmit="salvarComplementoSituacaoPagamento(event,'${id}','${escapeHtml(novaSituacao)}','${tipo}')" class="space-y-4">
+          <div class="rounded-xl bg-${cor}-50 border border-${cor}-100 p-4">
+            <p class="font-bold text-navy-900">${escapeHtml(descricao)}</p>
+            <p class="text-xs text-steel-500 mt-1">Processo SEI: <strong>${escapeHtml(obterProcessoSEIPagamento(p))}</strong></p>
+          </div>
+          <div class="space-y-2" id="modal-complemento-list">
+            ${renderLinhasFinanceirasHTML(tipo,listaAtual)}
+          </div>
+          <button type="button" onclick="adicionarLinhaFinanceira('modal-complemento-list','${tipo}')" class="btn-secondary px-3 py-2 rounded-lg text-xs">+ Adicionar ${tipo==="ob"?"OB":"NL"}</button>
+          <div class="flex justify-end gap-2 pt-4 border-t border-sky-100">
+            <button type="button" onclick="closeAllModals();renderContent()" class="btn-secondary px-4 py-2 rounded-lg">Cancelar</button>
+            <button type="submit" class="btn-primary px-4 py-2 rounded-lg">Salvar e atualizar situação</button>
+          </div>
+        </form>
+      `;
+      openModal(titulo,content);
+    }
+
+    async function salvarComplementoSituacaoPagamento(e,id,novaSituacao,tipo){
+      e.preventDefault();
+      const pagamento=allPagamentos.find(p=>String(p.id)===String(id));
+      if(!pagamento){
+        showInlineAlert("Pagamento não encontrado","error");
+        return;
+      }
+
+      const linhas=coletarLinhasFinanceiras("modal-complemento-list");
+      if(!linhas.length){
+        showInlineAlert(tipo==="ob"?"Informe pelo menos uma OB.":"Informe pelo menos uma Nota de Lançamento.","error");
+        return;
+      }
+
+      const atualizado={
+        ...pagamento,
+        situacao:novaSituacao,
+        atualizadoEm:new Date().toISOString()
+      };
+
+      if(tipo==="ob"){
+        atualizado.ordensBancarias=linhas;
+      }else{
+        atualizado.notasLancamento=linhas;
+      }
+
+      registrarAuditoria("Alteração de situação","pagamentos",atualizado,`Situação alterada para "${novaSituacao}" com registro de ${tipo==="ob"?"OB":"NL"} • NF(s): ${pagamento.nfNumero||"—"} • Competência: ${pagamento.competencia||"—"}`);
+
+      const result=await atualizarRegistroSeguro(atualizado,"pagamentos");
+      if(result.isOk){
+        closeAllModals();
+        showInlineAlert("✅ Situação e dados financeiros atualizados com sucesso!","info");
+        renderContent();
+      }else{
+        showInlineAlert("❌ Erro ao atualizar situação","error");
+      }
+    }
+
+async function alterarSituacaoPagamentoRapido(id,novaSituacao){
       const pagamento=allPagamentos.find(p=>String(p.id)===String(id));
       if(!pagamento){
         showInlineAlert("Pagamento não encontrado para alteração","error");
+        return;
+      }
+
+      if(precisaNotaLancamento(novaSituacao) || precisaOrdemBancaria(novaSituacao)){
+        abrirComplementoSituacaoPagamento(id,novaSituacao);
         return;
       }
 
@@ -2789,11 +3016,7 @@ function openNovoContratoModal(){
 
       const result=await atualizarRegistroSeguro(atualizado,"pagamentos");
       if(result.isOk){
-        if(String(novaSituacao).toLowerCase().trim()==="pago"){
-          showInlineAlert("✅ Situação atualizada para Pago. O processo foi ocultado da lista padrão.","info");
-        }else{
-          showInlineAlert("✅ Situação atualizada com sucesso!","info");
-        }
+        showInlineAlert("✅ Situação atualizada com sucesso!","info");
         renderContent();
       }else{
         showInlineAlert("❌ Erro ao alterar situação","error");
@@ -2864,6 +3087,28 @@ function openNovoContratoModal(){
       renderContent();
     }
 
+
+    function obterSetoresPagamento(){
+      return listas.setoresPagamento || ["CAS","UNFIN","NAO","DPLAN","Assessoria","Financeiro","Controle Interno"];
+    }
+
+    async function alterarSetorPagamentoRapido(id,novoSetor){
+      const pagamento=allPagamentos.find(p=>String(p.id)===String(id));
+      if(!pagamento) return;
+      const atualizado={
+        ...pagamento,
+        setor: novoSetor || "",
+        atualizadoEm: new Date().toISOString()
+      };
+      const result=await atualizarRegistroSeguro(atualizado,"pagamentos");
+      if(result.isOk){
+        showInlineAlert("✅ Setor atualizado com sucesso!","info");
+        renderContent();
+      }else{
+        showInlineAlert("Erro ao atualizar setor do pagamento","error");
+      }
+    }
+
 function obterPagamentosFiltrados(){
       let pagamentosFiltrados=allPagamentos.filter(p=>String(p.anoExercicio)==String(exercicioAtivo)||!p.anoExercicio);
 
@@ -2923,7 +3168,9 @@ function obterPagamentosFiltrados(){
         "Fonte",
         "Valor",
         "Situação",
-        "Última Atualização"
+        "Última Atualização",
+        "Nota(s) de Lançamento",
+        "OB(s)"
       ];
 
       const linhas=lista.map(p=>{
@@ -2941,7 +3188,9 @@ function obterPagamentosFiltrados(){
           p.fonteRecurso||"—",
           fmtM(p.nfValor),
           p.situacao||"—",
-          formatarDataHoraBR(p.atualizadoEm||p.criadoEm)
+          formatarDataHoraBR(p.atualizadoEm||p.criadoEm),
+          normalizarListaFinanceira(p.notasLancamento||[]).map(n=>`${n.numero} ${n.data?formatarDataBR(n.data):""}`.trim()).join(" | "),
+          normalizarListaFinanceira(p.ordensBancarias||[]).map(o=>`${o.numero} ${o.data?formatarDataBR(o.data):""}`.trim()).join(" | ")
         ].map(csvEscape).join(";");
       });
 
@@ -2979,11 +3228,11 @@ function renderPagamentos(el){
       });
 
       el.innerHTML=`
-      <div class="fade-in space-y-4">
+      <div class="fade-in space-y-5">
         <div class="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h2 class="text-2xl font-bold text-navy-900">💳 Pagamentos</h2>
-            <p class="text-sm text-steel-500 mt-1">Agrupados por serviço, empresa e unidade</p>
+            <p class="text-sm text-steel-500 mt-1">Ambiente de acompanhamento financeiro com leitura executiva por serviço, empresa e unidade.</p>
           </div>
           <div class="flex items-center gap-2 flex-wrap">
             <button onclick="baixarPagamentosFiltrados()" class="btn-secondary px-4 py-2 rounded-lg flex items-center gap-2">
@@ -2995,7 +3244,7 @@ function renderPagamentos(el){
           </div>
         </div>
 
-        <div class="glass rounded-xl p-4 space-y-3">
+        <div class="glass rounded-2xl p-4 space-y-3">
           <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
             <div>
               <label class="block text-[10px] font-bold text-navy-900 mb-1">Situação</label>
@@ -3059,77 +3308,93 @@ function renderPagamentos(el){
         <div class="glass rounded-2xl overflow-hidden">
           <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-7 py-5 text-white">
             <p class="text-2xl font-bold">${servicoLabel(svc)}</p>
-            <p class="text-base text-blue-100 mt-1">${Object.values(empresas).reduce((t,e)=>t+Object.values(e).reduce((t2,u)=>t2+u.length,0),0)} pagamento(s)</p>
+            <p class="text-sm text-blue-100 mt-1">${Object.values(empresas).reduce((t,e)=>t+Object.values(e).reduce((t2,u)=>t2+u.length,0),0)} processo(s) de pagamento</p>
           </div>
 
           <div class="divide-y divide-blue-100">
             ${Object.entries(empresas).map(([empresa,unidades])=>`
-            <div class="bg-blue-50/30">
+            <div class="bg-blue-50/20">
               <div class="px-7 py-4 border-b border-blue-100 flex items-center gap-3">
                 <i data-lucide="building-2" class="w-5 h-5 text-blue-600"></i>
-                <p class="font-bold text-xl text-blue-900">${escapeHtml(empresa)}</p>
-                <span class="ml-auto badge bg-blue-100 text-blue-700">${Object.values(unidades).reduce((t,u)=>t+u.length,0)} NF(s)</span>
+                <p class="font-bold text-lg text-blue-900">${escapeHtml(empresa)}</p>
+                <span class="ml-auto badge bg-blue-100 text-blue-700">${Object.values(unidades).reduce((t,u)=>t+u.length,0)} registro(s)</span>
               </div>
 
-              <div class="divide-y divide-blue-100">
+              <div class="divide-y divide-blue-100/70">
                 ${Object.entries(unidades).map(([uh,pagtos])=>`
-                <div class="px-7 py-4">
+                <div class="px-7 py-5">
                   <div class="flex items-center gap-2 mb-4">
                     <i data-lucide="hospital" class="w-4 h-4 text-blue-600"></i>
-                    <p class="text-sm font-bold text-blue-700">🏥 ${escapeHtml(uh)}</p>
+                    <p class="text-sm font-bold text-blue-700">${escapeHtml(uh)}</p>
                   </div>
 
-                  <div class="space-y-4 ml-4">
+                  <div class="space-y-4 ml-3">
                     ${pagtos.map(p=>{
                       const nfs=extrairNFsPagamento(p).map(n=>n.numero).filter(Boolean).join(", ") || "—";
                       const empenhosTxt=Array.isArray(p.empenhos)?p.empenhos.map(e=>e.numero).filter(Boolean).join(", "):(p.empenho||"—");
                       const ultima=p.atualizadoEm||p.criadoEm;
                       const processo=obterProcessoSEIPagamento(p);
+                      const setorAtual=p.setor||"";
                       return `
                         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition">
-                          <div class="grid grid-cols-1 xl:grid-cols-[1.15fr_0.95fr_190px] gap-4 items-stretch">
+                          <div class="grid grid-cols-1 xl:grid-cols-[1.3fr_0.9fr_210px] gap-4 items-stretch">
                             <div class="space-y-3">
-                              <div class="rounded-xl border border-yellow-200 bg-yellow-50 p-3">
-                                <p class="text-[10px] uppercase tracking-wide font-black text-yellow-800">Processo SEI</p>
-                                <p class="font-mono text-sm md:text-base font-bold text-yellow-950 mt-1 break-all">${escapeHtml(processo)}</p>
+                              <div class="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                                <p class="text-[10px] uppercase tracking-wide font-black text-amber-800">Processo SEI</p>
+                                <p class="font-mono text-sm md:text-base font-bold text-amber-950 mt-1 break-all">${escapeHtml(processo)}</p>
                               </div>
-
-                              <div class="space-y-1">
-                                <p class="font-mono text-sm font-semibold text-navy-800">NF(s): ${escapeHtml(nfs)}</p>
-                                <p class="text-sm text-steel-600">Competência: <strong>${escapeHtml(p.competencia||"—")}</strong></p>
-                                <p class="text-sm text-steel-600">Empenho(s): ${escapeHtml(empenhosTxt)}</p>
-                                <p class="text-sm text-steel-600">Fonte: ${escapeHtml(p.fonteRecurso||"—")}</p>
-                                <p class="text-[11px] text-steel-500 pt-1">Última atualização: <strong>${formatarDataHoraBR(ultima)}</strong></p>
-                              </div>
-                            </div>
-
-                            <div class="grid grid-rows-[auto_1fr] gap-3">
-                              <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                                <p class="text-[10px] uppercase tracking-wide font-black text-emerald-800">Situação</p>
-                                <select onchange="alterarSituacaoPagamentoRapido('${p.id}',this.value)" class="input-field w-full mt-2 text-sm font-bold bg-white border-emerald-200">
-                                  ${(listas.situacoes||["A liquidar","Liquidado","Pago","Na unidade"]).map(s=>`<option value="${escapeHtml(s)}" ${String(p.situacao)===String(s)?"selected":""}>${escapeHtml(s)}</option>`).join("")}
-                                </select>
-                                <div class="mt-3">${statusBadge(p.situacao)}</div>
-                              </div>
-
-                              <div class="rounded-2xl border border-blue-200 bg-blue-50 p-4 flex flex-col justify-between">
-                                <div>
-                                  <p class="text-[10px] uppercase tracking-wide font-black text-blue-800">Resumo</p>
-                                  <p class="text-sm text-steel-600 mt-2">Empresa: <strong>${escapeHtml(empresa)}</strong></p>
-                                  <p class="text-sm text-steel-600">Unidade: <strong>${escapeHtml(uh)}</strong></p>
+                              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                <div class="rounded-xl bg-slate-50 border border-slate-200 p-3">
+                                  <p class="text-[10px] uppercase tracking-wide font-black text-steel-500">Competência</p>
+                                  <p class="font-bold text-navy-900 mt-1">${escapeHtml(p.competencia||"—")}</p>
                                 </div>
-                                <button onclick="viewPagamento('${p.id}')" class="mt-4 px-3 py-2 rounded-xl bg-white hover:bg-sky-50 border border-sky-100 text-navy-700 font-bold text-sm transition">👁️ Ver detalhes</button>
+                                <div class="rounded-xl bg-slate-50 border border-slate-200 p-3">
+                                  <p class="text-[10px] uppercase tracking-wide font-black text-steel-500">NF(s)</p>
+                                  <p class="font-semibold text-navy-900 mt-1">${escapeHtml(nfs)}</p>
+                                </div>
+                              </div>
+                              <div class="text-sm text-steel-600 space-y-1">
+                                <p><span class="font-semibold text-navy-900">Empenho(s):</span> ${escapeHtml(empenhosTxt)}</p>
+                                <p><span class="font-semibold text-navy-900">Fonte:</span> ${escapeHtml(p.fonteRecurso||"—")}</p>
+                                <p class="text-[11px] pt-1"><span class="font-semibold text-navy-900">Última atualização:</span> ${formatarDataHoraBR(ultima)}</p>
                               </div>
                             </div>
 
-                            <div class="grid grid-rows-[auto_auto_1fr] gap-3">
-                              <div class="rounded-2xl border border-sky-200 bg-sky-50 p-4">
-                                <p class="text-[10px] uppercase tracking-wide font-black text-sky-800">Valor</p>
+                            <div class="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 flex flex-col gap-4">
+                              <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-3">
+                                <div>
+                                  <label class="block text-[10px] uppercase tracking-wide font-black text-emerald-800 mb-1">Situação</label>
+                                  <select onchange="alterarSituacaoPagamentoRapido('${p.id}',this.value)" class="input-field w-full text-sm font-bold bg-white border-emerald-200">
+                                    ${(listas.situacoes||["A liquidar","Liquidado","Pago","Na unidade"]).map(s=>`<option value="${escapeHtml(s)}" ${String(p.situacao)===String(s)?"selected":""}>${escapeHtml(s)}</option>`).join("")}
+                                  </select>
+                                </div>
+                                <div>
+                                  <label class="block text-[10px] uppercase tracking-wide font-black text-emerald-800 mb-1">Setor <span class="font-medium normal-case text-steel-500">(opcional)</span></label>
+                                  <select onchange="alterarSetorPagamentoRapido('${p.id}',this.value)" class="input-field w-full text-sm bg-white border-emerald-200">
+                                    <option value="" ${!setorAtual?"selected":""}>Não informado</option>
+                                    ${obterSetoresPagamento().map(setor=>`<option value="${escapeHtml(setor)}" ${String(setorAtual)===String(setor)?"selected":""}>${escapeHtml(setor)}</option>`).join("")}
+                                  </select>
+                                </div>
+                              </div>
+                              <div class="rounded-xl bg-white border border-emerald-100 p-3">
+                                <p class="text-[10px] uppercase tracking-wide font-black text-steel-500">Status atual</p>
+                                <div class="mt-2">${statusBadge(p.situacao)}</div>
+                              </div>
+                              <div class="rounded-xl bg-white border border-emerald-100 p-3 text-sm">
+                                <p class="text-[10px] uppercase tracking-wide font-black text-steel-500">Setor</p>
+                                <p class="font-bold text-navy-900 mt-1">${escapeHtml(setorAtual||"Não informado")}</p>
+                              </div>
+                              ${renderResumoComplementosFinanceiros(p)}
+                            </div>
+
+                            <div class="flex flex-col gap-3">
+                              <div class="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                                <p class="text-[10px] uppercase tracking-wide font-black text-blue-800">Valor</p>
                                 <p class="text-3xl font-black text-navy-900 mt-2">${fmtM(p.nfValor)}</p>
                               </div>
-
-                              <button onclick="editarPagamento('${p.id}')" class="px-4 py-3 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-100 text-blue-700 font-bold text-sm transition hidden-btn" style="display:${hasPermission("edit")?"block":"none"}">✏️ Editar</button>
-                              <button onclick="excluirPagamento('${p.id}')" class="px-4 py-3 rounded-xl bg-red-50 hover:bg-red-100 border border-red-100 text-red-700 font-bold text-sm transition hidden-btn" style="display:${hasPermission("edit")?"block":"none"}">🗑️ Excluir</button>
+                              <button onclick="viewPagamento('${p.id}')" class="px-4 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-navy-700 font-bold text-sm transition">Ver</button>
+                              <button onclick="editarPagamento('${p.id}')" class="px-4 py-3 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-100 text-blue-700 font-bold text-sm transition hidden-btn" style="display:${hasPermission("edit")?"block":"none"}">Editar</button>
+                              <button onclick="excluirPagamento('${p.id}')" class="px-4 py-3 rounded-xl bg-red-50 hover:bg-red-100 border border-red-100 text-red-700 font-bold text-sm transition hidden-btn" style="display:${hasPermission("edit")?"block":"none"}">Excluir</button>
                             </div>
                           </div>
                         </div>
@@ -3161,6 +3426,7 @@ function viewPagamento(id){
             <div><p class="text-[10px] text-steel-600">Contrato</p><p class="font-mono text-navy-600">${contrato?.nContrato||"—"}</p></div>
             <div><p class="text-[10px] text-steel-600">Competência</p><p class="text-navy-900">${p.competencia||"—"}</p></div>
             <div><p class="text-[10px] text-steel-600">Situação</p><p>${statusBadge(p.situacao)}</p></div>
+            <div><p class="text-[10px] text-steel-600">Setor</p><p class="font-semibold text-navy-900">${escapeHtml(p.setor||"Não informado")}</p></div>
             <div class="col-span-2 rounded-xl bg-yellow-50 border border-yellow-200 p-3">
               <p class="text-[10px] text-yellow-800 font-black uppercase tracking-wide">Processo SEI:</p>
               <p class="font-mono text-yellow-950 font-bold mt-1">${escapeHtml(obterProcessoSEIPagamento(p))}</p>
@@ -3171,6 +3437,8 @@ function viewPagamento(id){
               </div>
             </div>
           </div>
+
+          ${renderResumoComplementosFinanceiros(p)}
 
           <div class="border-t border-sky-100 pt-4">
             <p class="font-bold text-navy-900 mb-2">Notas fiscais do processo</p>
@@ -3232,11 +3500,20 @@ function viewPagamento(id){
             </div>
             <div>
               <label class="block text-xs font-semibold text-navy-900 mb-1">Situação</label>
-              <select id="edit-situacao-pag" class="input-field w-full" required>
+              <select id="edit-situacao-pag" class="input-field w-full" required onchange="atualizarComplementosStatusPagamento('edit')">
                 ${(listas.situacoes||["A liquidar","Liquidado","Pago","Na unidade"]).map(s=>`<option value="${s}" ${p.situacao===s?"selected":""}>${s}</option>`).join("")}
               </select>
             </div>
+            <div>
+              <label class="block text-xs font-semibold text-navy-900 mb-1">Setor <span class="text-steel-500 font-normal">(opcional)</span></label>
+              <select id="edit-setor-pag" class="input-field w-full">
+                <option value="" ${!p.setor?"selected":""}>Não informado</option>
+                ${obterSetoresPagamento().map(s=>`<option value="${s}" ${p.setor===s?"selected":""}>${s}</option>`).join("")}
+              </select>
+            </div>
           </div>
+
+          ${renderComplementosPagamentoForm("edit",p)}
 
           <div class="bg-sky-50 rounded-xl p-4 border border-sky-100">
             <label class="block text-xs font-bold text-navy-900 mb-2">Empenhos vinculados ao contrato</label>
@@ -3262,7 +3539,7 @@ function viewPagamento(id){
 
           <div class="flex gap-2 justify-end pt-4 border-t border-sky-200">
             <button type="button" onclick="closeAllModals()" class="btn-secondary px-3 py-2 rounded-lg text-xs">Cancelar</button>
-            <button type="button" onclick="confirmarExclusaoPagamento('${id}')" class="bg-red-100 text-red-700 px-3 py-2 rounded-lg text-xs font-bold">🗑️ Excluir</button>
+            <button type="button" onclick="excluirPagamento('${id}')" class="bg-red-100 text-red-700 px-3 py-2 rounded-lg text-xs font-bold">🗑️ Excluir</button>
             <button type="submit" class="btn-primary px-3 py-2 rounded-lg text-xs">Salvar Alterações</button>
           </div>
         </form>`;
@@ -3303,10 +3580,13 @@ function viewPagamento(id){
         notasFiscais:notas,
         nfNumero:notas.map(n=>n.numero).join(", "),
         nfValor:totalNotas,
-        processoSEI:(document.getElementById("form-processo-sei-pag")?.value||"").trim() || notas.map(n=>n.sei).filter(Boolean).join(", "),
+        processoSEI:(document.getElementById("edit-processo-sei-pag")?.value||"").trim() || notas.map(n=>n.sei).filter(Boolean).join(", "),
         dataEmissao:notas[0]?.dataEmissao||"",
         tipoNF:notas.map(n=>n.tipo).join(","),
         situacao:document.getElementById("edit-situacao-pag").value,
+        setor:document.getElementById("edit-setor-pag")?.value||"",
+        notasLancamento:coletarLinhasFinanceiras("edit-nl-list"),
+        ordensBancarias:coletarLinhasFinanceiras("edit-ob-list"),
         atualizadoEm:new Date().toISOString()
       };
 
@@ -3389,11 +3669,20 @@ function viewPagamento(id){
             </div>
             <div>
               <label class="block text-xs font-semibold text-navy-900 mb-1">Situação</label>
-              <select id="form-situacao-pag" class="input-field w-full" required>
+              <select id="form-situacao-pag" class="input-field w-full" required onchange="atualizarComplementosStatusPagamento('form')">
                 ${(listas.situacoes||["A liquidar","Liquidado","Pago","Na unidade"]).map(s=>`<option value="${s}">${s}</option>`).join("")}
               </select>
             </div>
+            <div>
+              <label class="block text-xs font-semibold text-navy-900 mb-1">Setor <span class="text-steel-500 font-normal">(opcional)</span></label>
+              <select id="form-setor-pag" class="input-field w-full">
+                <option value="">Não informado</option>
+                ${obterSetoresPagamento().map(s=>`<option value="${s}">${s}</option>`).join("")}
+              </select>
+            </div>
           </div>
+
+          ${renderComplementosPagamentoForm("form",{})}
 
           <div class="bg-sky-50 rounded-xl p-4 border border-sky-100">
             <label class="block text-xs font-bold text-navy-900 mb-2">Empenhos vinculados ao contrato</label>
@@ -3460,9 +3749,12 @@ function viewPagamento(id){
         notasFiscais:notas,
         nfNumero:notas.map(n=>n.numero).join(", "),
         nfValor:totalNotas,
-        processoSEI:(document.getElementById("edit-processo-sei-pag")?.value||"").trim() || notas.map(n=>n.sei).filter(Boolean).join(", "),
+        processoSEI:(document.getElementById("form-processo-sei-pag")?.value||"").trim() || notas.map(n=>n.sei).filter(Boolean).join(", "),
         dataEmissao:notas[0]?.dataEmissao||"",
         situacao:document.getElementById("form-situacao-pag").value,
+        setor:document.getElementById("form-setor-pag")?.value||"",
+        notasLancamento:coletarLinhasFinanceiras("form-nl-list"),
+        ordensBancarias:coletarLinhasFinanceiras("form-ob-list"),
         tipoNF:notas.map(n=>n.tipo).join(","),
         anoExercicio:exercicioAtivo,
         criadoEm:new Date().toISOString(),
