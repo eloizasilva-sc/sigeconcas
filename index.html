@@ -54,9 +54,15 @@
     .metric-card::before{content:"";position:absolute;left:0;top:0;width:100%;height:4px;background:linear-gradient(90deg,#2563a8,#6ba3d6)}
     .metric-card.navy::before{background:linear-gradient(90deg,#173a6a,#2563a8)}
     .metric-card.blue::before{background:linear-gradient(90deg,#2563a8,#3b82c4)}
+    .metric-card.orange::before{background:linear-gradient(90deg,#f97316,#fb923c)}
     .metric-card.emerald::before{background:linear-gradient(90deg,#059669,#34d399)}
     .metric-card.cyan::before{background:linear-gradient(90deg,#0891b2,#67e8f9)}
     .metric-card .metric-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)}
+    
+    .metric-card.orange .metric-icon{background:#ffedd5}
+    .metric-card.orange .metric-icon svg{color:#ea580c}
+    .metric-card.emerald .metric-icon{background:#d1fae5}
+    .metric-card.emerald .metric-icon svg{color:#047857}
     .hero-panel{position:relative;overflow:hidden;border-radius:24px;padding:28px;background:linear-gradient(135deg,#0f3461 0%,#1c4a85 55%,#3b82c4 100%);box-shadow:0 18px 40px rgba(15,52,97,0.24)}
     .hero-panel::after{content:"";position:absolute;inset:auto -80px -80px auto;width:220px;height:220px;border-radius:999px;background:rgba(255,255,255,0.09);filter:blur(2px)}
     .hero-chip{background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.18);border-radius:14px;padding:12px 14px;min-width:130px}
@@ -217,7 +223,17 @@
     let filtroFonte="";
     let fontesExecucaoSelecionadas=[];
     let filtroPagamentosSituacao="";
+    let filtroPagamentosMostrarPagos=false;
+    let filtroPagamentosEmpresa="";
+    let filtroPagamentosUH="";
+    let filtroPagamentosServico="";
+    let filtroPagamentosCompetencia="";
     let filtroContratosExecucaoStatus="";
+    let filtroContratosEmpresa="";
+    let filtroContratosServico="";
+    let filtroContratosUH="";
+    let filtroContratosFonte="";
+    let mostrarPagamentosVinculadosContratos=false;
     let exercicioAtivo=2026;
     
     // Listas Configuráveis
@@ -328,6 +344,89 @@
     function salvarDepoisDeAlterar(){
       salvarBancoLocal();
       salvarSessao();
+    }
+
+    // ─── AUDITORIA: RASTREABILIDADE DE ALTERAÇÕES ───
+    const CHAVE_AUDITORIA_SIGECON="sigecon_auditoria_alteracoes";
+
+    function carregarAuditoria(){
+      try{
+        const logs=JSON.parse(localStorage.getItem(CHAVE_AUDITORIA_SIGECON)||"[]");
+        return Array.isArray(logs)?logs:[];
+      }catch(e){
+        return [];
+      }
+    }
+
+    function salvarAuditoria(logs){
+      localStorage.setItem(CHAVE_AUDITORIA_SIGECON,JSON.stringify((logs||[]).slice(0,500)));
+    }
+
+    function usuarioAuditoria(){
+      return usuarioAutenticado?.nome || usuarioAutenticado?.matricula || "Sistema";
+    }
+
+    function perfilAuditoria(){
+      return currentProfile || usuarioAutenticado?.perfil || "não identificado";
+    }
+
+    function moduloAuditoria(tipoLista,registro={}){
+      const mapa={
+        contratos:"Contratos",
+        pagamentos:"Pagamentos",
+        producao:"Produção",
+        tecnicos:"Técnicos",
+        exercicios:"Exercícios",
+        configuracoes:"Configurações"
+      };
+      return mapa[tipoLista] || mapa[registro.tipo] || String(tipoLista||registro.tipo||"Sistema");
+    }
+
+    function descricaoRegistroAuditoria(registro={}){
+      if(registro.tipo==="contrato" || registro.nContrato){
+        return `Contrato ${registro.nContrato||"—"} • Empresa: ${registro.empresa||"—"} • Processo: ${registro.nProcesso||"—"}`;
+      }
+      if(registro.tipo==="pagamento" || registro.nfNumero || registro.contrato_id){
+        return `Pagamento NF(s): ${registro.nfNumero||"—"} • Competência: ${registro.competencia||"—"} • Situação: ${registro.situacao||"—"}`;
+      }
+      if(registro.tipo==="producao" || registro.pagamento_id){
+        return `Produção vinculada ao pagamento ${registro.pagamento_id||"—"}`;
+      }
+      if(registro.tipo==="tecnico" || registro.tecnicoMatricula){
+        return `Técnico ${registro.tecnicoNome||"—"} • Matrícula: ${registro.tecnicoMatricula||"—"}`;
+      }
+      if(registro.tipo==="exercicio" || registro.exercicioAno){
+        return `Exercício fiscal ${registro.exercicioAno||"—"} • Status: ${registro.exercicioStatus||"—"}`;
+      }
+      return registro.id?`Registro ${registro.id}`:"Registro do sistema";
+    }
+
+    function registrarAuditoria(acao,tipoLista,registro={},detalheExtra=""){
+      try{
+        const logs=carregarAuditoria();
+        const entrada={
+          id:`AUD-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          dataHora:new Date().toISOString(),
+          usuario:usuarioAuditoria(),
+          perfil:perfilAuditoria(),
+          modulo:moduloAuditoria(tipoLista,registro),
+          acao:acao,
+          detalhe:detalheExtra || descricaoRegistroAuditoria(registro),
+          registroId:registro?.id||"",
+          exercicio:exercicioAtivo||"",
+        };
+        logs.unshift(entrada);
+        salvarAuditoria(logs);
+      }catch(e){
+        console.warn("Falha ao registrar auditoria:",e);
+      }
+    }
+
+    function limparAuditoriaAlteracoes(){
+      if(!confirm("Deseja limpar a trilha de auditoria de alterações?")) return;
+      salvarAuditoria([]);
+      showInlineAlert("✅ Trilha de auditoria limpa com sucesso!","info");
+      renderAuditoria(document.getElementById("content-area"));
     }
 
     // ─── TÉCNICOS: PERSISTÊNCIA E LOGIN DINÂMICO ───
@@ -828,7 +927,9 @@
     }
 
     function hasPermission(perm){
-      return profiles[currentProfile].perms.includes(perm)||profiles[currentProfile].perms.includes("view_all");
+      const perfil=profiles[currentProfile]||profiles.gestor;
+      const perms=perfil?.perms||[];
+      return perms.includes(perm)||perms.includes("view_all");
     }
 
     // ─── HELPERS ───
@@ -880,13 +981,25 @@
       return d.toLocaleDateString("pt-BR");
     }
 
+    
+    function calcularDiasRestantes(dataFim){
+      if(!dataFim) return 0;
+      const hoje=new Date();
+      hoje.setHours(0,0,0,0);
+
+      const fim=new Date(String(dataFim)+"T00:00:00");
+      if(isNaN(fim)) return 0;
+
+      return Math.ceil((fim-hoje)/(1000*60*60*24));
+    }
+
     function renderVigenciaBadge(c){
-      const dias=calcularDiasRestantes(c.vigFim);
+      const dias=calcularDiasRestantes(c?.vigFim);
       const cor=dias<0?"bg-red-100 text-red-700 border-red-200":dias<=90?"bg-yellow-100 text-yellow-700 border-yellow-200":"bg-emerald-100 text-emerald-700 border-emerald-200";
-      const texto=dias<0?`Vencido há ${Math.abs(dias)} dia(s)`:dias<=90?`${dias} dia(s) restantes`:`${dias} dia(s) restantes`;
+      const texto=!c?.vigFim?"Vigência não informada":dias<0?`Vencido há ${Math.abs(dias)} dia(s)`:dias<=90?`${dias} dia(s) restantes`:`${dias} dia(s) restantes`;
       return `
         <div class="inline-flex flex-col gap-1 px-3 py-2 rounded-xl border ${cor} font-bold text-xs">
-          <span>${formatarDataBR(c.vigIni)} até ${formatarDataBR(c.vigFim)}</span>
+          <span>${formatarDataBR(c?.vigIni)} até ${formatarDataBR(c?.vigFim)}</span>
           <span class="font-semibold opacity-80">${texto}</span>
         </div>
       `;
@@ -1124,7 +1237,7 @@
             <input type="number" step="0.01" class="input-field w-full nf-valor" placeholder="0.00" value="${n.valor||""}" required>
           </div>
           <div>
-            <label class="block text-[10px] font-bold text-navy-900 mb-1">ID SEI</label>
+            <label class="block text-[10px] font-bold text-navy-900 mb-1">ID SEI da NF</label>
             <input type="text" class="input-field w-full nf-sei" placeholder="ID/SEI" value="${escapeHtml(n.sei||"")}" required>
           </div>
           <div>
@@ -1527,7 +1640,7 @@
 
     // ─── DASHBOARD ───
     function renderDashboard(el){
-      let contratosFiltrados=allContratos.filter(c=>c.anoExercicio==exercicioAtivo);
+      let contratosFiltrados=allContratos.filter(c=>!c.anoExercicio || String(c.anoExercicio)===String(exercicioAtivo));
       if(currentProfile==="tecnico"&&usuarioAutenticado?.servicos){
         contratosFiltrados=contratosFiltrados.filter(c=>
           usuarioAutenticado.servicos.includes(c.servicoTipo)
@@ -1541,6 +1654,13 @@
       if(filtroEmpresa) contratosFiltrados=contratosFiltrados.filter(c=>String(c.empresa||"")===String(filtroEmpresa));
       if(filtroFonte) contratosFiltrados=contratosFiltrados.filter(c=>contratoTemFonte(c,filtroFonte));
 
+      const fontesPainelAtivas=fontesPainelSelecionadasAtivas();
+      if(fontesPainelAtivas.length){
+        contratosFiltrados=contratosFiltrados.filter(c=>contratoAtendeAlgumaFonteSelecionada(c,fontesPainelAtivas));
+      }
+
+      const pagamentosPainelFiltrados=obterPagamentosPorContratos(contratosFiltrados);
+
       const totalContratos=contratosFiltrados.length;
       const totalGlobal=contratosFiltrados.reduce((s,c)=>s+(parseFloat(c.valorContrato)||0),0);
       const totalEmpenhado=contratosFiltrados.reduce((s,c)=>s+calcularValorEmpenhadoContrato(c),0);
@@ -1550,7 +1670,7 @@
       const saldoPct=pct(saldo,totalEmpenhado);
 
       const opcoesEmpresas=obterEmpresasDisponiveis(contratosBaseParaFiltros, filtroEmpresa);
-      const opcoesFontes=obterFontesDisponiveis(allContratos.filter(c=>c.anoExercicio==exercicioAtivo));
+      const opcoesFontes=obterFontesDisponiveis(allContratos.filter(c=>!c.anoExercicio || String(c.anoExercicio)===String(exercicioAtivo)));
       fontesExecucaoSelecionadas=fontesExecucaoSelecionadas.filter(f=>opcoesFontes.includes(f));
 
       const contratosExecucaoFonte=contratosFiltrados.filter(c=>contratoTemAlgumaFonte(c,fontesExecucaoSelecionadas));
@@ -1579,8 +1699,8 @@
       const cards=[
         {icon:"landmark",label:"Contratado",value:fmtM(totalGlobal),color:"navy",pct:totalGlobal>0?100:0},
         {icon:"trending-up",label:"Empenhado",value:fmtM(totalEmpenhado),color:"blue",pct:pct(totalEmpenhado,totalGlobal)},
-        {icon:"wallet",label:"Executado",value:fmtM(totalExecutado),color:"emerald",pct:execPct},
-        {icon:"zap",label:"Saldo",value:fmtM(saldo),color:"cyan",pct:saldoPct},
+        {icon:"wallet",label:"Executado",value:fmtM(totalExecutado),color:"orange",pct:execPct},
+        {icon:"zap",label:"Saldo",value:fmtM(saldo),color:"emerald",pct:saldoPct},
       ];
 
       const distribuicaoUH=['HMWG','HRTM','HEMONORTE','HCCPG'].map(uh=>{
@@ -1599,10 +1719,10 @@
       const maiorTopEmpresa=Math.max(1,...topEmpresas.map(c=>calcularValorEmpenhadoContrato(c)),1);
 
       const statusRows=[
-        {label:"A Liquidar",valor:"A liquidar",count:allPagamentos.filter(p=>p.situacao==="A liquidar").length,color:"bg-yellow-100 text-yellow-800"},
-        {label:"Liquidado",valor:"Liquidado",count:allPagamentos.filter(p=>p.situacao==="Liquidado").length,color:"bg-blue-100 text-blue-800"},
-        {label:"Pago",valor:"Pago",count:allPagamentos.filter(p=>p.situacao==="Pago").length,color:"bg-emerald-100 text-emerald-800"},
-        {label:"Na Unidade",valor:"Na unidade",count:allPagamentos.filter(p=>p.situacao==="Na unidade").length,color:"bg-purple-100 text-purple-800"}
+        {label:"A Liquidar",valor:"A liquidar",count:pagamentosPainelFiltrados.filter(p=>p.situacao==="A liquidar").length,color:"bg-yellow-100 text-yellow-800"},
+        {label:"Liquidado",valor:"Liquidado",count:pagamentosPainelFiltrados.filter(p=>p.situacao==="Liquidado").length,color:"bg-blue-100 text-blue-800"},
+        {label:"Pago",valor:"Pago",count:pagamentosPainelFiltrados.filter(p=>p.situacao==="Pago").length,color:"bg-emerald-100 text-emerald-800"},
+        {label:"Na Unidade",valor:"Na unidade",count:pagamentosPainelFiltrados.filter(p=>p.situacao==="Na unidade").length,color:"bg-purple-100 text-purple-800"}
       ];
 
       el.innerHTML=`
@@ -1711,8 +1831,8 @@
                   <p class="subtle-label">${c.label}</p>
                   <p class="kpi-number mt-2">${c.value}</p>
                 </div>
-                <div class="metric-icon bg-${c.color==='navy'?'navy':c.color==='blue'?'blue':c.color==='emerald'?'emerald':'cyan'}-100">
-                  <i data-lucide="${c.icon}" class="w-6 h-6 text-${c.color==='navy'?'navy':c.color==='blue'?'blue':c.color==='emerald'?'emerald':'cyan'}-700"></i>
+                <div class="metric-icon bg-${c.color==='navy'?'navy':c.color==='blue'?'blue':c.color==='orange'?'orange':c.color==='emerald'?'emerald':'cyan'}-100">
+                  <i data-lucide="${c.icon}" class="w-6 h-6 text-${c.color==='navy'?'navy':c.color==='blue'?'blue':c.color==='orange'?'orange':c.color==='emerald'?'emerald':'cyan'}-700"></i>
                 </div>
               </div>
               <div class="bar-track"><div class="bar-fill" style="width:${c.pct>0?Math.max(3,Math.min(100,c.pct)):0}%"></div></div>
@@ -1737,18 +1857,18 @@
 
             <div class="grid md:grid-cols-3 gap-4 mb-5">
               <div class="mini-stat"><p class="subtle-label">Empenhado</p><p class="text-2xl font-extrabold text-navy-900 mt-2">${fmtM(totalEmpenhadoExecucao)}</p></div>
-              <div class="mini-stat"><p class="subtle-label">Executado</p><p class="text-2xl font-extrabold text-emerald-700 mt-2">${fmtM(totalExecutadoExecucao)}</p></div>
-              <div class="mini-stat"><p class="subtle-label">Disponível</p><p class="text-2xl font-extrabold text-cyan-700 mt-2">${fmtM(saldoExecucao)}</p></div>
+              <div class="mini-stat"><p class="subtle-label">Executado</p><p class="text-2xl font-extrabold text-orange-600 mt-2">${fmtM(totalExecutadoExecucao)}</p></div>
+              <div class="mini-stat"><p class="subtle-label">Saldo</p><p class="text-2xl font-extrabold text-emerald-700 mt-2">${fmtM(saldoExecucao)}</p></div>
             </div>
 
             <div class="space-y-4">
               <div>
                 <div class="flex justify-between text-sm font-bold mb-2"><span>Executado</span><span>${pctExecutadoFonte}%</span></div>
-                <div class="bar-track"><div class="bar-fill" style="width:${pctExecutadoFonte}%; background:linear-gradient(90deg,#059669,#34d399)"></div></div>
+                <div class="bar-track"><div class="bar-fill" style="width:${pctExecutadoFonte}%; background:linear-gradient(90deg,#f97316,#fb923c)"></div></div>
               </div>
               <div>
                 <div class="flex justify-between text-sm font-bold mb-2"><span>Saldo</span><span>${pct(saldoExecucao,totalEmpenhadoExecucao)}%</span></div>
-                <div class="bar-track"><div class="bar-fill" style="width:${Math.max(0,pct(saldoExecucao,totalEmpenhadoExecucao))}%; background:linear-gradient(90deg,#0891b2,#67e8f9)"></div></div>
+                <div class="bar-track"><div class="bar-fill" style="width:${Math.max(0,pct(saldoExecucao,totalEmpenhadoExecucao))}%; background:linear-gradient(90deg,#059669,#34d399)"></div></div>
               </div>
             </div>
           </div>
@@ -1843,6 +1963,7 @@
         }
       }
 
+      registrarAuditoria("Exclusão",listaNome||registro.tipo,registro);
       salvarDepoisDeAlterar();
       persistirListasPrincipais();
       return {isOk:true, origem:"local"};
@@ -1885,6 +2006,7 @@
         allTecnicos=[...allTecnicos,registro];
       }
 
+      registrarAuditoria("Cadastro",tipoLista,registro);
       salvarDepoisDeAlterar();
       persistirListasPrincipais();
       return {isOk:true, origem:result.isOk?"dataSdk":"local"};
@@ -1921,6 +2043,7 @@
           : [...allTecnicos,registro];
       }
 
+      registrarAuditoria("Atualização",tipoLista,registro);
       salvarDepoisDeAlterar();
       persistirListasPrincipais();
       return {isOk:true, origem:result.isOk?"dataSdk":"local"};
@@ -1969,125 +2092,351 @@
     }
 
 // ─── CONTRATOS ───
-    function renderContratos(el){
-      let contratosFiltrados=allContratos.filter(c=>c.anoExercicio==exercicioAtivo);
-      
-      if(currentProfile==="tecnico"&&usuarioAutenticado?.servicos){
-        contratosFiltrados=contratosFiltrados.filter(c=>
-          usuarioAutenticado.servicos.includes(c.servicoTipo)
-        );
-      }
-      
-
-      if(filtroContratosExecucaoStatus){
-        contratosFiltrados=contratosFiltrados.filter(c=>analisarExecucaoContrato(c).status===filtroContratosExecucaoStatus);
-      }
-
-      const servicoMap={};
-      contratosFiltrados.forEach(c=>{
-        const svc=c.servicoTipo||"Sem classificação";
-        if(!servicoMap[svc]) servicoMap[svc]=[];
-        servicoMap[svc].push(c);
-      });
-      
-      const servicoLabels={
-        "telemedicina":"📱 Telemedicina",
-        "homecare":"🏥 Home Care",
-        "hemodialise":"🩸 Hemodiálise",
-        "laboratorio":"🧪 Laboratórios",
-        "cirurgias":"🔪 Cirurgias Eletivas",
-        "opme-ortopedia":"🦴 OPME Ortopedia",
-        "opme-urologia":"⚕️ OPME Urologia",
-        "Sem classificação":"❓ Sem Classificação"
-      };
-      
-      el.innerHTML=`
-      <div class="fade-in space-y-4">
-        <div class="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <h2 class="text-2xl font-bold text-navy-900">Contratos (Multi-Unidade)</h2>
-            <p class="text-sm text-steel-500 mt-1">${currentProfile==="tecnico"?`Contratos das suas unidades: ${usuarioAutenticado.unidades.join(", ")}`:"Agrupados por tipo de serviço"}</p>
-          </div>
-          <button onclick="openNovoContratoModal()" class="btn-primary px-4 py-2 rounded-lg flex items-center gap-2 hidden-btn" style="display:${hasPermission("create")?"flex":"none"}">
-            <i data-lucide="plus" class="w-4 h-4"></i>Novo Contrato
-          </button>
-        </div>
-
-        ${filtroContratosExecucaoStatus?`
-        <div class="filter-pill">
-          Contratos: ${filtroContratosExecucaoStatus}
-          <button onclick="navegarContratosPorExecucao('')" class="text-navy-700 font-black">×</button>
-        </div>
-        `:""}
-
-        ${Object.keys(servicoMap).length===0?`
-        <div class="glass rounded-xl p-6 text-center">
-          <p class="text-steel-500">${currentProfile==="tecnico"?"Nenhum contrato vinculado aos seus serviços":"Nenhum contrato cadastrado"}</p>
-        </div>
-        `:`
-        ${Object.entries(servicoMap).map(([svc,contratos])=>`
-        <div class="glass rounded-xl overflow-hidden">
-          <div class="bg-gradient-to-r from-navy-600 to-navy-700 px-6 py-4 text-white">
-            <p class="text-lg font-bold">${servicoLabel(svc)}</p>
-            <p class="text-sm text-navy-100 mt-1">${contratos.length} contrato${contratos.length!==1?"s":""}</p>
-          </div>
-          
-          <div class="divide-y divide-sky-100/50">
-            ${contratos.map(c=>`
-            <div class="p-4 hover:bg-sky-50/50 transition">
-              <div class="flex items-center justify-between gap-3 mb-3">
-                <div class="flex-1">
-                  <p class="font-bold text-navy-900">${c.empresa}</p>
-                  <p class="text-xs text-steel-500 mt-1 font-mono">${c.nContrato}${c.aditivo && c.aditivo!=="—"?" • "+c.aditivo:""}</p>
-                </div>
-                <div class="text-right">
-                  <p class="text-lg font-bold text-navy-900">${fmtM(c.valorContrato)}</p>
-                  <p class="text-xs text-steel-500">Valor do contrato</p>
-                  <p class="text-xs text-blue-700 font-bold mt-1">Empenhado: ${fmtM(calcularValorEmpenhadoContrato(c))}</p>
-                  <p class="text-xs text-emerald-700 font-bold">Executado: ${fmtM(calcularValorExecutadoContrato(c))}</p>
-                </div>
-                <div class="flex flex-wrap gap-1 justify-end">
-                  <button onclick="viewContrato('${c.id}')" class="px-2 py-2 rounded-lg hover:bg-sky-100 transition flex items-center gap-1" title="Visualizar"><i data-lucide="eye" class="w-4 h-4 text-navy-600"></i><span class="text-xs font-bold text-navy-700">Ver</span></button>
-                  <button onclick="editarContrato('${c.id}')" class="px-2 py-2 rounded-lg hover:bg-blue-50 transition hidden-btn flex items-center gap-1" title="Editar" style="display:${hasPermission("edit")?"flex":"none"}"><i data-lucide="edit" class="w-4 h-4 text-blue-600"></i><span class="text-xs font-bold text-blue-700">Editar</span></button>
-                  <button onclick="confirmarExclusaoContrato('${c.id}')" class="px-2 py-2 rounded-lg hover:bg-red-50 transition hidden-btn flex items-center gap-1" title="Excluir" style="display:${hasPermission("delete")?"flex":"none"}"><i data-lucide="trash-2" class="w-4 h-4 text-red-600"></i><span class="text-xs font-bold text-red-700">Excluir</span></button>
-                </div>
-              </div>
-              
-              <div class="text-xs">
-                <p class="text-steel-600 font-semibold mb-2">🏥 Unidades:</p>
-                <div class="flex flex-wrap gap-2">
-                  ${(c.unidades||"").split(",").map(uh=>`<span class="badge bg-navy-100 text-navy-700">${uh.trim()}</span>`).join("")}
-                </div>
-              </div>
-              
-              <div class="grid grid-cols-4 gap-3 mt-3 text-xs">
-                <div>
-                  <p class="text-steel-600">Vigência</p>
-                  <div class="mt-1">${renderVigenciaBadge(c)}</div>
-                </div>
-                <div>
-                  <p class="text-steel-600">Processo</p>
-                  <p class="font-mono text-navy-600">${c.nProcesso||"—"}</p>
-                </div>
-                <div>
-                  <p class="text-steel-600">Valor Mensal</p>
-                  <p class="font-semibold text-navy-900">${fmtM(c.valorEstimadoMensal)}</p>
-                </div>
-                <div>
-                  <p class="text-steel-600">Saldo</p>
-                  <p class="font-semibold text-cyan-700">${fmtM(calcularValorEmpenhadoContrato(c)-calcularValorExecutadoContrato(c))}</p>
-                </div>
-              </div>
-            </div>
-            `).join("")}
-          </div>
-        </div>
-        `).join("")}
-        `}
-      </div>`;
+    
+    function pagamentoEstaPago(p){
+      return String(p?.situacao||"").toLowerCase().trim()==="pago";
     }
 
-    function openNovoContratoModal(){
+    function limparFiltrosPagamentos(){
+      filtroPagamentosSituacao="";
+      filtroPagamentosMostrarPagos=false;
+      filtroPagamentosEmpresa="";
+      filtroPagamentosUH="";
+      filtroPagamentosServico="";
+      filtroPagamentosCompetencia="";
+      renderPagamentos(document.getElementById("content-area"));
+    }
+
+    function limparFiltrosContratos(){
+      filtroContratosExecucaoStatus="";
+      filtroContratosEmpresa="";
+      filtroContratosServico="";
+      filtroContratosUH="";
+      filtroContratosFonte="";
+      renderContratos(document.getElementById("content-area"));
+    }
+
+    function contratoUnidadesArray(c){
+      return String(c?.unidades||"").split(",").map(x=>x.trim()).filter(Boolean);
+    }
+
+    function obterServicosDisponiveisPorContratos(contratos=allContratos){
+      const servicos=[...(listas.servicos||[]).map(s=>normalizarServicoItem(s).codigo)];
+      (contratos||[]).forEach(c=>{ if(c.servicoTipo) servicos.push(c.servicoTipo); });
+      return [...new Set(servicos.filter(Boolean))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
+    }
+
+
+    function obterPagamentosPorContrato(contratoId){
+      return (allPagamentos||[])
+        .filter(p=>String(p.contrato_id)===String(contratoId) && (!p.anoExercicio || String(p.anoExercicio)===String(exercicioAtivo)))
+        .sort((a,b)=>String(b.competencia||"").localeCompare(String(a.competencia||"")));
+    }
+
+    function renderPagamentosVinculadosContrato(c){
+      const pagamentos=obterPagamentosPorContrato(c.id);
+      const total=pagamentos.reduce((s,p)=>s+parseValorBR(p.nfValor),0);
+
+      if(!pagamentos.length){
+        return `
+          <div class="mt-4 rounded-xl border border-sky-100 bg-sky-50 p-4">
+            <div class="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <p class="font-bold text-navy-900">Processos de Pagamento Vinculados</p>
+                <p class="text-xs text-steel-500 mt-1">Nenhum processo de pagamento cadastrado para este contrato.</p>
+              </div>
+              <span class="badge bg-slate-100 text-slate-700">Executado: ${fmtM(0)}</span>
+            </div>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="mt-4 rounded-xl border border-emerald-100 bg-emerald-50/50 p-4">
+          <div class="flex items-center justify-between gap-3 flex-wrap mb-3">
+            <div>
+              <p class="font-bold text-navy-900">Processos de Pagamento Vinculados</p>
+              <p class="text-xs text-steel-500 mt-1">Composição do valor executado deste contrato.</p>
+            </div>
+            <div class="text-right">
+              <p class="text-[10px] uppercase tracking-wide text-steel-500 font-bold">Valor executado</p>
+              <p class="text-lg font-black text-emerald-700">${fmtM(total)}</p>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            ${pagamentos.map(p=>{
+              const nfs=extrairNFsPagamento(p).map(n=>n.numero).filter(Boolean).join(", ") || p.nfNumero || "—";
+              const sei=obterProcessoSEIPagamento(p);
+              const empenhos=Array.isArray(p.empenhos)?p.empenhos.map(e=>e.numero).filter(Boolean).join(", "):(p.empenho||"—");
+              return `
+                <div class="bg-white border border-emerald-100 rounded-xl p-3 grid grid-cols-1 lg:grid-cols-[1fr_180px_110px] gap-3 items-center">
+                  <div class="min-w-0">
+                    <p class="font-bold text-navy-900">Processo SEI: <span class="font-mono">${escapeHtml(sei)}</span></p>
+                    <p class="text-xs text-steel-600 mt-1">NF(s): <strong>${escapeHtml(nfs)}</strong> • Competência: <strong>${escapeHtml(p.competencia||"—")}</strong></p>
+                    <p class="text-xs text-steel-500 mt-1">Empenho(s): ${escapeHtml(empenhos)} • Fonte: ${escapeHtml(p.fonteRecurso||"—")}</p>
+                  </div>
+                  <div>
+                    <p class="text-[10px] uppercase tracking-wide text-steel-500 font-bold">Situação</p>
+                    <div class="mt-1">${statusBadge(p.situacao)}</div>
+                  </div>
+                  <div class="text-right">
+                    <p class="text-[10px] uppercase tracking-wide text-steel-500 font-bold">Valor</p>
+                    <p class="font-black text-emerald-700">${fmtM(p.nfValor)}</p>
+                  </div>
+                </div>
+              `;
+            }).join("")}
+          </div>
+        </div>
+      `;
+    }
+
+
+    function abrirPagamentosVinculadosContrato(id){
+      const c=allContratos.find(x=>String(x.id)===String(id));
+      if(!c){
+        showInlineAlert("Contrato não encontrado.","error");
+        return;
+      }
+
+      const pagamentos=obterPagamentosPorContrato(c.id);
+      const total=pagamentos.reduce((s,p)=>s+parseValorBR(p.nfValor),0);
+
+      const lista=pagamentos.length?pagamentos.map(p=>{
+        const nfs=extrairNFsPagamento(p).map(n=>n.numero).filter(Boolean).join(", ") || p.nfNumero || "—";
+        const sei=obterProcessoSEIPagamento(p);
+        const empenhos=Array.isArray(p.empenhos)?p.empenhos.map(e=>e.numero).filter(Boolean).join(", "):(p.empenho||"—");
+        return `
+          <div class="bg-white border border-emerald-100 rounded-xl p-3 grid grid-cols-1 md:grid-cols-[1fr_130px_100px] gap-3 items-center">
+            <div class="min-w-0">
+              <p class="font-bold text-navy-900">Processo SEI: <span class="font-mono">${escapeHtml(sei)}</span></p>
+              <p class="text-xs text-steel-600 mt-1">NF(s): <strong>${escapeHtml(nfs)}</strong> • Competência: <strong>${escapeHtml(p.competencia||"—")}</strong></p>
+              <p class="text-xs text-steel-500 mt-1">Empenho(s): ${escapeHtml(empenhos)} • Fonte: ${escapeHtml(p.fonteRecurso||"—")}</p>
+            </div>
+            <div>${statusBadge(p.situacao)}</div>
+            <div class="text-right">
+              <p class="text-[10px] uppercase tracking-wide text-steel-500 font-bold">Valor</p>
+              <p class="font-black text-emerald-700">${fmtM(p.nfValor)}</p>
+            </div>
+          </div>
+        `;
+      }).join(""):`<div class="p-5 text-center text-steel-500 bg-sky-50 border border-sky-100 rounded-xl">Nenhum processo de pagamento vinculado a este contrato.</div>`;
+
+      const content=`
+        <div class="space-y-4 max-h-96 overflow-y-auto">
+          <div class="rounded-xl bg-emerald-50 border border-emerald-100 p-4 flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <p class="text-xs uppercase tracking-wide text-steel-500 font-bold">Contrato</p>
+              <p class="font-bold text-navy-900">${escapeHtml(c.nContrato||"—")} • ${escapeHtml(c.empresa||"—")}</p>
+            </div>
+            <div class="text-right">
+              <p class="text-xs uppercase tracking-wide text-steel-500 font-bold">Valor executado</p>
+              <p class="text-xl font-black text-emerald-700">${fmtM(total)}</p>
+            </div>
+          </div>
+          <div class="space-y-2">${lista}</div>
+          <div class="flex justify-end pt-3 border-t border-sky-100">
+            <button onclick="closeAllModals()" class="btn-secondary px-4 py-2 rounded-lg">Fechar</button>
+          </div>
+        </div>
+      `;
+
+      openModal("Pagamentos vinculados",content);
+    }
+
+function renderContratos(el){
+      try{
+        aplicarBancoLocal();
+        reidratarListasPrincipais();
+
+        let contratosBase=[...(allContratos||[])];
+
+        // Mantém contratos do exercício atual, mas não esconde registros antigos/sem exercício.
+        let contratosFiltrados=contratosBase.filter(c=>!c.anoExercicio || String(c.anoExercicio)===String(exercicioAtivo));
+        if(contratosFiltrados.length===0 && contratosBase.length>0){
+          contratosFiltrados=[...contratosBase];
+        }
+
+        if(currentProfile==="tecnico" && usuarioAutenticado?.servicos){
+          contratosFiltrados=contratosFiltrados.filter(c=>usuarioAutenticado.servicos.includes(c.servicoTipo));
+        }
+
+        if(filtroContratosEmpresa){
+          contratosFiltrados=contratosFiltrados.filter(c=>String(c.empresa||"")===String(filtroContratosEmpresa));
+        }
+        if(filtroContratosServico){
+          contratosFiltrados=contratosFiltrados.filter(c=>String(c.servicoTipo||"")===String(filtroContratosServico));
+        }
+        if(filtroContratosUH){
+          contratosFiltrados=contratosFiltrados.filter(c=>contratoUnidadesArray(c).includes(filtroContratosUH));
+        }
+        if(filtroContratosFonte){
+          contratosFiltrados=contratosFiltrados.filter(c=>contratoTemFonte(c,filtroContratosFonte));
+        }
+        if(filtroContratosExecucaoStatus){
+          contratosFiltrados=contratosFiltrados.filter(c=>analisarExecucaoContrato(c).status===filtroContratosExecucaoStatus);
+        }
+
+        const servicoMap={};
+        contratosFiltrados.forEach(c=>{
+          const svc=c.servicoTipo||"Sem classificação";
+          if(!servicoMap[svc]) servicoMap[svc]=[];
+          servicoMap[svc].push(c);
+        });
+
+        const totalContratos=contratosFiltrados.length;
+        const totalValor=contratosFiltrados.reduce((s,c)=>s+parseValorBR(c.valorContrato),0);
+        const totalEmpenhado=contratosFiltrados.reduce((s,c)=>s+calcularValorEmpenhadoContrato(c),0);
+
+        el.innerHTML=`
+        <div class="fade-in space-y-4">
+          <div class="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <h2 class="text-2xl font-bold text-navy-900">📄 Contratos</h2>
+              <p class="text-sm text-steel-500 mt-1">${currentProfile==="tecnico" ? "Contratos vinculados ao perfil técnico" : "Agrupados por tipo de serviço"}</p>
+            </div>
+            <button onclick="openNovoContratoModal()" class="btn-primary px-4 py-2 rounded-lg flex items-center gap-2 hidden-btn" style="display:${hasPermission("create")?"flex":"none"}">
+              <i data-lucide="plus" class="w-4 h-4"></i>Novo Contrato
+            </button>
+          </div>
+
+          <div class="grid md:grid-cols-3 gap-4">
+            <div class="glass rounded-xl p-4">
+              <p class="text-xs text-steel-500 font-bold uppercase">Contratos listados</p>
+              <p class="text-2xl font-black text-navy-900 mt-1">${totalContratos}</p>
+            </div>
+            <div class="glass rounded-xl p-4">
+              <p class="text-xs text-steel-500 font-bold uppercase">Valor contratado</p>
+              <p class="text-2xl font-black text-navy-900 mt-1">${fmtM(totalValor)}</p>
+            </div>
+            <div class="glass rounded-xl p-4">
+              <p class="text-xs text-steel-500 font-bold uppercase">Valor empenhado</p>
+              <p class="text-2xl font-black text-blue-700 mt-1">${fmtM(totalEmpenhado)}</p>
+            </div>
+          </div>
+
+          <div class="glass rounded-xl p-4 grid grid-cols-1 md:grid-cols-5 gap-3">
+            <div>
+              <label class="block text-[10px] font-bold text-navy-900 mb-1">Empresa</label>
+              <select class="input-field w-full text-xs" onchange="filtroContratosEmpresa=this.value;renderContratos(document.getElementById('content-area'))">
+                ${renderSelectOptions(obterEmpresasDisponiveis(contratosBase), filtroContratosEmpresa, "Todas")}
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-navy-900 mb-1">Serviço</label>
+              <select class="input-field w-full text-xs" onchange="filtroContratosServico=this.value;renderContratos(document.getElementById('content-area'))">
+                ${renderSelectOptions(obterServicosDisponiveisPorContratos(contratosBase), filtroContratosServico, "Todos")}
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-navy-900 mb-1">Unidade</label>
+              <select class="input-field w-full text-xs" onchange="filtroContratosUH=this.value;renderContratos(document.getElementById('content-area'))">
+                ${renderSelectOptions(listas.unidades||[], filtroContratosUH, "Todas")}
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-navy-900 mb-1">Fonte</label>
+              <select class="input-field w-full text-xs" onchange="filtroContratosFonte=this.value;renderContratos(document.getElementById('content-area'))">
+                ${renderSelectOptions(obterFontesDisponiveis(contratosBase), filtroContratosFonte, "Todas")}
+              </select>
+            </div>
+            <div class="flex items-end">
+              <button onclick="limparFiltrosContratos()" class="btn-secondary w-full px-3 py-2 rounded-lg text-xs font-bold">Limpar filtros</button>
+            </div>
+          </div>
+${filtroContratosExecucaoStatus?`
+          <div class="filter-pill">
+            Contratos: ${filtroContratosExecucaoStatus}
+            <button onclick="navegarContratosPorExecucao('')" class="text-navy-700 font-black">×</button>
+          </div>`:""}
+
+          ${Object.keys(servicoMap).length===0?`
+          <div class="glass rounded-xl p-8 text-center">
+            <i data-lucide="file-text" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i>
+            <p class="text-steel-500">${contratosBase.length>0 ? "Nenhum contrato encontrado para os filtros selecionados" : "Nenhum contrato cadastrado"}</p>
+          </div>
+          `:`
+          ${Object.entries(servicoMap).map(([svc,contratos])=>`
+          <div class="glass rounded-xl overflow-hidden">
+            <div class="bg-gradient-to-r from-navy-600 to-navy-700 px-6 py-4 text-white">
+              <p class="text-lg font-bold">${servicoLabel(svc)}</p>
+              <p class="text-sm text-navy-100 mt-1">${contratos.length} contrato${contratos.length!==1?"s":""}</p>
+            </div>
+
+            <div class="divide-y divide-sky-100/70">
+              ${contratos.map(c=>{
+                const unidades=contratoUnidadesArray(c);
+                const empenhado=calcularValorEmpenhadoContrato(c);
+                const executado=calcularValorExecutadoContrato(c);
+                const saldo=empenhado-executado;
+                const exec=analisarExecucaoContrato(c);
+                return `
+                <div class="p-4 hover:bg-sky-50/50 transition">
+                  <div class="flex items-start justify-between gap-3 mb-3">
+                    <div class="min-w-0">
+                      <p class="font-bold text-navy-900">${escapeHtml(c.empresa||"—")}</p>
+                      <p class="text-xs text-steel-500 mt-1 font-mono">${escapeHtml(c.nContrato||"—")}${c.aditivo && c.aditivo!=="—"?" • "+escapeHtml(c.aditivo):""}</p>
+                      <p class="text-xs text-steel-500 mt-1">Processo: <span class="font-mono">${escapeHtml(c.nProcesso||"—")}</span></p>
+                    </div>
+                    <div class="flex flex-wrap gap-1 justify-end">
+                      <button onclick="viewContrato('${c.id}')" class="px-2 py-2 rounded-lg hover:bg-sky-100 transition flex items-center gap-1" title="Visualizar"><i data-lucide="eye" class="w-4 h-4 text-navy-600"></i><span class="text-xs font-bold text-navy-700">Ver</span></button>
+                      <button onclick="abrirPagamentosVinculadosContrato('${c.id}')" class="px-2 py-2 rounded-lg hover:bg-emerald-50 transition flex items-center gap-1" title="Pagamentos vinculados"><i data-lucide="wallet-cards" class="w-4 h-4 text-emerald-600"></i><span class="text-xs font-bold text-emerald-700">Pagamentos</span></button>
+                      <button onclick="editarContrato('${c.id}')" class="px-2 py-2 rounded-lg hover:bg-blue-50 transition hidden-btn flex items-center gap-1" title="Editar" style="display:${hasPermission("edit")?"flex":"none"}"><i data-lucide="edit" class="w-4 h-4 text-blue-600"></i><span class="text-xs font-bold text-blue-700">Editar</span></button>
+                      <button onclick="confirmarExclusaoContrato('${c.id}')" class="px-2 py-2 rounded-lg hover:bg-red-50 transition hidden-btn flex items-center gap-1" title="Excluir" style="display:${hasPermission("delete")?"flex":"none"}"><i data-lucide="trash-2" class="w-4 h-4 text-red-600"></i><span class="text-xs font-bold text-red-700">Excluir</span></button>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 lg:grid-cols-5 gap-3 text-xs">
+                    <div class="lg:col-span-2">
+                      <p class="text-steel-600 font-semibold mb-2">Unidades</p>
+                      <div class="flex flex-wrap gap-2">
+                        ${unidades.length?unidades.map(uh=>`<span class="badge bg-navy-100 text-navy-700">${escapeHtml(uh)}</span>`).join(""):"—"}
+                      </div>
+                    </div>
+                    <div>
+                      <p class="text-steel-600">Vigência</p>
+                      <div class="mt-1">${renderVigenciaBadge(c)}</div>
+                    </div>
+                    <div>
+                      <p class="text-steel-600">Valor contratado</p>
+                      <p class="font-bold text-navy-900">${fmtM(c.valorContrato)}</p>
+                      <p class="text-steel-500 mt-1">Mensal: ${fmtM(c.valorEstimadoMensal)}</p>
+                    </div>
+                    <div>
+                      <p class="text-steel-600">Execução</p>
+                      <p class="font-bold text-blue-700">Empenhado: ${fmtM(empenhado)}</p>
+                      <p class="font-bold text-emerald-700">Executado: ${fmtM(executado)}</p>
+                      <p class="font-bold text-cyan-700">Saldo: ${fmtM(saldo)}</p>
+                      <span class="inline-block mt-2">${statusBadge(exec.status)}</span>
+                    </div>
+                  </div>
+                  
+                </div>
+                `;
+              }).join("")}
+            </div>
+          </div>
+          `).join("")}
+          `}
+        </div>`;
+
+        lucide.createIcons();
+      }catch(error){
+        console.error("Erro ao renderizar Contratos:",error);
+        el.innerHTML=`
+          <div class="fade-in space-y-4">
+            <div class="glass rounded-xl p-6 border border-red-100 bg-red-50">
+              <h2 class="text-xl font-bold text-red-700">Erro ao carregar Contratos</h2>
+              <p class="text-sm text-red-600 mt-2">A aba foi protegida contra tela em branco. Mensagem técnica: ${escapeHtml(error.message||error)}</p>
+              <button onclick="limparFiltrosContratos();renderContratos(document.getElementById('content-area'))" class="mt-4 btn-secondary px-4 py-2 rounded-lg text-sm font-bold">Tentar novamente</button>
+            </div>
+          </div>`;
+      }
+    }
+
+
+function openNovoContratoModal(){
       const content=`
         <form onsubmit="salvarContrato(event)" class="space-y-4 max-h-96 overflow-y-auto">
           <div class="bg-navy-50 rounded-lg p-4 border border-navy-200/30">
@@ -2259,11 +2608,14 @@
             <div><p class="text-[10px] text-steel-600">Valor Contrato</p><p class="font-bold text-navy-900">${fmtM(c.valorContrato)}</p></div>
             <div><p class="text-[10px] text-steel-600">Valor Mensal</p><p class="text-navy-900">${fmtM(c.valorEstimadoMensal)}</p></div>
             <div><p class="text-[10px] text-steel-600">Total Empenhado</p><p class="font-bold text-navy-600">${fmtM(totalEmpenhadoContrato)}</p></div>
-            <div><p class="text-[10px] text-steel-600">Executado 2026</p><p class="font-bold text-emerald-600">${fmtM(c.valorExecutado2026)}</p></div>
-            <div><p class="text-[10px] text-steel-600">Saldo</p><p class="font-mono text-navy-900">${fmtM(totalEmpenhadoContrato-c.valorExecutado2026)}</p></div>
+            <div><p class="text-[10px] text-steel-600">Executado 2026</p><p class="font-bold text-emerald-600">${fmtM(calcularValorExecutadoContrato(c))}</p></div>
+            <div><p class="text-[10px] text-steel-600">Saldo</p><p class="font-mono text-navy-900">${fmtM(totalEmpenhadoContrato-calcularValorExecutadoContrato(c))}</p></div>
             <div><p class="text-[10px] text-steel-600">Status</p><p class="badge bg-emerald-100 text-emerald-700">${c.status}</p></div>
             <div class="col-span-2"><p class="text-[10px] text-steel-600 mb-2">Empenhos / Fontes de recurso</p><div class="grid grid-cols-1 gap-2 bg-yellow-50 border border-yellow-200 rounded p-2">${listaEmpenhos}</div></div>
           </div>
+
+          ${renderPagamentosVinculadosContrato(c)}
+
           <div class="flex gap-2 justify-end pt-4 border-t border-sky-200">
             ${hasPermission("edit")?`<button onclick="closeAllModals();editarContrato('${id}')" class="btn-primary px-4 py-2 rounded-lg">Editar Contrato</button>`:""}
             <button onclick="closeAllModals()" class="btn-secondary px-4 py-2 rounded-lg">Fechar</button>
@@ -2429,6 +2781,15 @@
 
     // ─── PAGAMENTOS ───
     
+    function obterProcessoSEIPagamento(p){
+      if(!p) return "—";
+      const direto=String(p.processoSEI||p.processoSei||p.sei||"").trim();
+      if(direto) return direto;
+      const notas=extrairNFsPagamento(p);
+      const ids=[...new Set(notas.map(n=>String(n.sei||"").trim()).filter(Boolean))];
+      return ids.length?ids.join(", "):"—";
+    }
+
     function formatarDataHoraBR(data){
       if(!data) return "—";
       const d=new Date(data);
@@ -2453,23 +2814,98 @@
         return;
       }
 
+      const situacaoAnterior=pagamento.situacao||"—";
       const atualizado={
         ...pagamento,
         situacao:novaSituacao,
         atualizadoEm:new Date().toISOString()
       };
 
+      registrarAuditoria("Alteração de situação","pagamentos",atualizado,`Situação alterada de "${situacaoAnterior}" para "${novaSituacao}" • NF(s): ${pagamento.nfNumero||"—"} • Competência: ${pagamento.competencia||"—"}`);
+
       const result=await atualizarRegistroSeguro(atualizado,"pagamentos");
       if(result.isOk){
-        showInlineAlert("✅ Situação atualizada com sucesso!","info");
+        if(String(novaSituacao).toLowerCase().trim()==="pago"){
+          showInlineAlert("✅ Situação atualizada para Pago. O processo foi ocultado da lista padrão.","info");
+        }else{
+          showInlineAlert("✅ Situação atualizada com sucesso!","info");
+        }
         renderContent();
       }else{
         showInlineAlert("❌ Erro ao alterar situação","error");
       }
     }
 
-function renderPagamentos(el){
-      let pagamentosFiltrados=allPagamentos.filter(p=>p.anoExercicio==exercicioAtivo||!p.anoExercicio);
+
+    
+    function fontesPainelSelecionadasAtivas(){
+      const fontes=[...(filtroFonte?[filtroFonte]:[]), ...(fontesExecucaoSelecionadas||[])];
+      return [...new Set(fontes.filter(Boolean))];
+    }
+
+    function contratoAtendeAlgumaFonteSelecionada(c, fontes=[]){
+      if(!fontes || !fontes.length) return true;
+      const empenhos=extrairEmpenhosContrato(c);
+      return empenhos.some(e=>{
+        const fonte=String(e.fonte||"").trim().toLowerCase();
+        return fontes.some(f=>fonte===String(f).trim().toLowerCase() || fonte.includes(String(f).trim().toLowerCase()));
+      });
+    }
+
+    function obterPagamentosPorContratos(contratos=[]){
+      const ids=new Set((contratos||[]).map(c=>String(c.id)));
+      return (allPagamentos||[]).filter(p=>{
+        const okExercicio=!p.anoExercicio || String(p.anoExercicio)===String(exercicioAtivo);
+        return okExercicio && ids.has(String(p.contrato_id));
+      });
+    }
+
+    function excluirPagamento(id){
+      const pagamento=(allPagamentos||[]).find(p=>String(p.id)===String(id));
+      if(!pagamento){
+        showInlineAlert("Processo de pagamento não encontrado.","error");
+        return;
+      }
+
+      if(!confirm(`Deseja excluir o processo de pagamento ${obterProcessoSEIPagamento(pagamento)}?`)) return;
+
+      // Remove imediatamente da memória principal.
+      allPagamentos=(allPagamentos||[]).filter(p=>String(p.id)!==String(id));
+
+      // Remove do banco local dedicado.
+      try{
+        const pagos=JSON.parse(localStorage.getItem("sigecon_pagamentos_persistentes")||"[]");
+        localStorage.setItem("sigecon_pagamentos_persistentes", JSON.stringify((pagos||[]).filter(p=>String(p.id)!==String(id))));
+      }catch(e){ console.warn("Falha ao limpar chave local de pagamentos:",e); }
+
+      // Remove do banco geral.
+      try{
+        const banco=JSON.parse(localStorage.getItem("sigecon_banco_geral")||"{}");
+        banco.pagamentos=(Array.isArray(banco.pagamentos)?banco.pagamentos:[]).filter(p=>String(p.id)!==String(id));
+        banco.atualizadoEm=new Date().toISOString();
+        localStorage.setItem("sigecon_banco_geral", JSON.stringify(banco));
+      }catch(e){ console.warn("Falha ao limpar banco geral:",e); }
+
+      // Tenta também excluir do SDK, sem bloquear o fluxo local.
+      if(window.dataSdk && window.dataSdk.delete){
+        Promise.resolve(window.dataSdk.delete(pagamento)).catch(err=>{
+          console.warn("Falha ao excluir no Data SDK; exclusão local mantida.",err);
+        });
+      }
+
+      registrarAuditoria("Exclusão","pagamentos",pagamento);
+      salvarBancoLocal();
+      persistirListasPrincipais();
+      showInlineAlert("✅ Processo de pagamento excluído com sucesso!","info");
+      renderContent();
+    }
+
+function obterPagamentosFiltrados(){
+      let pagamentosFiltrados=allPagamentos.filter(p=>String(p.anoExercicio)==String(exercicioAtivo)||!p.anoExercicio);
+
+      if(!filtroPagamentosMostrarPagos){
+        pagamentosFiltrados=pagamentosFiltrados.filter(p=>!pagamentoEstaPago(p));
+      }
 
       if(currentProfile==="tecnico"&&usuarioAutenticado?.servicos){
         pagamentosFiltrados=pagamentosFiltrados.filter(p=>{
@@ -2482,10 +2918,92 @@ function renderPagamentos(el){
       if(filtroPagamentosSituacao){
         pagamentosFiltrados=pagamentosFiltrados.filter(p=>String(p.situacao||"")===String(filtroPagamentosSituacao));
       }
+      if(filtroPagamentosCompetencia){
+        pagamentosFiltrados=pagamentosFiltrados.filter(p=>String(p.competencia||"")===String(filtroPagamentosCompetencia));
+      }
+      if(filtroPagamentosUH){
+        pagamentosFiltrados=pagamentosFiltrados.filter(p=>String(p.uh||"")===String(filtroPagamentosUH));
+      }
+      if(filtroPagamentosEmpresa || filtroPagamentosServico){
+        pagamentosFiltrados=pagamentosFiltrados.filter(p=>{
+          const contrato=allContratos.find(c=>c.id===p.contrato_id);
+          if(filtroPagamentosEmpresa && String(contrato?.empresa||"")!==String(filtroPagamentosEmpresa)) return false;
+          if(filtroPagamentosServico && String(contrato?.servicoTipo||"")!==String(filtroPagamentosServico)) return false;
+          return true;
+        });
+      }
+
+      return pagamentosFiltrados;
+    }
+
+    function csvEscape(valor){
+      const texto=String(valor??"");
+      return `"${texto.replace(/"/g,'""')}"`;
+    }
+
+    function baixarPagamentosFiltrados(){
+      const lista=obterPagamentosFiltrados();
+      if(!lista.length){
+        showInlineAlert("Não há processos de pagamento para baixar com os filtros atuais.","error");
+        return;
+      }
+
+      const cabecalho=[
+        "Serviço",
+        "Empresa",
+        "Unidade",
+        "Processo SEI",
+        "NF(s)",
+        "Competência",
+        "Empenho(s)",
+        "Fonte",
+        "Valor",
+        "Situação",
+        "Última Atualização"
+      ];
+
+      const linhas=lista.map(p=>{
+        const contrato=allContratos.find(c=>c.id===p.contrato_id);
+        const nfs=extrairNFsPagamento(p).map(n=>n.numero).filter(Boolean).join(", ") || p.nfNumero || "";
+        const empenhos=Array.isArray(p.empenhos)?p.empenhos.map(e=>e.numero).filter(Boolean).join(", "):(p.empenho||"");
+        return [
+          servicoLabel(contrato?.servicoTipo||"Sem classificação"),
+          contrato?.empresa||"—",
+          p.uh||"—",
+          obterProcessoSEIPagamento(p),
+          nfs,
+          p.competencia||"—",
+          empenhos||"—",
+          p.fonteRecurso||"—",
+          fmtM(p.nfValor),
+          p.situacao||"—",
+          formatarDataHoraBR(p.atualizadoEm||p.criadoEm)
+        ].map(csvEscape).join(";");
+      });
+
+      const conteudo="\ufeff"+[cabecalho.map(csvEscape).join(";"),...linhas].join("\n");
+      const blob=new Blob([conteudo],{type:"text/csv;charset=utf-8;"});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a");
+      const data=new Date().toISOString().slice(0,10);
+      a.href=url;
+      a.download=`pagamentos_filtrados_SIGECON_${data}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      showInlineAlert(`✅ Arquivo baixado com ${lista.length} processo(s) de pagamento.`,"info");
+    }
+
+function renderPagamentos(el){
+      const pagamentosFiltrados=obterPagamentosFiltrados();
+      const competenciasPag=[...new Set((allPagamentos||[]).map(p=>p.competencia).filter(Boolean))].sort().reverse();
+      const pagosOcultos=(allPagamentos||[]).filter(p=>(String(p.anoExercicio)==String(exercicioAtivo)||!p.anoExercicio) && pagamentoEstaPago(p)).length;
 
       const servicoMap={};
       pagamentosFiltrados.forEach(p=>{
-        const contrato=allContratos.find(c=>c.id===p.contrato_id);
+        const contrato=allContratos.find(c=>String(c.id)===String(p.contrato_id));
         const svc=contrato?.servicoTipo||"Sem classificação";
         const empresa=contrato?.empresa||"—";
         const uh=p.uh||"—";
@@ -2503,9 +3021,62 @@ function renderPagamentos(el){
             <h2 class="text-2xl font-bold text-navy-900">💳 Pagamentos</h2>
             <p class="text-sm text-steel-500 mt-1">Agrupados por serviço, empresa e unidade</p>
           </div>
-          <button onclick="openNovoPagamentoModal()" class="btn-primary px-4 py-2 rounded-lg flex items-center gap-2 hidden-btn" style="display:${hasPermission("create")?"flex":"none"}">
-            <i data-lucide="plus" class="w-4 h-4"></i>Novo Pagamento
-          </button>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button onclick="baixarPagamentosFiltrados()" class="btn-secondary px-4 py-2 rounded-lg flex items-center gap-2">
+              <i data-lucide="download" class="w-4 h-4"></i>Baixar filtrados
+            </button>
+            <button onclick="openNovoPagamentoModal()" class="btn-primary px-4 py-2 rounded-lg flex items-center gap-2 hidden-btn" style="display:${hasPermission("create")?"flex":"none"}">
+              <i data-lucide="plus" class="w-4 h-4"></i>Novo Pagamento
+            </button>
+          </div>
+        </div>
+
+        <div class="glass rounded-xl p-4 space-y-3">
+          <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
+            <div>
+              <label class="block text-[10px] font-bold text-navy-900 mb-1">Situação</label>
+              <select class="input-field w-full text-xs" onchange="filtroPagamentosSituacao=this.value;renderPagamentos(document.getElementById('content-area'))">
+                ${renderSelectOptions(listas.situacoes||["A liquidar","Liquidado","Pago","Na unidade"], filtroPagamentosSituacao, "Todas")}
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-navy-900 mb-1">Competência</label>
+              <select class="input-field w-full text-xs" onchange="filtroPagamentosCompetencia=this.value;renderPagamentos(document.getElementById('content-area'))">
+                ${renderSelectOptions(competenciasPag, filtroPagamentosCompetencia, "Todas")}
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-navy-900 mb-1">Empresa</label>
+              <select class="input-field w-full text-xs" onchange="filtroPagamentosEmpresa=this.value;renderPagamentos(document.getElementById('content-area'))">
+                ${renderSelectOptions(obterEmpresasDisponiveis(allContratos), filtroPagamentosEmpresa, "Todas")}
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-navy-900 mb-1">Serviço</label>
+              <select class="input-field w-full text-xs" onchange="filtroPagamentosServico=this.value;renderPagamentos(document.getElementById('content-area'))">
+                ${renderSelectOptions(obterServicosDisponiveisPorContratos(allContratos), filtroPagamentosServico, "Todos")}
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-navy-900 mb-1">Unidade</label>
+              <select class="input-field w-full text-xs" onchange="filtroPagamentosUH=this.value;renderPagamentos(document.getElementById('content-area'))">
+                ${renderSelectOptions(listas.unidades||[], filtroPagamentosUH, "Todas")}
+              </select>
+            </div>
+            <div class="flex items-end">
+              <button onclick="limparFiltrosPagamentos()" class="btn-secondary w-full px-3 py-2 rounded-lg text-xs font-bold">Limpar filtros</button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between gap-3 flex-wrap rounded-xl bg-sky-50 border border-sky-100 p-3">
+            <div>
+              <p class="text-xs font-bold text-navy-900">Processos pagos</p>
+              <p class="text-[11px] text-steel-500">${filtroPagamentosMostrarPagos?`Exibindo todos, inclusive ${pagosOcultos} pago(s).`:`Ocultando ${pagosOcultos} processo(s) pago(s).`}</p>
+            </div>
+            <button onclick="filtroPagamentosMostrarPagos=!filtroPagamentosMostrarPagos;renderPagamentos(document.getElementById('content-area'))" class="${filtroPagamentosMostrarPagos?'bg-emerald-100 text-emerald-700':'bg-blue-600 text-white'} px-4 py-2 rounded-lg text-xs font-bold">
+              ${filtroPagamentosMostrarPagos?'Ocultar pagos':'Ver todos os processos'}
+            </button>
+          </div>
         </div>
 
         ${filtroPagamentosSituacao?`
@@ -2521,67 +3092,83 @@ function renderPagamentos(el){
         </div>
         `:`
         ${Object.entries(servicoMap).map(([svc,empresas])=>`
-        <div class="glass rounded-xl overflow-hidden">
-          <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 text-white">
-            <p class="text-lg font-bold">${servicoLabel(svc)}</p>
-            <p class="text-sm text-blue-100 mt-1">${Object.values(empresas).reduce((t,e)=>t+Object.values(e).reduce((t2,u)=>t2+u.length,0),0)} pagamento(s)</p>
+        <div class="glass rounded-2xl overflow-hidden">
+          <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-7 py-5 text-white">
+            <p class="text-2xl font-bold">${servicoLabel(svc)}</p>
+            <p class="text-base text-blue-100 mt-1">${Object.values(empresas).reduce((t,e)=>t+Object.values(e).reduce((t2,u)=>t2+u.length,0),0)} pagamento(s)</p>
           </div>
 
           <div class="divide-y divide-blue-100">
             ${Object.entries(empresas).map(([empresa,unidades])=>`
-            <div class="bg-blue-50/50">
-              <div class="px-6 py-3 border-b border-blue-200 flex items-center gap-2">
+            <div class="bg-blue-50/30">
+              <div class="px-7 py-4 border-b border-blue-100 flex items-center gap-3">
                 <i data-lucide="building-2" class="w-5 h-5 text-blue-600"></i>
-                <p class="font-semibold text-blue-900">${escapeHtml(empresa)}</p>
-                <span class="ml-auto badge bg-blue-200 text-blue-800">${Object.values(unidades).reduce((t,u)=>t+u.length,0)} NF(s)</span>
+                <p class="font-bold text-xl text-blue-900">${escapeHtml(empresa)}</p>
+                <span class="ml-auto badge bg-blue-100 text-blue-700">${Object.values(unidades).reduce((t,u)=>t+u.length,0)} NF(s)</span>
               </div>
 
               <div class="divide-y divide-blue-100">
                 ${Object.entries(unidades).map(([uh,pagtos])=>`
-                <div class="px-6 py-3">
-                  <p class="text-xs font-bold text-blue-700 mb-3 flex items-center gap-2">
-                    <i data-lucide="hospital" class="w-4 h-4"></i>🏥 ${escapeHtml(uh)}
-                  </p>
+                <div class="px-7 py-4">
+                  <div class="flex items-center gap-2 mb-4">
+                    <i data-lucide="hospital" class="w-4 h-4 text-blue-600"></i>
+                    <p class="text-sm font-bold text-blue-700">🏥 ${escapeHtml(uh)}</p>
+                  </div>
 
-                  <div class="space-y-3 ml-6">
+                  <div class="space-y-4 ml-4">
                     ${pagtos.map(p=>{
-                      const nfs=extrairNFsPagamento(p).map(n=>n.numero).join(", ")||"—";
-                      const empenhosTxt=Array.isArray(p.empenhos)?p.empenhos.map(e=>e.numero).join(", "):(p.empenho||"—");
+                      const nfs=extrairNFsPagamento(p).map(n=>n.numero).filter(Boolean).join(", ") || "—";
+                      const empenhosTxt=Array.isArray(p.empenhos)?p.empenhos.map(e=>e.numero).filter(Boolean).join(", "):(p.empenho||"—");
                       const ultima=p.atualizadoEm||p.criadoEm;
+                      const processo=obterProcessoSEIPagamento(p);
                       return `
-                    <div class="grid grid-cols-1 xl:grid-cols-[1fr_260px_210px] gap-3 p-4 bg-white rounded-xl border border-blue-100 hover:shadow-sm transition">
-                      <div class="min-w-0">
-                        <div class="flex items-center gap-2 mb-1 flex-wrap">
-                          <p class="font-mono text-sm text-navy-700 font-semibold">NF(s): ${escapeHtml(nfs)}</p>
-                          <span class="text-xs text-steel-500">•</span>
-                          <p class="text-xs text-steel-600">${escapeHtml(p.competencia||"—")}</p>
-                        </div>
-                        <p class="text-xs text-steel-500 font-mono">Empenho(s): ${escapeHtml(empenhosTxt)}</p>
-                        <p class="text-xs text-steel-500">Fonte: ${escapeHtml(p.fonteRecurso||"—")}</p>
-                        <p class="text-[11px] text-steel-500 mt-2">Última atualização: <strong>${formatarDataHoraBR(ultima)}</strong></p>
-                      </div>
+                        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition">
+                          <div class="grid grid-cols-1 xl:grid-cols-[1.15fr_0.95fr_190px] gap-4 items-stretch">
+                            <div class="space-y-3">
+                              <div class="rounded-xl border border-yellow-200 bg-yellow-50 p-3">
+                                <p class="text-[10px] uppercase tracking-wide font-black text-yellow-800">Processo SEI</p>
+                                <p class="font-mono text-sm md:text-base font-bold text-yellow-950 mt-1 break-all">${escapeHtml(processo)}</p>
+                              </div>
 
-                      <div class="rounded-xl border ${situacaoClasseDestaque(p.situacao)} p-3">
-                        <p class="text-[10px] uppercase tracking-wide font-black opacity-80 mb-2">Situação do processo</p>
-                        <select onchange="alterarSituacaoPagamentoRapido('${p.id}',this.value)" class="input-field w-full text-sm font-bold bg-white/80 border-current">
-                          ${(listas.situacoes||["A liquidar","Liquidado","Pago","Na unidade"]).map(s=>`<option value="${escapeHtml(s)}" ${String(p.situacao)===String(s)?"selected":""}>${escapeHtml(s)}</option>`).join("")}
-                        </select>
-                        <div class="mt-2">${statusBadge(p.situacao)}</div>
-                      </div>
+                              <div class="space-y-1">
+                                <p class="font-mono text-sm font-semibold text-navy-800">NF(s): ${escapeHtml(nfs)}</p>
+                                <p class="text-sm text-steel-600">Competência: <strong>${escapeHtml(p.competencia||"—")}</strong></p>
+                                <p class="text-sm text-steel-600">Empenho(s): ${escapeHtml(empenhosTxt)}</p>
+                                <p class="text-sm text-steel-600">Fonte: ${escapeHtml(p.fonteRecurso||"—")}</p>
+                                <p class="text-[11px] text-steel-500 pt-1">Última atualização: <strong>${formatarDataHoraBR(ultima)}</strong></p>
+                              </div>
+                            </div>
 
-                      <div class="flex xl:flex-col items-stretch justify-between gap-2">
-                        <div class="text-right xl:text-left">
-                          <p class="text-[10px] text-steel-500 font-bold uppercase">Valor</p>
-                          <p class="font-bold text-navy-900 text-lg">${fmtM(p.nfValor)}</p>
-                        </div>
+                            <div class="grid grid-rows-[auto_1fr] gap-3">
+                              <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                                <p class="text-[10px] uppercase tracking-wide font-black text-emerald-800">Situação</p>
+                                <select onchange="alterarSituacaoPagamentoRapido('${p.id}',this.value)" class="input-field w-full mt-2 text-sm font-bold bg-white border-emerald-200">
+                                  ${(listas.situacoes||["A liquidar","Liquidado","Pago","Na unidade"]).map(s=>`<option value="${escapeHtml(s)}" ${String(p.situacao)===String(s)?"selected":""}>${escapeHtml(s)}</option>`).join("")}
+                                </select>
+                                <div class="mt-3">${statusBadge(p.situacao)}</div>
+                              </div>
 
-                        <div class="grid grid-cols-3 xl:grid-cols-1 gap-2">
-                          <button onclick="viewPagamento('${p.id}')" class="px-3 py-2 rounded-lg bg-sky-50 hover:bg-sky-100 text-navy-700 font-bold text-xs transition" title="Visualizar">👁️ Ver</button>
-                          <button onclick="editarPagamento('${p.id}')" class="px-3 py-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs transition hidden-btn" title="Editar" style="display:${hasPermission("edit")?"block":"none"}">✏️ Editar</button>
-                          <button onclick="confirmarExclusaoPagamento('${p.id}')" class="px-3 py-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 font-bold text-xs transition hidden-btn" title="Excluir" style="display:${hasPermission("edit")?"block":"none"}">🗑️ Excluir</button>
+                              <div class="rounded-2xl border border-blue-200 bg-blue-50 p-4 flex flex-col justify-between">
+                                <div>
+                                  <p class="text-[10px] uppercase tracking-wide font-black text-blue-800">Resumo</p>
+                                  <p class="text-sm text-steel-600 mt-2">Empresa: <strong>${escapeHtml(empresa)}</strong></p>
+                                  <p class="text-sm text-steel-600">Unidade: <strong>${escapeHtml(uh)}</strong></p>
+                                </div>
+                                <button onclick="viewPagamento('${p.id}')" class="mt-4 px-3 py-2 rounded-xl bg-white hover:bg-sky-50 border border-sky-100 text-navy-700 font-bold text-sm transition">👁️ Ver detalhes</button>
+                              </div>
+                            </div>
+
+                            <div class="grid grid-rows-[auto_auto_1fr] gap-3">
+                              <div class="rounded-2xl border border-sky-200 bg-sky-50 p-4">
+                                <p class="text-[10px] uppercase tracking-wide font-black text-sky-800">Valor</p>
+                                <p class="text-3xl font-black text-navy-900 mt-2">${fmtM(p.nfValor)}</p>
+                              </div>
+
+                              <button onclick="editarPagamento('${p.id}')" class="px-4 py-3 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-100 text-blue-700 font-bold text-sm transition hidden-btn" style="display:${hasPermission("edit")?"block":"none"}">✏️ Editar</button>
+                              <button onclick="excluirPagamento('${p.id}')" class="px-4 py-3 rounded-xl bg-red-50 hover:bg-red-100 border border-red-100 text-red-700 font-bold text-sm transition hidden-btn" style="display:${hasPermission("edit")?"block":"none"}">🗑️ Excluir</button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
                       `;
                     }).join("")}
                   </div>
@@ -2597,7 +3184,6 @@ function renderPagamentos(el){
       </div>`;
     }
 
-
 function viewPagamento(id){
       const p=allPagamentos.find(x=>x.id===id);
       if(!p)return;
@@ -2611,6 +3197,10 @@ function viewPagamento(id){
             <div><p class="text-[10px] text-steel-600">Contrato</p><p class="font-mono text-navy-600">${contrato?.nContrato||"—"}</p></div>
             <div><p class="text-[10px] text-steel-600">Competência</p><p class="text-navy-900">${p.competencia||"—"}</p></div>
             <div><p class="text-[10px] text-steel-600">Situação</p><p>${statusBadge(p.situacao)}</p></div>
+            <div class="col-span-2 rounded-xl bg-yellow-50 border border-yellow-200 p-3">
+              <p class="text-[10px] text-yellow-800 font-black uppercase tracking-wide">Processo SEI:</p>
+              <p class="font-mono text-yellow-950 font-bold mt-1">${escapeHtml(obterProcessoSEIPagamento(p))}</p>
+            </div>
             <div class="col-span-2"><p class="text-[10px] text-steel-600">Empenhos vinculados</p>
               <div class="flex flex-wrap gap-2 mt-1">
                 ${empenhos.map(e=>`<span class="badge bg-navy-100 text-navy-700">${escapeHtml(e.numero||"—")} • ${escapeHtml(e.fonte||"—")}</span>`).join("")||"—"}
@@ -2665,12 +3255,16 @@ function viewPagamento(id){
             <div>
               <label class="block text-xs font-semibold text-navy-900 mb-1">Contrato</label>
               <select id="edit-contrato-pag" class="input-field w-full" required onchange="atualizarEmpenhosPagamento('edit')">
-                ${allContratos.filter(c=>c.anoExercicio==exercicioAtivo).map(c=>`<option value="${c.id}" ${p.contrato_id===c.id?"selected":""}>${c.nContrato} • ${c.empresa}</option>`).join("")}
+                ${allContratos.filter(c=>!c.anoExercicio || String(c.anoExercicio)===String(exercicioAtivo)).map(c=>`<option value="${c.id}" ${p.contrato_id===c.id?"selected":""}>${c.nContrato} • ${c.empresa}</option>`).join("")}
               </select>
             </div>
             <div>
               <label class="block text-xs font-semibold text-navy-900 mb-1">Competência</label>
               <input type="month" id="edit-competencia-pag" class="input-field w-full" value="${escapeHtml(p.competencia||"")}" required>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-navy-900 mb-1">Processo SEI</label>
+              <input type="text" id="edit-processo-sei-pag" class="input-field w-full" value="${escapeHtml(obterProcessoSEIPagamento(p)==="—"?"":obterProcessoSEIPagamento(p))}" placeholder="Ex: 00610447.000000/2026-00" required>
             </div>
             <div>
               <label class="block text-xs font-semibold text-navy-900 mb-1">Situação</label>
@@ -2745,7 +3339,7 @@ function viewPagamento(id){
         notasFiscais:notas,
         nfNumero:notas.map(n=>n.numero).join(", "),
         nfValor:totalNotas,
-        processoSEI:notas.map(n=>n.sei).filter(Boolean).join(", "),
+        processoSEI:(document.getElementById("form-processo-sei-pag")?.value||"").trim() || notas.map(n=>n.sei).filter(Boolean).join(", "),
         dataEmissao:notas[0]?.dataEmissao||"",
         tipoNF:notas.map(n=>n.tipo).join(","),
         situacao:document.getElementById("edit-situacao-pag").value,
@@ -2771,14 +3365,36 @@ function viewPagamento(id){
 
       if(!confirm(`Deseja excluir este processo de pagamento?`)) return;
 
-      const result=await excluirRegistroSeguro(p,"pagamentos");
-      if(result.isOk){
-        closeAllModals();
-        showInlineAlert("✅ Pagamento excluído com sucesso!","info");
-        atualizarTelaAtual();
-      } else {
-        showInlineAlert("❌ Erro ao excluir pagamento","error");
+      // Remove imediatamente da memória.
+      allPagamentos=allPagamentos.filter(x=>String(x.id)!==String(id));
+
+      // Remove diretamente das chaves locais, evitando reaparecer após F5.
+      try{
+        const chaves=["sigecon_pagamentos_persistentes","sigecon_banco_geral"];
+        const pagamentosLocais=JSON.parse(localStorage.getItem("sigecon_pagamentos_persistentes")||"[]")
+          .filter(x=>String(x.id)!==String(id));
+        localStorage.setItem("sigecon_pagamentos_persistentes",JSON.stringify(pagamentosLocais));
+
+        const banco=JSON.parse(localStorage.getItem("sigecon_banco_geral")||"{}");
+        banco.pagamentos=(Array.isArray(banco.pagamentos)?banco.pagamentos:[]).filter(x=>String(x.id)!==String(id));
+        banco.atualizadoEm=new Date().toISOString();
+        localStorage.setItem("sigecon_banco_geral",JSON.stringify(banco));
+      }catch(e){
+        console.warn("Falha ao limpar pagamento no armazenamento local:",e);
       }
+
+      // Tenta remover do SDK, mas a exclusão local já foi aplicada.
+      if(window.dataSdk && window.dataSdk.delete){
+        try{ await window.dataSdk.delete(p); }catch(e){ console.warn("SDK delete falhou, exclusão local mantida:",e); }
+      }
+
+      registrarAuditoria("Exclusão","pagamentos",p);
+      salvarBancoLocal();
+      persistirListasPrincipais();
+
+      closeAllModals();
+      showInlineAlert("✅ Pagamento excluído com sucesso!","info");
+      renderContent();
     }
 
     function openNovoPagamentoModal(){
@@ -2796,12 +3412,16 @@ function viewPagamento(id){
               <label class="block text-xs font-semibold text-navy-900 mb-1">Contrato</label>
               <select id="form-contrato-pag" class="input-field w-full" required onchange="atualizarEmpenhosPagamento('form')">
                 <option value="">— Selecione —</option>
-                ${allContratos.filter(c=>c.anoExercicio==exercicioAtivo).map(c=>`<option value="${c.id}">${c.nContrato} • ${c.empresa}</option>`).join("")}
+                ${allContratos.filter(c=>!c.anoExercicio || String(c.anoExercicio)===String(exercicioAtivo)).map(c=>`<option value="${c.id}">${c.nContrato} • ${c.empresa}</option>`).join("")}
               </select>
             </div>
             <div>
               <label class="block text-xs font-semibold text-navy-900 mb-1">Competência</label>
               <input type="month" id="form-competencia-pag" class="input-field w-full" required>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-navy-900 mb-1">Processo SEI</label>
+              <input type="text" id="form-processo-sei-pag" class="input-field w-full" placeholder="Ex: 00610447.000000/2026-00" required>
             </div>
             <div>
               <label class="block text-xs font-semibold text-navy-900 mb-1">Situação</label>
@@ -2876,7 +3496,7 @@ function viewPagamento(id){
         notasFiscais:notas,
         nfNumero:notas.map(n=>n.numero).join(", "),
         nfValor:totalNotas,
-        processoSEI:notas.map(n=>n.sei).filter(Boolean).join(", "),
+        processoSEI:(document.getElementById("edit-processo-sei-pag")?.value||"").trim() || notas.map(n=>n.sei).filter(Boolean).join(", "),
         dataEmissao:notas[0]?.dataEmissao||"",
         situacao:document.getElementById("form-situacao-pag").value,
         tipoNF:notas.map(n=>n.tipo).join(","),
@@ -3002,7 +3622,7 @@ function viewPagamento(id){
       allPagamentos.forEach(p=>{if(p.competencia) competencias.add(p.competencia)});
       const competenciasOrdenadas=[...competencias].sort().reverse();
 
-      const contratosBase=allContratos.filter(c=>c.anoExercicio==exercicioAtivo);
+      const contratosBase=allContratos.filter(c=>!c.anoExercicio || String(c.anoExercicio)===String(exercicioAtivo));
       const empresas=new Set(contratosBase.map(c=>c.empresa).filter(Boolean));
       const unidades=new Set();
       contratosBase.forEach(c=>{
@@ -3741,7 +4361,7 @@ function viewPagamento(id){
       allPagamentos.forEach(p=>{if(p.competencia) competencias.add(p.competencia)});
       const competenciasOrdenadas=[...competencias].sort().reverse();
 
-      const contratosFiltrados=allContratos.filter(c=>c.anoExercicio==exercicioAtivo);
+      const contratosFiltrados=allContratos.filter(c=>!c.anoExercicio || String(c.anoExercicio)===String(exercicioAtivo));
       const empresas=new Set(contratosFiltrados.map(c=>c.empresa).filter(Boolean));
 
       const unidades=new Set();
@@ -3840,6 +4460,25 @@ function viewPagamento(id){
       if(filtroAuditoriaCompetencia) issuesFiltrados=issuesFiltrados.filter(i=>i.categoria!=="empenho"&&i.categoria!=="saldo");
       if(filtroAuditoriaContrato) issuesFiltrados=issuesFiltrados.filter(i=>i.categoria!=="empenho"&&i.categoria!=="saldo");
 
+      // Rastreabilidade de alterações dos usuários
+      let logsAuditoria=carregarAuditoria();
+      if(filtroAuditoriaCompetencia){
+        logsAuditoria=logsAuditoria.filter(l=>String(l.detalhe||"").includes(filtroAuditoriaCompetencia));
+      }
+      if(filtroAuditoriaContrato){
+        const contratoAuditado=allContratos.find(c=>String(c.id)===String(filtroAuditoriaContrato));
+        if(contratoAuditado){
+          logsAuditoria=logsAuditoria.filter(l=>String(l.detalhe||"").includes(contratoAuditado.nContrato)||String(l.registroId||"")===String(filtroAuditoriaContrato));
+        }
+      }
+      if(filtroAuditoriaEmpresa){
+        logsAuditoria=logsAuditoria.filter(l=>String(l.detalhe||"").toLowerCase().includes(String(filtroAuditoriaEmpresa).toLowerCase()));
+      }
+      if(filtroAuditoriaServico){
+        logsAuditoria=logsAuditoria.filter(l=>String(l.detalhe||"").toLowerCase().includes(String(filtroAuditoriaServico).toLowerCase())||String(l.modulo||"").toLowerCase().includes(String(filtroAuditoriaServico).toLowerCase()));
+      }
+      const logsRecentes=logsAuditoria.slice(0,80);
+
       // Contar por severidade
       const countCritica=issuesFiltrados.filter(i=>i.severidade==="Crítica").length;
       const countAlta=issuesFiltrados.filter(i=>i.severidade==="Alta").length;
@@ -3851,7 +4490,7 @@ function viewPagamento(id){
         <div class="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h2 class="text-2xl font-bold text-navy-900">🔍 Auditoria Interna</h2>
-            <p class="text-sm text-steel-500 mt-2">Detecção automática de inconsistências e anomalias do exercício fiscal</p>
+            <p class="text-sm text-steel-500 mt-2">Detecção de inconsistências e rastreabilidade das alterações feitas pelos usuários</p>
           </div>
           <button onclick="executarAuditoria()" class="btn-primary px-4 py-2 rounded-lg flex items-center gap-2">
             <i data-lucide="play" class="w-4 h-4"></i>Executar Auditoria Completa
@@ -3915,6 +4554,51 @@ function viewPagamento(id){
             <p class="text-4xl font-bold ${countBaixa>0?"text-green-600":"text-slate-400"}">${countBaixa}</p>
             <p class="text-sm text-steel-600 mt-2 font-semibold">Baixo</p>
           </div>
+        </div>
+
+        <!-- Trilha de Alterações -->
+        <div class="glass rounded-xl overflow-hidden">
+          <div class="px-6 py-4 border-b border-sky-100 bg-sky-50/70 flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h3 class="text-lg font-bold text-navy-900 flex items-center gap-2">
+                <i data-lucide="history" class="w-5 h-5 text-blue-600"></i>Rastreabilidade de Alterações
+              </h3>
+              <p class="text-xs text-steel-600 mt-1">Registro automático das ações feitas pelos usuários no sistema.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="soft-badge">${logsRecentes.length} registro(s)</span>
+              <button onclick="limparAuditoriaAlteracoes()" class="px-3 py-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 font-bold text-xs">Limpar trilha</button>
+            </div>
+          </div>
+
+          ${logsRecentes.length===0?`
+            <div class="p-6 text-center">
+              <i data-lucide="history" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i>
+              <p class="text-sm text-steel-500">Nenhuma alteração registrada ainda.</p>
+            </div>
+          `:`
+            <div class="divide-y divide-sky-100 max-h-[520px] overflow-y-auto">
+              ${logsRecentes.map(log=>`
+                <div class="p-4 hover:bg-sky-50/60 transition">
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-2 flex-wrap mb-1">
+                        <span class="badge ${log.acao==="Exclusão"?"bg-red-100 text-red-700":log.acao==="Cadastro"?"bg-emerald-100 text-emerald-700":log.acao==="Alteração de situação"?"bg-yellow-100 text-yellow-700":"bg-blue-100 text-blue-700"}">${escapeHtml(log.acao)}</span>
+                        <span class="badge bg-slate-100 text-slate-700">${escapeHtml(log.modulo)}</span>
+                        <span class="text-xs text-steel-500">${formatarDataHoraBR(log.dataHora)}</span>
+                      </div>
+                      <p class="font-bold text-navy-900">${escapeHtml(log.usuario)} <span class="text-xs font-semibold text-steel-500">(${escapeHtml(log.perfil)})</span></p>
+                      <p class="text-sm text-steel-600 mt-1">${escapeHtml(log.detalhe)}</p>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                      <p class="text-[10px] uppercase tracking-wide text-steel-500 font-bold">Exercício</p>
+                      <p class="font-bold text-navy-900">${escapeHtml(log.exercicio||"—")}</p>
+                    </div>
+                  </div>
+                </div>
+              `).join("")}
+            </div>
+          `}
         </div>
 
         <!-- Issues List -->
@@ -4269,6 +4953,7 @@ function viewPagamento(id){
     
     // ─── CONFIGURAÇÕES SIMPLES E ESTÁVEIS ───
     function configPersistir(){
+      registrarAuditoria("Atualização","configuracoes",{tipo:"configuracoes",id:"listas"},"Alteração nas listas de configuração do sistema");
       delete listas.servidores;
       delete listas.empenhos;
       const atual=JSON.parse(localStorage.getItem("sigecon_configuracoes")||"{}");
