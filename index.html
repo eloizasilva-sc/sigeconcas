@@ -234,15 +234,52 @@
 
     // ─── BANCO LOCAL: PERSISTÊNCIA GERAL DO SISTEMA ───
     const CHAVE_BANCO_SIGECON="sigecon_banco_geral";
+    const CHAVE_CONTRATOS_SIGECON="sigecon_contratos_persistentes";
+    const CHAVE_PAGAMENTOS_SIGECON="sigecon_pagamentos_persistentes";
+    const CHAVE_PRODUCAO_SIGECON="sigecon_producao_persistente";
+    const CHAVE_TECNICOS_SIGECON="sigecon_tecnicos_persistentes";
+
+    function carregarListaLocal(chave){
+      try{
+        const lista=JSON.parse(localStorage.getItem(chave)||"[]");
+        return Array.isArray(lista)?lista:[];
+      }catch(e){
+        return [];
+      }
+    }
+
+    function salvarListaLocal(chave,lista){
+      try{
+        localStorage.setItem(chave,JSON.stringify(lista||[]));
+        return true;
+      }catch(e){
+        console.error("Erro ao salvar lista local:",chave,e);
+        return false;
+      }
+    }
+
+    function persistirListasPrincipais(){
+      salvarListaLocal(CHAVE_CONTRATOS_SIGECON,allContratos||[]);
+      salvarListaLocal(CHAVE_PAGAMENTOS_SIGECON,allPagamentos||[]);
+      salvarListaLocal(CHAVE_PRODUCAO_SIGECON,allProducao||[]);
+      salvarListaLocal(CHAVE_TECNICOS_SIGECON,(allTecnicos||[]).filter(t=>t.tipo==="tecnico"||t.tipo==="exercicio"));
+    }
+
+    function reidratarListasPrincipais(){
+      allContratos=mesclarPorId(allContratos,carregarListaLocal(CHAVE_CONTRATOS_SIGECON));
+      allPagamentos=mesclarPorId(allPagamentos,carregarListaLocal(CHAVE_PAGAMENTOS_SIGECON));
+      allProducao=mesclarPorId(allProducao,carregarListaLocal(CHAVE_PRODUCAO_SIGECON));
+      allTecnicos=mesclarExerciciosLocais(mesclarTecnicosLocais(mesclarPorId(allTecnicos,carregarListaLocal(CHAVE_TECNICOS_SIGECON))));
+    }
 
     function carregarBancoLocal(){
       try{
         const banco=JSON.parse(localStorage.getItem(CHAVE_BANCO_SIGECON)||"{}");
         return {
-          contratos:Array.isArray(banco.contratos)?banco.contratos:[],
-          pagamentos:Array.isArray(banco.pagamentos)?banco.pagamentos:[],
-          producao:Array.isArray(banco.producao)?banco.producao:[],
-          tecnicos:Array.isArray(banco.tecnicos)?banco.tecnicos:[],
+          contratos:mesclarPorId(Array.isArray(banco.contratos)?banco.contratos:[],carregarListaLocal(CHAVE_CONTRATOS_SIGECON)),
+          pagamentos:mesclarPorId(Array.isArray(banco.pagamentos)?banco.pagamentos:[],carregarListaLocal(CHAVE_PAGAMENTOS_SIGECON)),
+          producao:mesclarPorId(Array.isArray(banco.producao)?banco.producao:[],carregarListaLocal(CHAVE_PRODUCAO_SIGECON)),
+          tecnicos:mesclarPorId(Array.isArray(banco.tecnicos)?banco.tecnicos:[],carregarListaLocal(CHAVE_TECNICOS_SIGECON)),
           atualizadoEm:banco.atualizadoEm||null
         };
       }catch(e){
@@ -253,6 +290,7 @@
 
     function salvarBancoLocal(){
       try{
+        persistirListasPrincipais();
         localStorage.setItem(CHAVE_BANCO_SIGECON,JSON.stringify({
           contratos:allContratos||[],
           pagamentos:allPagamentos||[],
@@ -284,6 +322,7 @@
       allPagamentos=mesclarPorId(allPagamentos,banco.pagamentos);
       allProducao=mesclarPorId(allProducao,banco.producao);
       allTecnicos=mesclarExerciciosLocais(mesclarTecnicosLocais(mesclarPorId(allTecnicos,banco.tecnicos)));
+      reidratarListasPrincipais();
     }
 
     function salvarDepoisDeAlterar(){
@@ -535,10 +574,10 @@
       onDataChanged(data){
         const banco=carregarBancoLocal();
 
-        allContratos=mesclarPorId(data.filter(d=>d.tipo==="contrato"),banco.contratos);
-        allPagamentos=mesclarPorId(data.filter(d=>d.tipo==="pagamento"),banco.pagamentos);
-        allProducao=mesclarPorId(data.filter(d=>d.tipo==="producao"),banco.producao);
-        allTecnicos=mesclarExerciciosLocais(mesclarTecnicosLocais(mesclarPorId(data.filter(d=>d.tipo==="tecnico"||d.tipo==="exercicio"),banco.tecnicos)));
+        allContratos=mesclarPorId(mesclarPorId(data.filter(d=>d.tipo==="contrato"),banco.contratos),carregarListaLocal(CHAVE_CONTRATOS_SIGECON));
+        allPagamentos=mesclarPorId(mesclarPorId(data.filter(d=>d.tipo==="pagamento"),banco.pagamentos),carregarListaLocal(CHAVE_PAGAMENTOS_SIGECON));
+        allProducao=mesclarPorId(mesclarPorId(data.filter(d=>d.tipo==="producao"),banco.producao),carregarListaLocal(CHAVE_PRODUCAO_SIGECON));
+        allTecnicos=mesclarExerciciosLocais(mesclarTecnicosLocais(mesclarPorId(mesclarPorId(data.filter(d=>d.tipo==="tecnico"||d.tipo==="exercicio"),banco.tecnicos),carregarListaLocal(CHAVE_TECNICOS_SIGECON))));
 
         salvarBancoLocal();
 
@@ -626,6 +665,11 @@
       renderContent();
       salvarSessao();
       return true;
+    }
+
+    if(!window.__sigeconAutosaveBanco){
+      window.__sigeconAutosaveBanco=true;
+      setInterval(()=>{salvarBancoLocal();},2000);
     }
 
     window.addEventListener("beforeunload",()=>{
@@ -1206,6 +1250,7 @@
 
     // ─── CONTENT RENDERER ───
     function renderContent(){
+      reidratarListasPrincipais();
       const el=document.getElementById("content-area");
       const renderers={
         dashboard:renderDashboard,
@@ -1777,19 +1822,6 @@
         return {isOk:false, error:"Registro inválido"};
       }
 
-      // Tenta excluir no Data SDK, mas não deixa o sistema travar se falhar.
-      if(window.dataSdk && window.dataSdk.delete){
-        try{
-          const result=await window.dataSdk.delete(registro);
-          if(result?.isOk){
-            return {isOk:true, origem:"dataSdk"};
-          }
-        }catch(e){
-          console.warn("Falha no Data SDK. Aplicando exclusão local:",e);
-        }
-      }
-
-      // Exclusão local de emergência por tipo/lista.
       if(listaNome==="contratos" || registro.tipo==="contrato"){
         allContratos=allContratos.filter(x=>String(x.id)!==String(registro.id));
       }
@@ -1803,7 +1835,16 @@
         allTecnicos=allTecnicos.filter(x=>String(x.id)!==String(registro.id));
       }
 
+      if(window.dataSdk && window.dataSdk.delete){
+        try{
+          await window.dataSdk.delete(registro);
+        }catch(e){
+          console.warn("Falha no Data SDK. Exclusão local preservada:",e);
+        }
+      }
+
       salvarDepoisDeAlterar();
+      persistirListasPrincipais();
       return {isOk:true, origem:"local"};
     }
 
@@ -1845,6 +1886,7 @@
       }
 
       salvarDepoisDeAlterar();
+      persistirListasPrincipais();
       return {isOk:true, origem:result.isOk?"dataSdk":"local"};
     }
 
@@ -1880,6 +1922,7 @@
       }
 
       salvarDepoisDeAlterar();
+      persistirListasPrincipais();
       return {isOk:true, origem:result.isOk?"dataSdk":"local"};
     }
 
@@ -2385,9 +2428,49 @@
     }
 
     // ─── PAGAMENTOS ───
-    function renderPagamentos(el){
+    
+    function formatarDataHoraBR(data){
+      if(!data) return "—";
+      const d=new Date(data);
+      if(isNaN(d)) return String(data);
+      return d.toLocaleDateString("pt-BR")+" às "+d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+    }
+
+    function situacaoClasseDestaque(situacao){
+      const s=String(situacao||"").toLowerCase();
+      if(s.includes("pago")) return "bg-emerald-100 text-emerald-800 border-emerald-200";
+      if(s.includes("liquidado")) return "bg-blue-100 text-blue-800 border-blue-200";
+      if(s.includes("liquidar")) return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      if(s.includes("unidade")) return "bg-purple-100 text-purple-800 border-purple-200";
+      if(s.includes("glosado")) return "bg-red-100 text-red-800 border-red-200";
+      return "bg-slate-100 text-slate-700 border-slate-200";
+    }
+
+    async function alterarSituacaoPagamentoRapido(id,novaSituacao){
+      const pagamento=allPagamentos.find(p=>String(p.id)===String(id));
+      if(!pagamento){
+        showInlineAlert("Pagamento não encontrado para alteração","error");
+        return;
+      }
+
+      const atualizado={
+        ...pagamento,
+        situacao:novaSituacao,
+        atualizadoEm:new Date().toISOString()
+      };
+
+      const result=await atualizarRegistroSeguro(atualizado,"pagamentos");
+      if(result.isOk){
+        showInlineAlert("✅ Situação atualizada com sucesso!","info");
+        renderContent();
+      }else{
+        showInlineAlert("❌ Erro ao alterar situação","error");
+      }
+    }
+
+function renderPagamentos(el){
       let pagamentosFiltrados=allPagamentos.filter(p=>p.anoExercicio==exercicioAtivo||!p.anoExercicio);
-      
+
       if(currentProfile==="tecnico"&&usuarioAutenticado?.servicos){
         pagamentosFiltrados=pagamentosFiltrados.filter(p=>{
           const contratoVinculado=allContratos.find(c=>c.id===p.contrato_id);
@@ -2396,36 +2479,23 @@
         });
       }
 
-
       if(filtroPagamentosSituacao){
         pagamentosFiltrados=pagamentosFiltrados.filter(p=>String(p.situacao||"")===String(filtroPagamentosSituacao));
       }
 
-      // Agrupar por Serviço → Empresa → Unidade
       const servicoMap={};
       pagamentosFiltrados.forEach(p=>{
         const contrato=allContratos.find(c=>c.id===p.contrato_id);
         const svc=contrato?.servicoTipo||"Sem classificação";
         const empresa=contrato?.empresa||"—";
         const uh=p.uh||"—";
-        
+
         if(!servicoMap[svc]) servicoMap[svc]={};
         if(!servicoMap[svc][empresa]) servicoMap[svc][empresa]={};
         if(!servicoMap[svc][empresa][uh]) servicoMap[svc][empresa][uh]=[];
         servicoMap[svc][empresa][uh].push(p);
       });
 
-      const servicoLabels={
-        "telemedicina":"📱 Telemedicina",
-        "homecare":"🏥 Home Care",
-        "hemodialise":"🩸 Hemodiálise",
-        "laboratorio":"🧪 Laboratórios",
-        "cirurgias":"🔪 Cirurgias Eletivas",
-        "opme-ortopedia":"🦴 OPME Ortopedia",
-        "opme-urologia":"⚕️ OPME Urologia",
-        "Sem classificação":"❓ Sem Classificação"
-      };
-      
       el.innerHTML=`
       <div class="fade-in space-y-4">
         <div class="flex items-center justify-between flex-wrap gap-3">
@@ -2462,7 +2532,7 @@
             <div class="bg-blue-50/50">
               <div class="px-6 py-3 border-b border-blue-200 flex items-center gap-2">
                 <i data-lucide="building-2" class="w-5 h-5 text-blue-600"></i>
-                <p class="font-semibold text-blue-900">${empresa}</p>
+                <p class="font-semibold text-blue-900">${escapeHtml(empresa)}</p>
                 <span class="ml-auto badge bg-blue-200 text-blue-800">${Object.values(unidades).reduce((t,u)=>t+u.length,0)} NF(s)</span>
               </div>
 
@@ -2470,32 +2540,50 @@
                 ${Object.entries(unidades).map(([uh,pagtos])=>`
                 <div class="px-6 py-3">
                   <p class="text-xs font-bold text-blue-700 mb-3 flex items-center gap-2">
-                    <i data-lucide="hospital" class="w-4 h-4"></i>🏥 ${uh}
+                    <i data-lucide="hospital" class="w-4 h-4"></i>🏥 ${escapeHtml(uh)}
                   </p>
-                  
-                  <div class="space-y-2 ml-6">
-                    ${pagtos.map(p=>`
-                    <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-100 hover:shadow-sm transition">
-                      <div class="flex-1">
-                        <div class="flex items-center gap-2 mb-1">
-                          <p class="font-mono text-sm text-navy-700 font-semibold">NF(s): ${extrairNFsPagamento(p).map(n=>n.numero).join(", ")||"—"}</p>
+
+                  <div class="space-y-3 ml-6">
+                    ${pagtos.map(p=>{
+                      const nfs=extrairNFsPagamento(p).map(n=>n.numero).join(", ")||"—";
+                      const empenhosTxt=Array.isArray(p.empenhos)?p.empenhos.map(e=>e.numero).join(", "):(p.empenho||"—");
+                      const ultima=p.atualizadoEm||p.criadoEm;
+                      return `
+                    <div class="grid grid-cols-1 xl:grid-cols-[1fr_260px_210px] gap-3 p-4 bg-white rounded-xl border border-blue-100 hover:shadow-sm transition">
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-2 mb-1 flex-wrap">
+                          <p class="font-mono text-sm text-navy-700 font-semibold">NF(s): ${escapeHtml(nfs)}</p>
                           <span class="text-xs text-steel-500">•</span>
-                          <p class="text-xs text-steel-600">${p.competencia}</p>
+                          <p class="text-xs text-steel-600">${escapeHtml(p.competencia||"—")}</p>
                         </div>
-                        <p class="text-xs text-steel-500 font-mono">Empenho(s): ${Array.isArray(p.empenhos)?p.empenhos.map(e=>e.numero).join(", "):(p.empenho||"—")}</p><p class="text-xs text-steel-500">Fonte: ${p.fonteRecurso||"—"}</p>
-                      </div>
-                      
-                      <div class="text-right mr-3">
-                        <p class="font-bold text-navy-900">${fmtM(p.nfValor)}</p>
-                        <p class="text-xs text-steel-500 mt-1">${statusBadge(p.situacao)}</p>
+                        <p class="text-xs text-steel-500 font-mono">Empenho(s): ${escapeHtml(empenhosTxt)}</p>
+                        <p class="text-xs text-steel-500">Fonte: ${escapeHtml(p.fonteRecurso||"—")}</p>
+                        <p class="text-[11px] text-steel-500 mt-2">Última atualização: <strong>${formatarDataHoraBR(ultima)}</strong></p>
                       </div>
 
-                      <div class="flex gap-1">
-                        <button onclick="viewPagamento('${p.id}')" class="p-2 rounded hover:bg-sky-100 transition" title="Visualizar"><i data-lucide="eye" class="w-4 h-4 text-navy-600"></i></button>
-                        <button onclick="editarPagamento('${p.id}')" class="p-2 rounded hover:bg-sky-100 transition hidden-btn" title="Editar" style="display:${hasPermission("edit")?"block":"none"}"><i data-lucide="edit" class="w-4 h-4 text-blue-600"></i></button>
+                      <div class="rounded-xl border ${situacaoClasseDestaque(p.situacao)} p-3">
+                        <p class="text-[10px] uppercase tracking-wide font-black opacity-80 mb-2">Situação do processo</p>
+                        <select onchange="alterarSituacaoPagamentoRapido('${p.id}',this.value)" class="input-field w-full text-sm font-bold bg-white/80 border-current">
+                          ${(listas.situacoes||["A liquidar","Liquidado","Pago","Na unidade"]).map(s=>`<option value="${escapeHtml(s)}" ${String(p.situacao)===String(s)?"selected":""}>${escapeHtml(s)}</option>`).join("")}
+                        </select>
+                        <div class="mt-2">${statusBadge(p.situacao)}</div>
+                      </div>
+
+                      <div class="flex xl:flex-col items-stretch justify-between gap-2">
+                        <div class="text-right xl:text-left">
+                          <p class="text-[10px] text-steel-500 font-bold uppercase">Valor</p>
+                          <p class="font-bold text-navy-900 text-lg">${fmtM(p.nfValor)}</p>
+                        </div>
+
+                        <div class="grid grid-cols-3 xl:grid-cols-1 gap-2">
+                          <button onclick="viewPagamento('${p.id}')" class="px-3 py-2 rounded-lg bg-sky-50 hover:bg-sky-100 text-navy-700 font-bold text-xs transition" title="Visualizar">👁️ Ver</button>
+                          <button onclick="editarPagamento('${p.id}')" class="px-3 py-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs transition hidden-btn" title="Editar" style="display:${hasPermission("edit")?"block":"none"}">✏️ Editar</button>
+                          <button onclick="confirmarExclusaoPagamento('${p.id}')" class="px-3 py-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 font-bold text-xs transition hidden-btn" title="Excluir" style="display:${hasPermission("edit")?"block":"none"}">🗑️ Excluir</button>
+                        </div>
                       </div>
                     </div>
-                    `).join("")}
+                      `;
+                    }).join("")}
                   </div>
                 </div>
                 `).join("")}
@@ -2509,7 +2597,8 @@
       </div>`;
     }
 
-    function viewPagamento(id){
+
+function viewPagamento(id){
       const p=allPagamentos.find(x=>x.id===id);
       if(!p)return;
       const contrato=allContratos.find(c=>c.id===p.contrato_id);
@@ -2545,6 +2634,10 @@
             <div class="text-right mt-3">
               <p class="text-[10px] text-steel-600">Total das notas</p>
               <p class="text-lg font-bold text-navy-900">${fmtM(p.nfValor)}</p>
+            </div>
+            <div>
+              <p class="text-[10px] text-steel-600">Última atualização</p>
+              <p class="text-navy-900">${formatarDataHoraBR(p.atualizadoEm||p.criadoEm)}</p>
             </div>
           </div>
 
@@ -2788,7 +2881,8 @@
         situacao:document.getElementById("form-situacao-pag").value,
         tipoNF:notas.map(n=>n.tipo).join(","),
         anoExercicio:exercicioAtivo,
-        criadoEm:new Date().toISOString()
+        criadoEm:new Date().toISOString(),
+        atualizadoEm:new Date().toISOString()
       };
 
       const result=await criarRegistroSeguro(novoPagamento,"pagamentos");
@@ -4913,6 +5007,7 @@ async function salvarConfiguracoes(){
     async function initializeApp(){
       carregarConfiguracoesLocais();
       aplicarBancoLocal();
+      reidratarListasPrincipais();
       allTecnicos=mesclarExerciciosLocais(allTecnicos);
       carregarExerciciosCadastrados();
 
@@ -4953,6 +5048,8 @@ async function salvarConfiguracoes(){
         }
       }
       
+      aplicarBancoLocal();
+      reidratarListasPrincipais();
       lucide.createIcons();
 
       // Reforço final: após SDK e ícones carregarem, mantém a sessão aberta.
