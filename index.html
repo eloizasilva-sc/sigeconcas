@@ -660,6 +660,166 @@
   width: 100% !important;
   justify-content: center !important;
 }
+
+/* Campos de aditivos do contrato */
+.linha-aditivo .input-field{font-size:12px !important;padding:10px 12px !important;}
+
+/* Ajuste fino final da tabela de Pagamentos */
+.pagamentos-compact-table{
+  table-layout: fixed !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+.pagamentos-compact-table th{
+  font-size:11px !important;
+  line-height:1.2 !important;
+  white-space: normal !important;
+  word-break: break-word !important;
+  padding: 12px 10px !important;
+}
+.pagamentos-compact-table td{
+  padding: 10px 10px !important;
+}
+.pagamentos-compact-table .col-processo{
+  width: 21% !important;
+  min-width: 180px !important;
+}
+.pagamentos-compact-table .col-competencia{
+  width: 11% !important;
+  min-width: 100px !important;
+}
+.pagamentos-compact-table .col-competencia span{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:100% !important;
+  min-height:58px !important;
+  padding:8px 10px !important;
+  border-radius:14px !important;
+  text-align:center !important;
+  white-space:normal !important;
+  line-height:1.15 !important;
+  font-size:12px !important;
+}
+.pagamentos-compact-table .col-valor{
+  width: 11% !important;
+  min-width: 115px !important;
+}
+.pagamentos-compact-table .col-situacao{
+  width: 14% !important;
+  min-width: 145px !important;
+}
+.pagamentos-compact-table .col-situacao > div{
+  min-height: 86px !important;
+  border-radius: 16px !important;
+  padding: 10px !important;
+}
+.pagamentos-compact-table .col-situacao select{
+  min-height:40px !important;
+  font-size:11px !important;
+  padding: 8px 10px !important;
+  white-space: normal !important;
+}
+.pagamentos-compact-table .col-situacao p,
+.pagamentos-compact-table .col-situacao span{
+  white-space:normal !important;
+  word-break:break-word !important;
+  line-height:1.2 !important;
+}
+.pagamentos-compact-table .col-fonte{
+  width: 11% !important;
+  min-width: 115px !important;
+}
+.pagamentos-compact-table .col-fonte > div{
+  min-height: 86px !important;
+  border-radius: 16px !important;
+  padding: 10px !important;
+}
+.pagamentos-compact-table .col-setor{
+  width: 13% !important;
+  min-width: 140px !important;
+}
+.pagamentos-compact-table .col-setor select{
+  min-height: 42px !important;
+  border-radius: 12px !important;
+  font-size:11px !important;
+}
+.pagamentos-compact-table td[style*="min-width:170px"]{
+  width: 14% !important;
+  min-width: 150px !important;
+}
+.pagamentos-compact-table textarea.input-field{
+  min-height:72px !important;
+  border-radius: 12px !important;
+  font-size:11px !important;
+}
+.pagamentos-compact-table .col-acoes{
+  width: 9% !important;
+  min-width: 105px !important;
+}
+.pagamentos-compact-table .col-acoes button{
+  border-radius: 12px !important;
+  min-height: 36px !important;
+  font-size: 11px !important;
+}
+.pagamentos-compact-table .processo-principal{
+  font-size:15px !important;
+  font-weight:800 !important;
+}
+.pagamentos-compact-table .processo-meta{
+  font-size:10px !important;
+  line-height:1.25 !important;
+}
+
+/* Ajuste fino: Situação e Fonte em Pagamentos */
+.pagamentos-compact-table .col-situacao{
+  width: 12% !important;
+  min-width: 125px !important;
+}
+.pagamentos-compact-table .col-situacao > div{
+  min-height: 74px !important;
+  padding: 8px !important;
+  border-radius: 14px !important;
+}
+.pagamentos-compact-table .col-situacao select{
+  min-height: 34px !important;
+  height: 34px !important;
+  padding: 5px 8px !important;
+  font-size: 10px !important;
+  border-radius: 9px !important;
+}
+.pagamentos-compact-table .col-situacao .badge,
+.pagamentos-compact-table .col-situacao span{
+  font-size: 10px !important;
+  padding: 5px 8px !important;
+  line-height: 1.1 !important;
+  border-radius: 9px !important;
+}
+.pagamentos-compact-table .col-fonte{
+  width: 8% !important;
+  min-width: 82px !important;
+}
+.pagamentos-compact-table .col-fonte > div{
+  min-height: 64px !important;
+  padding: 8px !important;
+  border-radius: 14px !important;
+  text-align: center !important;
+}
+.pagamentos-compact-table .col-fonte p:first-child{
+  display: none !important;
+}
+.pagamentos-compact-table .col-fonte p.font-bold{
+  font-size: 16px !important;
+  line-height: 1.1 !important;
+  margin-top: 0 !important;
+}
+.pagamentos-compact-table .col-setor{
+  width: 14% !important;
+}
+.pagamentos-compact-table .col-observacoes,
+.pagamentos-compact-table td[style*="min-width:170px"]{
+  width: 15% !important;
+}
 </style>
   <style>body { box-sizing: border-box; }</style>
  </head>
@@ -838,30 +998,10 @@
     const CHAVE_PRODUCAO_SIGECON="sigecon_producao_persistente";
     const CHAVE_TECNICOS_SIGECON="sigecon_tecnicos_persistentes";
 
-    const CHAVE_RESET_PAGAMENTOS_VERSAO="sigecon_reset_pagamentos_planilha_v1";
-
+    // Reset automático desativado: dados só podem ser apagados por ações explícitas de excluir/delete.
+    const CHAVE_RESET_PAGAMENTOS_VERSAO="sigecon_reset_desativado";
     function resetarPagamentosCadastradosUmaVez(){
-      try{
-        if(localStorage.getItem(CHAVE_RESET_PAGAMENTOS_VERSAO)==="ok") return;
-
-        allPagamentos=[];
-        localStorage.setItem(CHAVE_PAGAMENTOS_SIGECON,JSON.stringify([]));
-
-        const banco=JSON.parse(localStorage.getItem(CHAVE_BANCO_SIGECON)||"{}");
-        banco.pagamentos=[];
-        banco.atualizadoEm=new Date().toISOString();
-        localStorage.setItem(CHAVE_BANCO_SIGECON,JSON.stringify(banco));
-
-        const bancoSistema=JSON.parse(localStorage.getItem("bancoSistema")||"{}");
-        if(Array.isArray(bancoSistema.pagamentos)){
-          bancoSistema.pagamentos=[];
-          localStorage.setItem("bancoSistema",JSON.stringify(bancoSistema));
-        }
-
-        localStorage.setItem(CHAVE_RESET_PAGAMENTOS_VERSAO,"ok");
-      }catch(e){
-        console.warn("Não foi possível resetar pagamentos anteriores:",e);
-      }
+      return false;
     }
 
 
@@ -915,16 +1055,45 @@
       }
     }
 
-    function salvarBancoLocal(){
+    function contarBancoLocalAtual(){
+      const banco=carregarBancoLocal();
+      return {
+        contratos:(banco.contratos||[]).length,
+        pagamentos:(banco.pagamentos||[]).length,
+        producao:(banco.producao||[]).length,
+        tecnicos:(banco.tecnicos||[]).length
+      };
+    }
+
+    function salvarBancoLocal(opcoes={}){
       try{
-        persistirListasPrincipais();
-        localStorage.setItem(CHAVE_BANCO_SIGECON,JSON.stringify({
+        const permitirVazio=opcoes.permitirVazio===true;
+        const atual=contarBancoLocalAtual();
+
+        const proximos={
           contratos:allContratos||[],
           pagamentos:allPagamentos||[],
           producao:allProducao||[],
           tecnicos:(allTecnicos||[]).filter(t=>t.tipo==="tecnico"||t.tipo==="exercicio"),
           atualizadoEm:new Date().toISOString()
-        }));
+        };
+
+        // Proteção contra perda acidental em atualização/F5 ou falha de carregamento:
+        // se já havia dados salvos e a memória está vazia, não sobrescreve o banco com vazio.
+        if(!permitirVazio){
+          if(atual.contratos>0 && proximos.contratos.length===0) proximos.contratos=carregarBancoLocal().contratos||[];
+          if(atual.pagamentos>0 && proximos.pagamentos.length===0) proximos.pagamentos=carregarBancoLocal().pagamentos||[];
+          if(atual.producao>0 && proximos.producao.length===0) proximos.producao=carregarBancoLocal().producao||[];
+          if(atual.tecnicos>0 && proximos.tecnicos.length===0) proximos.tecnicos=carregarBancoLocal().tecnicos||[];
+        }
+
+        allContratos=proximos.contratos;
+        allPagamentos=proximos.pagamentos;
+        allProducao=proximos.producao;
+        allTecnicos=mesclarExerciciosLocais(mesclarTecnicosLocais(proximos.tecnicos));
+
+        persistirListasPrincipais();
+        localStorage.setItem(CHAVE_BANCO_SIGECON,JSON.stringify(proximos));
         return true;
       }catch(e){
         console.error("Erro ao salvar banco local:",e);
@@ -944,7 +1113,6 @@
     }
 
     function aplicarBancoLocal(){
-      resetarPagamentosCadastradosUmaVez();
       const banco=carregarBancoLocal();
       allContratos=mesclarPorId(allContratos,banco.contratos);
       allPagamentos=mesclarPorId(allPagamentos,banco.pagamentos);
@@ -1425,13 +1593,19 @@
 
     if(!window.__sigeconAutosaveBanco){
       window.__sigeconAutosaveBanco=true;
-      setInterval(()=>{salvarBancoLocal();},2000);
+      setInterval(()=>{salvarBancoLocal();},5000);
     }
 
     window.addEventListener("beforeunload",()=>{
       salvarBancoLocal();
       if(usuarioAutenticado) salvarSessao();
     });
+
+    window.addEventListener("pagehide",()=>{
+      salvarBancoLocal();
+      if(usuarioAutenticado) salvarSessao();
+    });
+
 
     
     function servicoOptionLabel(valor){
@@ -1959,7 +2133,16 @@ function obterValorMoedaInput(id){
       return fontes.some(f=>fontePagamento.includes(String(f).toLowerCase()));
     }
 
-    function contratoTemFonte(c,fonte){
+    
+    function resumirFonteRecurso(fonte){
+      const texto=String(fonte||"").trim();
+      if(!texto) return "—";
+      const match=texto.match(/\b(\d{3,4})\b/);
+      if(match) return match[1];
+      return texto.replace(/^fonte\s*/i,"").split("-")[0].trim() || texto;
+    }
+
+function contratoTemFonte(c,fonte){
       if(!fonte) return true;
       const termo=String(fonte).toLowerCase().trim();
       if(!termo) return true;
@@ -2196,6 +2379,8 @@ function obterValorMoedaInput(id){
         id="dashboard";
       }
       currentTab=id;
+      salvarSessao();
+      salvarBancoLocal();
       buildNav();
       renderContent();
     }
@@ -2936,28 +3121,98 @@ function renderListaAlertasVigencia(alertas){
       return {isOk:true, origem:result.isOk?"dataSdk":"local"};
     }
 
+    function normalizarEmpenhosAditivo(valor=""){
+      if(Array.isArray(valor)) return valor;
+      return String(valor||"").split(/\n|;/).map(v=>v.trim()).filter(Boolean).map(numero=>({numero}));
+    }
+
     function extrairAditivosContrato(c){
       if(Array.isArray(c?.aditivos) && c.aditivos.length){
         return c.aditivos.map(a=>({
           numero:String(a.numero||"").trim(),
           data:String(a.data||"").trim(),
+          vigIni:String(a.vigIni||a.vigenciaInicial||"").trim(),
+          vigFim:String(a.vigFim||a.vigenciaFinal||"").trim(),
+          valor:parseValorBR(a.valor||0),
+          empenhos:normalizarEmpenhosAditivo(a.empenhos||a.empenhosTexto||""),
           descricao:String(a.descricao||a.objeto||"").trim()
-        })).filter(a=>a.numero||a.data||a.descricao);
+        })).filter(a=>a.numero||a.data||a.vigIni||a.vigFim||a.valor||a.descricao||a.empenhos.length);
       }
       if(c?.aditivo && c.aditivo!=="—"){
-        return [{numero:String(c.aditivo),data:"",descricao:""}];
+        return [{numero:String(c.aditivo),data:"",vigIni:"",vigFim:"",valor:0,empenhos:[],descricao:""}];
       }
       return [];
     }
 
+    function obterAditivoVigenteContrato(c){
+      const hoje=new Date();
+      hoje.setHours(0,0,0,0);
+      const aditivos=extrairAditivosContrato(c)
+        .filter(a=>a.vigIni||a.vigFim)
+        .map(a=>({...a,ini:a.vigIni?new Date(a.vigIni):null,fim:a.vigFim?new Date(a.vigFim):null}))
+        .filter(a=>(!a.ini||!isNaN(a.ini))&&(!a.fim||!isNaN(a.fim)));
+
+      const vigente=aditivos.find(a=>(!a.ini||a.ini<=hoje)&&(!a.fim||a.fim>=hoje));
+      if(vigente) return vigente;
+
+      const ordenado=aditivos.sort((a,b)=>(b.fim?.getTime()||0)-(a.fim?.getTime()||0));
+      return ordenado[0]||null;
+    }
+
+    function obterResumoVigenteContrato(c){
+      const ad=obterAditivoVigenteContrato(c);
+      if(ad){
+        return {
+          temAditivo:true,
+          numero:ad.numero||"Aditivo",
+          vigIni:ad.vigIni||c.vigIni,
+          vigFim:ad.vigFim||c.vigFim,
+          valor:ad.valor||parseValorBR(c.valorContrato),
+          empenhos:ad.empenhos||[],
+          descricao:ad.descricao||""
+        };
+      }
+      return {
+        temAditivo:false,
+        numero:c.nContrato||"Contrato inicial",
+        vigIni:c.vigIni,
+        vigFim:c.vigFim,
+        valor:parseValorBR(c.valorContrato),
+        empenhos:extrairEmpenhosContrato(c),
+        descricao:c.objeto||""
+      };
+    }
+
+    function renderVigenciaResumoContrato(c){
+      const atual=obterResumoVigenteContrato(c);
+      const dias=calcularDiasRestantes(atual.vigFim);
+
+      let cls="bg-emerald-50 text-emerald-800 border-emerald-200"; // acima de 90
+      if(dias!==null && dias>=1 && dias<=30){
+        cls="bg-red-50 text-red-800 border-red-200";
+      }else if(dias!==null && dias>=31 && dias<=90){
+        cls="bg-amber-50 text-amber-800 border-amber-200";
+      }
+
+      return `
+        <div class="inline-flex flex-col px-3 py-2 rounded-xl border ${cls}">
+          <span class="font-black">${formatarDataBR(atual.vigIni)} até ${formatarDataBR(atual.vigFim)}</span>
+          <span class="text-[10px]">${dias!==null?`${dias} dia(s) restantes`:"Vigência não informada"} ${atual.temAditivo?"• aditivo vigente":"• contrato inicial"}</span>
+        </div>
+      `;
+    }
+
     function renderAditivoRowsHTML(aditivos=[]){
-      const lista=aditivos.length?aditivos:[{numero:"",data:"",descricao:""}];
+      const lista=aditivos.length?aditivos:[{numero:"",data:"",vigIni:"",vigFim:"",valor:"",empenhos:[],descricao:""}];
       return lista.map(a=>`
-        <div class="linha-aditivo grid grid-cols-12 gap-2 border border-blue-200 p-2 rounded-lg bg-white">
-          <input type="text" value="${escapeHtml(a.numero||"")}" placeholder="Nº do aditivo" class="input-field aditivo-numero col-span-3">
-          <input type="date" value="${escapeHtml(a.data||"")}" class="input-field aditivo-data col-span-3">
-          <input type="text" value="${escapeHtml(a.descricao||"")}" placeholder="Objeto/observação do aditivo" class="input-field aditivo-descricao col-span-5">
+        <div class="linha-aditivo grid grid-cols-12 gap-2 border border-blue-200 p-3 rounded-lg bg-white">
+          <input type="text" value="${escapeHtml(a.numero||"")}" placeholder="Nº do aditivo" class="input-field aditivo-numero col-span-2">
+          <input type="date" value="${escapeHtml(a.vigIni||"")}" title="Vigência inicial" class="input-field aditivo-vigini col-span-2">
+          <input type="date" value="${escapeHtml(a.vigFim||"")}" title="Vigência final" class="input-field aditivo-vigfim col-span-2">
+          <input type="text" value="${a.valor?formatarMoedaBR(a.valor):""}" placeholder="Valor do aditivo, se houver" class="input-field aditivo-valor col-span-2" onblur="aplicarMascaraMoedaBR(this)">
+          <input type="text" value="${escapeHtml((a.empenhos||[]).map(e=>e.numero||e).join("; "))}" placeholder="Empenho(s) do aditivo, se houver" class="input-field aditivo-empenhos col-span-3">
           <button type="button" onclick="this.closest('.linha-aditivo').remove()" class="text-red-600 hover:bg-red-50 rounded-lg font-bold">X</button>
+          <textarea class="input-field aditivo-descricao col-span-12" rows="2" placeholder="Objeto/observação do aditivo">${escapeHtml(a.descricao||"")}</textarea>
         </div>
       `).join("");
     }
@@ -2965,7 +3220,7 @@ function renderListaAlertasVigencia(alertas){
     function adicionarLinhaAditivo(containerId){
       const container=document.getElementById(containerId);
       if(!container) return;
-      container.insertAdjacentHTML("beforeend", renderAditivoRowsHTML([{numero:"",data:"",descricao:""}]));
+      container.insertAdjacentHTML("beforeend", renderAditivoRowsHTML([{numero:"",data:"",vigIni:"",vigFim:"",valor:"",empenhos:[],descricao:""}]));
     }
 
     function coletarAditivos(containerId){
@@ -2973,9 +3228,13 @@ function renderListaAlertasVigencia(alertas){
       if(!container) return [];
       return [...container.querySelectorAll(".linha-aditivo")].map(row=>({
         numero:row.querySelector(".aditivo-numero")?.value?.trim()||"",
-        data:row.querySelector(".aditivo-data")?.value||"",
+        data:"",
+        vigIni:row.querySelector(".aditivo-vigini")?.value||"",
+        vigFim:row.querySelector(".aditivo-vigfim")?.value||"",
+        valor:parseValorBR(row.querySelector(".aditivo-valor")?.value||0),
+        empenhos:normalizarEmpenhosAditivo(row.querySelector(".aditivo-empenhos")?.value||""),
         descricao:row.querySelector(".aditivo-descricao")?.value?.trim()||""
-      })).filter(a=>a.numero||a.data||a.descricao);
+      })).filter(a=>a.numero||a.vigIni||a.vigFim||a.valor||a.descricao||a.empenhos.length);
     }
 
 // ─── CONTRATOS ───
@@ -3373,6 +3632,7 @@ ${filtroContratosExecucaoStatus?`
                 const executado=calcularValorExecutadoContrato(c);
                 const saldo=empenhado-executado;
                 const exec=analisarExecucaoContrato(c);
+                const vigente=obterResumoVigenteContrato(c);
                 return `
                 <div class="p-4 hover:bg-sky-50/50 transition">
                   <div class="flex items-start justify-between gap-3 mb-3">
@@ -3380,7 +3640,7 @@ ${filtroContratosExecucaoStatus?`
                       <p class="font-bold text-navy-900">${escapeHtml(c.empresa||"—")}</p>
                       <div class="mt-2 flex flex-wrap gap-2">
                         <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-100 text-blue-800 text-xs font-black">
-                          Contrato: <span class="font-mono">${escapeHtml(c.nContrato||"—")}</span>${c.aditivo && c.aditivo!=="—"?" • "+escapeHtml(c.aditivo):""}
+                          ${vigente.temAditivo?"Aditivo vigente":"Contrato vigente"}: <span class="font-mono">${escapeHtml(vigente.temAditivo?vigente.numero:(c.nContrato||"—"))}</span>
                         </span>
                         <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-navy-900 text-xs font-black">
                           Processo: <span class="font-mono">${escapeHtml(c.nProcesso||"—")}</span>
@@ -3403,13 +3663,13 @@ ${filtroContratosExecucaoStatus?`
                       </div>
                     </div>
                     <div>
-                      <p class="text-steel-600">Vigência</p>
-                      <div class="mt-1">${renderVigenciaBadge(c)}</div>
+                      <p class="text-steel-600">Vigência atual</p>
+                      <div class="mt-1">${renderVigenciaResumoContrato(c)}</div>
                     </div>
                     <div>
-                      <p class="text-steel-600">Valor contratado</p>
-                      <p class="font-bold text-navy-900">${fmtM(c.valorContrato)}</p>
-                      <p class="text-steel-500 mt-1">Mensal: ${fmtM(c.valorEstimadoMensal)}</p>
+                      <p class="text-steel-600">${vigente.temAditivo?"Valor do aditivo/atual":"Valor contratado"}</p>
+                      <p class="font-bold text-navy-900">${fmtM(vigente.valor||c.valorContrato)}</p>
+                      <p class="text-steel-500 mt-1">${vigente.temAditivo?"Histórico no botão Ver":"Mensal: "+fmtM(c.valorEstimadoMensal)}</p>
                     </div>
                     <div>
                       <p class="text-steel-600">Execução</p>
@@ -3482,6 +3742,10 @@ function openNovoContratoModal(){
               <label class="block text-xs font-bold text-navy-900 mb-1">Aditivos</label>
               <p class="text-xs text-steel-500 bg-sky-50 rounded-lg p-3 border border-sky-100">Opcional. Use a seção abaixo para inserir um ou mais aditivos.</p>
             </div>
+            <div class="col-span-2">
+              <label class="block text-xs font-bold text-navy-900 mb-1">Objeto do contrato *</label>
+              <textarea id="form-objeto" class="input-field w-full" rows="3" placeholder="Descreva o objeto contratual" required></textarea>
+            </div>
             <div>
               <label class="block text-xs font-bold text-navy-900 mb-1">Vigência Inicial *</label>
               <input id="form-vigini" type="date" class="input-field w-full" required onchange="atualizarValorMensalContrato('form')">
@@ -3505,7 +3769,7 @@ function openNovoContratoModal(){
             <div class="flex items-center justify-between gap-3 mb-3">
               <div>
                 <label class="block text-xs font-bold text-navy-900">📄 Aditivos do contrato</label>
-                <p class="text-[10px] text-steel-600 mt-1">Opcional. Insira um ou mais aditivos, um abaixo do outro.</p>
+                <p class="text-[10px] text-steel-600 mt-1">Opcional. Quando houver aditivo, informe número, vigência inicial/final, valor, empenho(s) e objeto/observação.</p>
               </div>
               <button type="button" onclick="adicionarLinhaAditivo('form-lista-aditivos')" class="btn-secondary px-3 py-2 rounded-lg text-xs">+ Adicionar aditivo</button>
             </div>
@@ -3573,6 +3837,7 @@ function openNovoContratoModal(){
         unidades:unidades.join(","),
         empresa:document.getElementById("form-empresa").value,
         nContrato:document.getElementById("form-ncontrato").value,
+        objeto:document.getElementById("form-objeto").value.trim(),
         aditivo:aditivos.map(a=>a.numero).filter(Boolean).join(", ")||"—",
         aditivos:aditivos,
         vigIni:vigIni,
@@ -3600,30 +3865,64 @@ function openNovoContratoModal(){
     }
 
     function viewContrato(id){
-      const c=allContratos.find(x=>x.id===id);
+      const c=allContratos.find(x=>String(x.id)===String(id));
       if(!c)return;
       const empenhosContrato=extrairEmpenhosContrato(c);
-      const listaEmpenhos=empenhosContrato.length?empenhosContrato.map(e=>`<div class="border border-yellow-200 rounded-lg p-2 bg-white"><p class="font-bold text-navy-900">${escapeHtml(e.numero||"Empenho")}</p><p>${fmtM(e.valor)}</p><p class="text-steel-600">Elemento: ${escapeHtml(e.elementoDespesa||"—")}</p><p class="text-steel-600">Fonte: ${escapeHtml(e.fonte||"Fonte não informada")}</p></div>`).join(""):"—";
       const totalEmpenhadoContrato=calcularValorEmpenhadoContrato(c);
       const aditivosContrato=extrairAditivosContrato(c);
-      const listaAditivos=aditivosContrato.length?aditivosContrato.map(a=>`<div class="border border-blue-200 rounded-lg p-2 bg-white"><p class="font-bold text-navy-900">${escapeHtml(a.numero||"Aditivo")}</p><p class="text-steel-600">${a.data?new Date(a.data).toLocaleDateString("pt-BR"):"Sem data"}</p><p class="text-steel-600">${escapeHtml(a.descricao||"—")}</p></div>`).join(""):"—";
+      const vigente=obterResumoVigenteContrato(c);
+
+      const listaEmpenhos=empenhosContrato.length?empenhosContrato.map(e=>`
+        <div class="border border-yellow-200 rounded-lg p-3 bg-white">
+          <p class="font-bold text-navy-900">${escapeHtml(e.numero||"Empenho")}</p>
+          <p>${fmtM(e.valor)}</p>
+          <p class="text-steel-600">Elemento: ${escapeHtml(e.elementoDespesa||"—")}</p>
+          <p class="text-steel-600">Fonte: ${escapeHtml(e.fonte||"Fonte não informada")}</p>
+        </div>`).join(""):"—";
+
+      const listaAditivos=aditivosContrato.length?aditivosContrato.map(a=>`
+        <div class="border ${a.numero===vigente.numero?"border-blue-400 bg-blue-50":"border-blue-200 bg-white"} rounded-lg p-3">
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <p class="font-bold text-navy-900">${escapeHtml(a.numero||"Aditivo")}</p>
+            ${a.numero===vigente.numero?`<span class="badge bg-blue-100 text-blue-700">Vigente/mais atual</span>`:""}
+          </div>
+          <div class="grid md:grid-cols-3 gap-2 mt-2 text-xs">
+            <p><strong>Vigência inicial:</strong> ${formatarDataBR(a.vigIni)}</p>
+            <p><strong>Vigência final:</strong> ${formatarDataBR(a.vigFim)}</p>
+            <p><strong>Valor:</strong> ${fmtM(a.valor||0)}</p>
+          </div>
+          <p class="text-steel-700 mt-2"><strong>Objeto/observação:</strong> ${escapeHtml(a.descricao||"—")}</p>
+          <p class="text-steel-700 mt-1"><strong>Empenho(s):</strong> ${(a.empenhos||[]).length?(a.empenhos||[]).map(e=>escapeHtml(e.numero||e)).join(", "):"—"}</p>
+        </div>`).join(""):"<p class='text-steel-500'>Nenhum aditivo cadastrado.</p>";
+
       const content=`
         <div class="space-y-4 max-h-96 overflow-y-auto text-xs">
+          <div class="rounded-xl border border-blue-100 bg-blue-50 p-4">
+            <p class="font-black text-navy-900 mb-2">Contrato/aditivo exibido como vigente na listagem</p>
+            <div class="grid md:grid-cols-4 gap-3">
+              <div><p class="text-[10px] text-steel-600">Tipo</p><p class="font-bold">${vigente.temAditivo?"Aditivo vigente":"Contrato inicial"}</p></div>
+              <div><p class="text-[10px] text-steel-600">Número</p><p class="font-mono font-bold">${escapeHtml(vigente.numero||"—")}</p></div>
+              <div><p class="text-[10px] text-steel-600">Vigência</p><p class="font-bold">${formatarDataBR(vigente.vigIni)} até ${formatarDataBR(vigente.vigFim)}</p></div>
+              <div><p class="text-[10px] text-steel-600">Valor</p><p class="font-bold">${fmtM(vigente.valor||0)}</p></div>
+            </div>
+          </div>
+
           <div class="grid grid-cols-2 gap-3">
-            <div><p class="text-[10px] text-steel-600">Nº Processo</p><p class="font-semibold text-navy-900">${c.nProcesso||"—"}</p></div>
-            <div><p class="text-[10px] text-steel-600">Unidades</p><p class="font-semibold text-navy-900">${c.unidades||"—"}</p></div>
-            <div><p class="text-[10px] text-steel-600">Empresa</p><p class="font-semibold text-navy-900">${c.empresa}</p></div>
-            <div><p class="text-[10px] text-steel-600">Contrato</p><p class="font-mono text-navy-600">${c.nContrato}</p></div>
-            <div><p class="text-[10px] text-steel-600">Aditivo</p><p class="font-mono text-navy-600">${c.aditivo||"—"}</p></div>
-            <div><p class="text-[10px] text-steel-600">Serviço</p><p class="text-navy-900">${c.servicoTipo||"—"}</p></div>
-            <div><p class="text-[10px] text-steel-600">Vigência</p><div class="mt-1">${renderVigenciaBadge(c)}</div></div>
-            <div><p class="text-[10px] text-steel-600">Valor Contrato</p><p class="font-bold text-navy-900">${fmtM(c.valorContrato)}</p></div>
+            <div><p class="text-[10px] text-steel-600">Nº Processo</p><p class="font-semibold text-navy-900">${escapeHtml(c.nProcesso||"—")}</p></div>
+            <div><p class="text-[10px] text-steel-600">Unidades</p><p class="font-semibold text-navy-900">${escapeHtml(c.unidades||"—")}</p></div>
+            <div><p class="text-[10px] text-steel-600">Empresa</p><p class="font-semibold text-navy-900">${escapeHtml(c.empresa||"—")}</p></div>
+            <div><p class="text-[10px] text-steel-600">Contrato inicial</p><p class="font-mono text-navy-600">${escapeHtml(c.nContrato||"—")}</p></div>
+            <div><p class="text-[10px] text-steel-600">Serviço</p><p class="text-navy-900">${servicoLabel(c.servicoTipo||"—")}</p></div>
+            <div><p class="text-[10px] text-steel-600">Vigência inicial do contrato</p><div class="mt-1">${renderVigenciaBadge(c)}</div></div>
+            <div><p class="text-[10px] text-steel-600">Valor inicial do contrato</p><p class="font-bold text-navy-900">${fmtM(c.valorContrato)}</p></div>
             <div><p class="text-[10px] text-steel-600">Valor Mensal</p><p class="text-navy-900">${fmtM(c.valorEstimadoMensal)}</p></div>
             <div><p class="text-[10px] text-steel-600">Total Empenhado</p><p class="font-bold text-navy-600">${fmtM(totalEmpenhadoContrato)}</p></div>
-            <div><p class="text-[10px] text-steel-600">Executado 2026</p><p class="font-bold text-emerald-600">${fmtM(calcularValorExecutadoContrato(c))}</p></div>
+            <div><p class="text-[10px] text-steel-600">Executado</p><p class="font-bold text-emerald-600">${fmtM(calcularValorExecutadoContrato(c))}</p></div>
             <div><p class="text-[10px] text-steel-600">Saldo</p><p class="font-mono text-navy-900">${fmtM(totalEmpenhadoContrato-calcularValorExecutadoContrato(c))}</p></div>
-            <div><p class="text-[10px] text-steel-600">Status</p><p class="badge bg-emerald-100 text-emerald-700">${c.status}</p></div>
-            <div class="col-span-2"><p class="text-[10px] text-steel-600 mb-2">Empenhos / Fontes de recurso</p><div class="grid grid-cols-1 gap-2 bg-yellow-50 border border-yellow-200 rounded p-2">${listaEmpenhos}</div></div>
+            <div><p class="text-[10px] text-steel-600">Status</p><p class="badge bg-emerald-100 text-emerald-700">${escapeHtml(c.status||"Ativo")}</p></div>
+            <div class="col-span-2"><p class="text-[10px] text-steel-600">Objeto do contrato</p><p class="font-semibold text-navy-900 whitespace-pre-wrap">${escapeHtml(c.objeto||"—")}</p></div>
+            <div class="col-span-2"><p class="text-[10px] text-steel-600 mb-2">Empenhos / Fontes de recurso do contrato inicial</p><div class="grid grid-cols-1 gap-2 bg-yellow-50 border border-yellow-200 rounded p-2">${listaEmpenhos}</div></div>
+            <div class="col-span-2"><p class="text-[10px] text-steel-600 mb-2">Histórico de aditivos</p><div class="grid grid-cols-1 gap-2 bg-blue-50 border border-blue-200 rounded p-2">${listaAditivos}</div></div>
           </div>
 
           ${renderPagamentosVinculadosContrato(c)}
@@ -3638,7 +3937,7 @@ function openNovoContratoModal(){
       openModal("Detalhes do Contrato",content);
     }
 
-    function editarContrato(id){
+function editarContrato(id){
       if(bloquearAcaoLeitor()) return;
 
       const c=allContratos.find(x=>x.id===id);
@@ -3681,6 +3980,10 @@ function openNovoContratoModal(){
               <label class="block text-xs font-semibold text-navy-900 mb-1">Aditivos</label>
               <p class="text-xs text-steel-500 bg-sky-50 rounded-lg p-3 border border-sky-100">Opcional. Edite a lista de aditivos na seção abaixo.</p>
             </div>
+            <div class="col-span-2">
+              <label class="block text-xs font-semibold text-navy-900 mb-1">Objeto do contrato</label>
+              <textarea id="edit-objeto" class="input-field w-full" rows="3" required>${escapeHtml(c.objeto||"")}</textarea>
+            </div>
             <div>
               <label class="block text-xs font-semibold text-navy-900 mb-1">Vigência Inicial</label>
               <input id="edit-vigini" type="date" class="input-field w-full" value="${c.vigIni||""}" required onchange="atualizarValorMensalContrato('edit')">
@@ -3704,7 +4007,7 @@ function openNovoContratoModal(){
             <div class="flex items-center justify-between gap-3 mb-3">
               <div>
                 <label class="block text-xs font-semibold text-navy-900">Aditivos do contrato</label>
-                <p class="text-[10px] text-steel-600 mt-1">Opcional. Insira um ou mais aditivos, um abaixo do outro.</p>
+                <p class="text-[10px] text-steel-600 mt-1">Opcional. Quando houver aditivo, informe número, vigência inicial/final, valor, empenho(s) e objeto/observação.</p>
               </div>
               <button type="button" onclick="adicionarLinhaAditivo('edit-lista-aditivos')" class="btn-secondary px-3 py-2 rounded-lg text-xs">+ Adicionar aditivo</button>
             </div>
@@ -3755,6 +4058,7 @@ function openNovoContratoModal(){
         unidades:unidades.join(","),
         empresa:document.getElementById("edit-empresa").value,
         nContrato:document.getElementById("edit-ncontrato").value,
+        objeto:document.getElementById("edit-objeto").value.trim(),
         aditivo:aditivos.map(a=>a.numero).filter(Boolean).join(", ")||"—",
         aditivos:aditivos,
         vigIni:document.getElementById("edit-vigini").value,
@@ -4620,7 +4924,7 @@ function renderPagamentos(el){
                                   <td class="col-fonte">
                                     <div class="rounded-xl border border-slate-200 bg-slate-50 p-2">
                                       <p class="text-[10px] uppercase tracking-wide text-steel-500 font-black">Fonte</p>
-                                      <p class="font-bold text-navy-900 mt-1">${escapeHtml(p.fonteRecurso||"—")}</p>
+                                      <p class="font-bold text-navy-900 mt-1">${escapeHtml(resumirFonteRecurso(p.fonteRecurso))}</p>
                                     </div>
                                   </td>
                                   <td class="col-setor">
