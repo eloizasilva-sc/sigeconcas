@@ -1762,9 +1762,11 @@
     
 
     // ─── SINCRONIZAÇÃO EM NUVEM + BACKUP PORTÁVEL ───
-    // GitHub Pages publica o sistema, mas não guarda dados.
-    // Para os cadastros aparecerem em qualquer computador/celular/navegador, preencha o Firebase abaixo.
-    const SIGECON_FIREBASE_CONFIG={
+    // GitHub Pages publica o sistema, mas não grava dados sozinho.
+    // Para os cadastros aparecerem em qualquer computador/celular/navegador,
+    // o SIGECON precisa de um banco online. Esta versão usa Firebase Realtime Database.
+
+    const SIGECON_FIREBASE_CONFIG_PADRAO={
       apiKey:"COLE_AQUI_SUA_API_KEY",
       authDomain:"COLE_AQUI_SEU_AUTH_DOMAIN",
       databaseURL:"COLE_AQUI_SUA_DATABASE_URL",
@@ -1775,18 +1777,84 @@
     };
 
     // Caminho único do banco do SIGECON na nuvem.
+    // Pode alterar apenas se quiser separar bases por ambiente.
     const SIGECON_FIREBASE_PATH="sigecon/cas_sesap_rn/producao";
+    const SIGECON_FIREBASE_CONFIG_LOCAL_KEY="sigecon_firebase_config";
 
+    let SIGECON_FIREBASE_CONFIG={...SIGECON_FIREBASE_CONFIG_PADRAO};
     let sigeconFirebaseApp=null;
     let sigeconFirebaseDb=null;
     let sigeconNuvemAtiva=false;
     let sigeconRecebendoNuvem=false;
     let sigeconTimerNuvem=null;
     let sigeconUltimoHashNuvem="";
+    let sigeconUltimoErroNuvem="";
+
+    function limparTextoConfigFirebase(v){
+      return String(v||"").trim();
+    }
+
+    function normalizarConfigFirebase(cfg){
+      if(!cfg || typeof cfg!=="object") return {};
+      return {
+        apiKey:limparTextoConfigFirebase(cfg.apiKey),
+        authDomain:limparTextoConfigFirebase(cfg.authDomain),
+        databaseURL:limparTextoConfigFirebase(cfg.databaseURL),
+        projectId:limparTextoConfigFirebase(cfg.projectId),
+        storageBucket:limparTextoConfigFirebase(cfg.storageBucket),
+        messagingSenderId:limparTextoConfigFirebase(cfg.messagingSenderId),
+        appId:limparTextoConfigFirebase(cfg.appId)
+      };
+    }
+
+    function configFirebaseValida(cfg){
+      cfg=normalizarConfigFirebase(cfg);
+      return !!(cfg.apiKey && cfg.databaseURL && cfg.projectId &&
+        !cfg.apiKey.includes("COLE_AQUI") &&
+        !cfg.databaseURL.includes("COLE_AQUI") &&
+        cfg.databaseURL.startsWith("https://"));
+    }
+
+    function obterConfigFirebaseLocal(){
+      try{return normalizarConfigFirebase(JSON.parse(localStorage.getItem(SIGECON_FIREBASE_CONFIG_LOCAL_KEY)||"{}"));}catch(e){return {};}
+    }
+
+    async function carregarConfigFirebaseExterna(){
+      // Permite configurar pelo GitHub sem mexer no index.html: crie o arquivo firebase-config.json no repositório.
+      // Exemplo do caminho público: https://eloizasilva-sc.github.io/sigeconcas/firebase-config.json
+      try{
+        const url="./firebase-config.json?v="+Date.now();
+        const resp=await fetch(url,{cache:"no-store"});
+        if(!resp.ok) return null;
+        const cfg=normalizarConfigFirebase(await resp.json());
+        return configFirebaseValida(cfg)?cfg:null;
+      }catch(e){
+        return null;
+      }
+    }
+
+    async function resolverConfigFirebase(){
+      // Ordem de prioridade:
+      // 1) configuração salva neste navegador pela tela de relatórios;
+      // 2) arquivo firebase-config.json hospedado no GitHub Pages;
+      // 3) configuração colada diretamente no código.
+      const local=obterConfigFirebaseLocal();
+      if(configFirebaseValida(local)){
+        SIGECON_FIREBASE_CONFIG=local;
+        return local;
+      }
+      const externa=await carregarConfigFirebaseExterna();
+      if(configFirebaseValida(externa)){
+        SIGECON_FIREBASE_CONFIG=externa;
+        return externa;
+      }
+      const padrao=normalizarConfigFirebase(SIGECON_FIREBASE_CONFIG_PADRAO);
+      SIGECON_FIREBASE_CONFIG=padrao;
+      return padrao;
+    }
 
     function firebaseConfigurado(){
-      const cfg=SIGECON_FIREBASE_CONFIG||{};
-      return !!(cfg.apiKey && cfg.databaseURL && !String(cfg.apiKey).includes("COLE_AQUI") && !String(cfg.databaseURL).includes("COLE_AQUI"));
+      return configFirebaseValida(SIGECON_FIREBASE_CONFIG) || configFirebaseValida(obterConfigFirebaseLocal());
     }
 
     function clonarSeguro(obj){
@@ -1803,7 +1871,7 @@
 
     function montarBancoCompletoSnapshot(){
       return {
-        versao:"SIGECON-CLOUD-BACKUP-2026-05-07",
+        versao:"SIGECON-CLOUD-BACKUP-2026-05-07-ROBUSTO",
         atualizadoEm:new Date().toISOString(),
         atualizadoPor:usuarioAutenticado?.nome||usuarioAutenticado?.matricula||"Sistema",
         exercicioAtivo:exercicioAtivo||2026,
@@ -1856,21 +1924,31 @@
 
     async function inicializarNuvemSigec(){
       try{
-        if(!firebaseConfigurado()){
-          console.warn("SIGECON em modo local: Firebase ainda não configurado.");
+        await resolverConfigFirebase();
+        if(!configFirebaseValida(SIGECON_FIREBASE_CONFIG)){
+          sigeconNuvemAtiva=false;
+          sigeconUltimoErroNuvem="Firebase ainda não configurado.";
+          atualizarIndicadorNuvem();
           return false;
         }
         if(!window.firebase || !window.firebase.database){
-          console.warn("Firebase não carregou. O sistema seguirá em modo local.");
+          sigeconNuvemAtiva=false;
+          sigeconUltimoErroNuvem="SDK do Firebase não carregou. Verifique internet/bloqueio do navegador.";
+          atualizarIndicadorNuvem();
           return false;
         }
         sigeconFirebaseApp=window.firebase.apps && window.firebase.apps.length ? window.firebase.app() : window.firebase.initializeApp(SIGECON_FIREBASE_CONFIG);
         sigeconFirebaseDb=window.firebase.database();
+        await sigeconFirebaseDb.ref(SIGECON_FIREBASE_PATH+"/_ping").set({ok:true,em:new Date().toISOString()});
         sigeconNuvemAtiva=true;
+        sigeconUltimoErroNuvem="";
+        atualizarIndicadorNuvem();
         return true;
       }catch(e){
         console.error("Falha ao iniciar Firebase:",e);
         sigeconNuvemAtiva=false;
+        sigeconUltimoErroNuvem=e?.message||String(e||"Erro desconhecido no Firebase.");
+        atualizarIndicadorNuvem();
         return false;
       }
     }
@@ -1881,10 +1959,12 @@
         const snap=await sigeconFirebaseDb.ref(SIGECON_FIREBASE_PATH).get();
         const banco=snap.exists()?snap.val():null;
         if(banco){
+          delete banco._ping;
           sigeconUltimoHashNuvem=JSON.stringify(banco);
           return banco;
         }
       }catch(e){
+        sigeconUltimoErroNuvem=e?.message||String(e);
         console.error("Não foi possível carregar dados da nuvem:",e);
       }
       return null;
@@ -1896,13 +1976,15 @@
         const banco=snapshot||montarBancoCompletoSnapshot();
         const hash=JSON.stringify(banco);
         if(hash===sigeconUltimoHashNuvem) return true;
-        await sigeconFirebaseDb.ref(SIGECON_FIREBASE_PATH).set(banco);
+        await sigeconFirebaseDb.ref(SIGECON_FIREBASE_PATH).update({...banco,_ping:{ok:true,em:new Date().toISOString()}});
         sigeconUltimoHashNuvem=hash;
+        sigeconUltimoErroNuvem="";
         atualizarIndicadorNuvem();
         return true;
       }catch(e){
+        sigeconUltimoErroNuvem=e?.message||String(e);
         console.error("Erro ao salvar dados na nuvem:",e);
-        if(typeof showInlineAlert==="function") showInlineAlert("⚠️ Dados salvos neste navegador, mas a nuvem não sincronizou.","error");
+        if(typeof showInlineAlert==="function") showInlineAlert("⚠️ Dados salvos neste navegador, mas a nuvem não sincronizou: "+sigeconUltimoErroNuvem,"error");
         atualizarIndicadorNuvem();
         return false;
       }
@@ -1921,6 +2003,7 @@
         sigeconFirebaseDb.ref(SIGECON_FIREBASE_PATH).on("value",snap=>{
           const banco=snap.val();
           if(!banco) return;
+          delete banco._ping;
           const hash=JSON.stringify(banco);
           if(hash===sigeconUltimoHashNuvem) return;
           sigeconUltimoHashNuvem=hash;
@@ -1934,22 +2017,53 @@
           }
         });
       }catch(e){
+        sigeconUltimoErroNuvem=e?.message||String(e);
         console.error("Erro ao escutar alterações da nuvem:",e);
       }
     }
 
     function statusSincronizacaoNuvem(){
       if(sigeconNuvemAtiva) return "☁️ Nuvem ativa";
-      return firebaseConfigurado()?"⚠️ Nuvem desconectada":"💾 Modo local";
+      if(configFirebaseValida(SIGECON_FIREBASE_CONFIG)||configFirebaseValida(obterConfigFirebaseLocal())) return "⚠️ Nuvem desconectada";
+      return "💾 Modo local";
     }
 
     function atualizarIndicadorNuvem(){
       try{
-        const el=document.getElementById("sigecon-cloud-status");
-        if(el) el.textContent=statusSincronizacaoNuvem();
+        ["sigecon-cloud-status","sigecon-cloud-status-card"].forEach(id=>{
+          const el=document.getElementById(id);
+          if(el) el.textContent=statusSincronizacaoNuvem();
+        });
+        const detalhe=document.getElementById("sigecon-cloud-detail");
+        if(detalhe) detalhe.textContent=sigeconUltimoErroNuvem ? "Último erro: "+sigeconUltimoErroNuvem : "Sincronização pronta. O GitHub abre o sistema; o Firebase guarda os dados.";
       }catch(e){}
     }
 
+    function salvarConfigFirebasePorPrompt(){
+      const atual=JSON.stringify(SIGECON_FIREBASE_CONFIG&&configFirebaseValida(SIGECON_FIREBASE_CONFIG)?SIGECON_FIREBASE_CONFIG:SIGECON_FIREBASE_CONFIG_PADRAO,null,2);
+      const texto=prompt("Cole aqui o objeto firebaseConfig completo, entre chaves { ... }.\n\nVocê também pode criar um arquivo firebase-config.json no GitHub com esse mesmo conteúdo.",atual);
+      if(!texto) return;
+      try{
+        const limpo=texto.replace(/^const\s+firebaseConfig\s*=\s*/i,"").replace(/;\s*$/,"");
+        const cfg=normalizarConfigFirebase(Function("return ("+limpo+")")());
+        if(!configFirebaseValida(cfg)) throw new Error("Configuração incompleta. Confira apiKey, databaseURL e projectId.");
+        localStorage.setItem(SIGECON_FIREBASE_CONFIG_LOCAL_KEY,JSON.stringify(cfg));
+        SIGECON_FIREBASE_CONFIG=cfg;
+        showInlineAlert("✅ Configuração do Firebase salva neste navegador. Clique em Testar Nuvem.","info");
+        atualizarIndicadorNuvem();
+      }catch(e){
+        alert("Não consegui ler a configuração do Firebase. Cole o objeto completo exatamente como aparece no Firebase.\n\nErro: "+(e?.message||e));
+      }
+    }
+
+    async function testarConexaoFirebaseManual(){
+      await inicializarNuvemSigec();
+      if(!sigeconNuvemAtiva){
+        showInlineAlert("⚠️ Nuvem não conectou: "+(sigeconUltimoErroNuvem||"verifique a configuração e as regras do Realtime Database."),"error");
+        return;
+      }
+      showInlineAlert("✅ Firebase conectado. Agora clique em Sincronizar Nuvem para enviar os dados atuais.","info");
+    }
 
     // ─── BANCO LOCAL: PERSISTÊNCIA GERAL DO SISTEMA ───
     const CHAVE_BANCO_SIGECON="sigecon_banco_geral";
@@ -8824,16 +8938,16 @@ function openNovaProducaoModal(pagamentoIdSelecionado=""){
     async function sincronizarNuvemManual(){
       salvarBancoLocal();
       if(!firebaseConfigurado()){
-        showInlineAlert("⚠️ Firebase ainda não configurado. O sistema está funcionando com backup/localStorage.","error");
+        showInlineAlert("⚠️ Firebase ainda não configurado. Use o botão Configurar Firebase ou crie firebase-config.json no GitHub.","error");
         return;
       }
       if(!sigeconNuvemAtiva) await inicializarNuvemSigec();
       if(!sigeconNuvemAtiva){
-        showInlineAlert("⚠️ Não foi possível conectar à nuvem. Verifique o Firebase.","error");
+        showInlineAlert("⚠️ Não foi possível conectar à nuvem: "+(sigeconUltimoErroNuvem||"verifique Firebase e regras do banco."),"error");
         return;
       }
-      await salvarBancoNuvemAgora(montarBancoCompletoSnapshot());
-      showInlineAlert("☁️ Dados sincronizados com a nuvem.","info");
+      const ok=await salvarBancoNuvemAgora(montarBancoCompletoSnapshot());
+      if(ok) showInlineAlert("☁️ Dados sincronizados com a nuvem. Abra em outro dispositivo e atualize a página.","info");
     }
 
 function renderAuditoria(el){
@@ -9480,15 +9594,17 @@ function renderRelatorios(el){
           <div class="flex items-start justify-between gap-4 flex-wrap">
             <div>
               <h3 class="font-bold text-navy-900 mb-2">Backup e Sincronização do Sistema</h3>
-              <p class="text-sm text-steel-600 mb-1">Use o backup JSON para levar os dados para outro computador e como segurança.</p>
-              <p class="text-xs text-steel-500">Para aparecer automaticamente em qualquer celular/navegador, configure o Firebase no código.</p>
+              <p class="text-sm text-steel-600 mb-1">Use o backup JSON como segurança. Para aparecer automaticamente em qualquer celular/navegador, use Firebase.</p>
+              <p id="sigecon-cloud-detail" class="text-xs text-steel-500">Sincronização pronta. O GitHub abre o sistema; o Firebase guarda os dados.</p>
             </div>
             <span id="sigecon-cloud-status-card" class="badge bg-blue-100 text-blue-700">${statusSincronizacaoNuvem()}</span>
           </div>
           <input id="input-backup-sigecon" type="file" accept="application/json,.json" class="hidden" onchange="importarBaseCompletaJSON(event)">
-          <div class="grid md:grid-cols-3 gap-3 mt-4">
+          <div class="grid md:grid-cols-5 gap-3 mt-4">
             <button onclick="exportarBaseCompletaJSON()" class="btn-secondary px-4 py-2 rounded-lg">💾 Baixar Backup JSON</button>
             <button onclick="acionarImportacaoBackup()" class="btn-secondary px-4 py-2 rounded-lg">📤 Importar Backup JSON</button>
+            <button onclick="salvarConfigFirebasePorPrompt()" class="btn-secondary px-4 py-2 rounded-lg">🔑 Configurar Firebase</button>
+            <button onclick="testarConexaoFirebaseManual()" class="btn-secondary px-4 py-2 rounded-lg">🧪 Testar Nuvem</button>
             <button onclick="sincronizarNuvemManual()" class="btn-primary px-4 py-2 rounded-lg">☁️ Sincronizar Nuvem</button>
           </div>
         </div>
@@ -10510,6 +10626,12 @@ async function salvarConfiguracoes(){
     window.confirmarExclusaoTecnico=confirmarExclusaoTecnico;
     window.confirmarExclusaoExercicio=confirmarExclusaoExercicio;
     window.confirmarExclusaoProducao=typeof confirmarExclusaoProducao!=="undefined"?confirmarExclusaoProducao:null;
+    window.salvarConfigFirebasePorPrompt=salvarConfigFirebasePorPrompt;
+    window.testarConexaoFirebaseManual=testarConexaoFirebaseManual;
+    window.sincronizarNuvemManual=sincronizarNuvemManual;
+    window.exportarBaseCompletaJSON=exportarBaseCompletaJSON;
+    window.importarBaseCompletaJSON=importarBaseCompletaJSON;
+    window.acionarImportacaoBackup=acionarImportacaoBackup;
 
 // ─── INIT ───
     async function initializeApp(){
