@@ -3877,6 +3877,180 @@ function renderListaAlertasVigencia(alertas){
         </div>`;
     }
 
+
+    function obterDadosProducaoAbaFiltrados(){
+      reidratarListasPrincipais();
+
+      const contratosBase=aplicarFiltroLeitorContratos(allContratos)
+        .filter(c=>!c.anoExercicio || String(c.anoExercicio)===String(exercicioAtivo))
+        .filter(c=>{
+          if(currentProfile==="tecnico" && usuarioAutenticado?.servicos){
+            return usuarioAutenticado.servicos.includes(c.servicoTipo);
+          }
+          return true;
+        });
+
+      const contratosIdsPermitidos=new Set(contratosBase.map(c=>String(c.id)));
+      let pagamentosBase=aplicarFiltroLeitorPagamentos(allPagamentos)
+        .filter(p=>!p.anoExercicio || String(p.anoExercicio)===String(exercicioAtivo))
+        .filter(p=>contratosIdsPermitidos.has(String(p.contrato_id)));
+
+      if(filtroProducaoCompetencia) pagamentosBase=pagamentosBase.filter(p=>String(p.competencia||"")===String(filtroProducaoCompetencia));
+      if(filtroProducaoContrato) pagamentosBase=pagamentosBase.filter(p=>String(p.contrato_id||"")===String(filtroProducaoContrato));
+      if(filtroProducaoUH) pagamentosBase=pagamentosBase.filter(p=>String(p.uh||"")===String(filtroProducaoUH));
+
+      if(filtroProducaoEmpresa || filtroProducaoServico){
+        pagamentosBase=pagamentosBase.filter(p=>{
+          const contrato=allContratos.find(c=>String(c.id)===String(p.contrato_id));
+          if(!contrato) return false;
+          if(filtroProducaoEmpresa && String(contrato.empresa||"")!==String(filtroProducaoEmpresa)) return false;
+          if(filtroProducaoServico && String(contrato.servicoTipo||"")!==String(filtroProducaoServico)) return false;
+          return true;
+        });
+      }
+
+      const producoesFiltradas=(allProducao||[]).filter(pr=>pagamentosBase.some(p=>String(p.id)===String(pr.pagamento_id)));
+      const linhas=pagamentosBase.map(p=>{
+        const contrato=allContratos.find(c=>String(c.id)===String(p.contrato_id))||{};
+        const prod=obterProducaoPorPagamento(p.id);
+        const notas=extrairNFsPagamento(p).map(n=>n.numero).filter(Boolean).join(", ") || p.nfNumero || "—";
+        const indicadores=prod?montarIndicadoresProducao(prod,contrato):"Pendente";
+        return {p,contrato,prod,notas,indicadores};
+      });
+
+      return {contratosBase,pagamentosBase,producoesFiltradas,linhas};
+    }
+
+    function obterRotuloFiltrosProducao(){
+      const partes=[];
+      if(filtroProducaoCompetencia) partes.push(`Competência: ${formatarCompetenciaBR(filtroProducaoCompetencia)}`);
+      if(filtroProducaoContrato){
+        const c=allContratos.find(ct=>String(ct.id)===String(filtroProducaoContrato));
+        partes.push(`Contrato: ${c?.nContrato||filtroProducaoContrato}`);
+      }
+      if(filtroProducaoEmpresa) partes.push(`Empresa: ${filtroProducaoEmpresa}`);
+      if(filtroProducaoUH) partes.push(`Unidade: ${filtroProducaoUH}`);
+      if(filtroProducaoServico) partes.push(`Serviço: ${servicoLabel(filtroProducaoServico)}`);
+      return partes.length?partes.join(" • "):"Sem filtros específicos";
+    }
+
+    function montarTabelaProducaoAba(){
+      const {linhas}=obterDadosProducaoAbaFiltrados();
+      const cab=["Processo SEI","NF(s)","Contrato","Empresa","Unidade","Serviço","Competência","Valor","Status","Indicadores da Produção","Observações"];
+      const rows=linhas.map(({p,contrato,prod,notas,indicadores})=>[
+        obterProcessoSEIPagamento(p),
+        notas,
+        contrato.nContrato||"—",
+        contrato.empresa||"—",
+        p.uh||"—",
+        servicoLabel(contrato.servicoTipo||""),
+        formatarCompetenciaBR(p.competencia),
+        fmtM(p.nfValor),
+        prod?"Registrada":"Pendente",
+        indicadores,
+        prod?.observacoes||p.observacoes||""
+      ]);
+      return {cab,rows,linhas};
+    }
+
+    function baixarProducaoFiltradaCSV(){
+      const dados=montarTabelaProducaoAba();
+      if(!dados.rows.length){
+        showInlineAlert("Não há dados de produção para baixar com os filtros atuais.","error");
+        return;
+      }
+      baixarCSV(`producao_filtrada_SIGECON_${new Date().toISOString().slice(0,10)}.csv`,dados.cab,dados.rows);
+      showInlineAlert("✅ Produção filtrada baixada em CSV/Excel.","info");
+    }
+
+    function baixarProducaoFiltradaPDF(){
+      const {pagamentosBase,producoesFiltradas,linhas}=obterDadosProducaoAbaFiltrados();
+      if(!linhas.length){
+        showInlineAlert("Não há dados de produção para baixar com os filtros atuais.","error");
+        return;
+      }
+      const data=new Date().toLocaleString("pt-BR");
+      const totalValor=pagamentosBase.reduce((s,p)=>s+parseValorBR(p.nfValor),0);
+      const pendentes=pagamentosBase.filter(p=>!obterProducaoPorPagamento(p.id)).length;
+      const perc=pagamentosBase.length?Math.round((producoesFiltradas.length/pagamentosBase.length)*100):0;
+      const indicadoresHTML=renderIndicadoresConsolidadosProducao(pagamentosBase,producoesFiltradas);
+      const linhasHTML=linhas.map(({p,contrato,prod,notas,indicadores})=>`
+        <tr>
+          <td><strong>${escapeHtml(obterProcessoSEIPagamento(p))}</strong><br><span>NF(s): ${escapeHtml(notas)}</span></td>
+          <td><strong>${escapeHtml(contrato.nContrato||"—")}</strong><br><span>${escapeHtml(servicoLabel(contrato.servicoTipo||""))}</span></td>
+          <td><strong>${escapeHtml(contrato.empresa||"—")}</strong><br><span>${escapeHtml(p.uh||"—")}</span></td>
+          <td>${escapeHtml(formatarCompetenciaBR(p.competencia))}</td>
+          <td>${escapeHtml(fmtM(p.nfValor))}</td>
+          <td><strong>${prod?"Registrada":"Pendente"}</strong><br><span>${escapeHtml(indicadores)}</span></td>
+        </tr>`).join("");
+
+      const html=`<!doctype html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Relatório de Produção</title>
+        <style>
+          body{font-family:Arial, sans-serif;color:#0f172a;padding:24px;background:#fff;}
+          h1{font-size:22px;margin:0 0 4px;color:#0f2f56;}
+          .sub{font-size:12px;color:#64748b;margin-bottom:14px;}
+          .header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px;}
+          .brand{font-weight:900;color:#123B6B;font-size:12px;text-transform:uppercase;letter-spacing:.08em;}
+          .filters{font-size:11px;color:#334155;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px;margin-bottom:14px;}
+          .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0;}
+          .kpi{border:1px solid #dbe3ef;border-radius:12px;padding:12px;background:#f8fafc;}
+          .kpi small{display:block;color:#64748b;text-transform:uppercase;font-weight:800;font-size:9px;}
+          .kpi strong{display:block;font-size:18px;margin-top:4px;color:#0f2f56;}
+          .section-title{font-size:13px;font-weight:900;color:#0f2f56;margin:18px 0 8px;text-transform:uppercase;letter-spacing:.04em;}
+          .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px;}
+          .rounded-2xl{border:1px solid #dbe3ef;border-radius:14px;background:#f8fafc;padding:12px;break-inside:avoid;}
+          .rounded-xl{border:1px solid #dbe3ef;border-radius:10px;background:#fff;padding:8px;display:inline-block;margin:3px;min-width:90px;}
+          .text-xs,.text-[10px]{font-size:10px;color:#64748b;text-transform:uppercase;font-weight:800;}
+          .text-base{font-size:14px;font-weight:900;color:#0f172a;}
+          .badge{display:inline-block;border-radius:999px;background:#dbeafe;color:#1d4ed8;padding:4px 8px;font-size:10px;font-weight:800;}
+          table{width:100%;border-collapse:collapse;font-size:10px;margin-top:8px;}
+          th{background:#123B6B;color:#fff;text-align:left;padding:8px;border:1px solid #dbe3ef;}
+          td{padding:8px;border:1px solid #dbe3ef;vertical-align:top;}
+          td span{color:#64748b;font-size:9px;}
+          button{background:#123B6B;color:white;border:0;border-radius:8px;padding:8px 12px;font-weight:800;}
+          @media print{button{display:none}.grid{grid-template-columns:repeat(2,1fr)}body{padding:12px}}
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div>
+            <div class="brand">SIGECON • SESAP RN</div>
+            <h1>Relatório de Produção</h1>
+            <div class="sub">Segue o mesmo modelo visual da aba Produção • Exercício ${exercicioAtivo} • Gerado em ${escapeHtml(data)}</div>
+          </div>
+          <button onclick="window.print()">Imprimir / Salvar em PDF</button>
+        </div>
+        <div class="filters"><strong>Filtros aplicados:</strong> ${escapeHtml(obterRotuloFiltrosProducao())}</div>
+        <div class="kpis">
+          <div class="kpi"><small>Processos de pagamento</small><strong>${pagamentosBase.length}</strong></div>
+          <div class="kpi"><small>Produções registradas</small><strong>${producoesFiltradas.length}</strong></div>
+          <div class="kpi"><small>Pendentes</small><strong>${pendentes}</strong></div>
+          <div class="kpi"><small>Valor vinculado</small><strong>${escapeHtml(fmtM(totalValor))}</strong><small>${perc}% com produção</small></div>
+        </div>
+        <div class="section-title">Indicadores por tipo de serviço</div>
+        <div class="grid">${indicadoresHTML}</div>
+        <div class="section-title">Processos de pagamento e produção</div>
+        <table>
+          <thead><tr><th>Processo / NF</th><th>Contrato</th><th>Empresa / Unidade</th><th>Competência</th><th>Valor</th><th>Produção</th></tr></thead>
+          <tbody>${linhasHTML}</tbody>
+        </table>
+      </body>
+      </html>`;
+      const win=window.open("","_blank");
+      if(!win){
+        showInlineAlert("❌ O navegador bloqueou a janela do PDF. Autorize pop-ups para o SIGECON.","error");
+        return;
+      }
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
+      setTimeout(()=>win.print(),500);
+    }
+
     function renderFiscaisUnidadesHTML(prefixo, unidadesSelecionadas=[], fiscaisPorUnidade={}){
       const unidadesBase=listas.unidades||[];
       return `
@@ -7657,9 +7831,17 @@ function editarPagamento(id){
               <h2 class="text-2xl font-bold text-navy-900">📈 Produção</h2>
               <p class="text-sm text-steel-500 mt-1">Produção vinculada aos processos de pagamento cadastrados</p>
             </div>
-            <button onclick="openNovaProducaoModal()" class="btn-primary px-4 py-2 rounded-lg flex items-center gap-2 hidden-btn" style="display:${hasPermission("create")?"flex":"none"}">
-              <i data-lucide="plus" class="w-4 h-4"></i>Registrar Produção
-            </button>
+            <div class="flex flex-wrap items-center gap-2">
+              <button onclick="baixarProducaoFiltradaPDF()" class="btn-secondary px-4 py-2 rounded-lg flex items-center gap-2">
+                <i data-lucide="file-down" class="w-4 h-4"></i>Baixar PDF
+              </button>
+              <button onclick="baixarProducaoFiltradaCSV()" class="btn-secondary px-4 py-2 rounded-lg flex items-center gap-2">
+                <i data-lucide="download" class="w-4 h-4"></i>Baixar Excel/CSV
+              </button>
+              <button onclick="openNovaProducaoModal()" class="btn-primary px-4 py-2 rounded-lg flex items-center gap-2 hidden-btn" style="display:${hasPermission("create")?"flex":"none"}">
+                <i data-lucide="plus" class="w-4 h-4"></i>Registrar Produção
+              </button>
+            </div>
           </div>
 
           <div class="glass rounded-xl p-5 grid grid-cols-1 md:grid-cols-5 gap-3">
@@ -8759,31 +8941,23 @@ function renderAuditoria(el){
 
       if(tipo==="producao"){
         const pagamentosProd=obterPagamentosProducaoRelatorioFiltrados();
-        const cab=["Processo SEI","Contrato","Empresa","Unidade","Serviço","Competência","Valor Pagamento","Status Produção","Pacientes","Procedimentos/Cirurgias","Sessões HD","Cateter","Testes Realizados","Testes Contratados","Testes Estimados/Mês","Exames/Itens Laboratório","Laudos","Tomografias","Observações"];
+        const cab=["Processo SEI","NF(s)","Contrato","Empresa","Unidade","Serviço","Competência","Valor","Status","Indicadores da Produção","Observações"];
         const linhas=pagamentosProd.map(p=>{
-          const c=allContratos.find(ct=>String(ct.id)===String(p.contrato_id));
-          const pr=(allProducao||[]).find(x=>String(x.pagamento_id)===String(p.id))||{};
-          const procedimentos=(parseInt(pr.numProcedimentos||0,10)||0)+(parseInt(pr.numCirurgias||0,10)||0);
+          const c=allContratos.find(ct=>String(ct.id)===String(p.contrato_id))||{};
+          const pr=(allProducao||[]).find(x=>String(x.pagamento_id)===String(p.id));
+          const notas=extrairNFsPagamento(p).map(n=>n.numero).filter(Boolean).join(", ") || p.nfNumero || "—";
           return [
             obterProcessoSEIPagamento(p),
-            c?.nContrato||"—",
-            c?.empresa||"—",
-            p.uh||pr.uh||"—",
-            servicoLabel(c?.servicoTipo||pr.servicoTipo||""),
-            formatarCompetenciaBR(p.competencia||pr.competencia),
-            fmtM(p.nfValor||pr.nfValor),
-            pr.id?"Registrada":"Pendente",
-            pr.id?(parseInt(pr.numPacientes||0,10)||0):"",
-            pr.id?procedimentos:"",
-            pr.id?(parseInt(pr.numSessoesHD||0,10)||0):"",
-            pr.id?(parseInt(pr.numInsercaoCateter||0,10)||0):"",
-            pr.id?(parseInt(pr.numTestesRealizados||0,10)||0):"",
-            pr.id?(parseInt(pr.numTestesContrato||0,10)||0):"",
-            pr.id?(parseInt(pr.numTestesEstimadoMes||0,10)||0):"",
-            pr.id?resumoExamesLaboratorioRelatorio(pr):"",
-            pr.id?(parseInt(pr.numLaudos||0,10)||0):"",
-            pr.id?(parseInt(pr.numTomografias||0,10)||0):"",
-            pr.observacoes||""
+            notas,
+            c.nContrato||"—",
+            c.empresa||"—",
+            p.uh||pr?.uh||"—",
+            servicoLabel(c.servicoTipo||pr?.servicoTipo||""),
+            formatarCompetenciaBR(p.competencia||pr?.competencia),
+            fmtM(p.nfValor||pr?.nfValor),
+            pr?.id?"Registrada":"Pendente",
+            pr?.id?montarIndicadoresProducao(pr,c):"Pendente",
+            pr?.observacoes||p.observacoes||""
           ];
         });
         return {titulo:"Relatório de Produção",cab,linhas};
