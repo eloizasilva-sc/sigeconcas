@@ -828,6 +828,216 @@
 .config-card .cfg-list-input{
   min-height: 38px;
 }
+
+
+/* Correção 2026: sessão persistente e Fonte por Empenho em Pagamentos */
+.pagamentos-compact-table .col-fonte{
+  width:16% !important;
+  min-width:210px !important;
+}
+.pagamentos-compact-table .col-situacao{
+  width:12% !important;
+  min-width:135px !important;
+}
+.pagamentos-compact-table .col-setor{
+  width:12% !important;
+  min-width:135px !important;
+}
+.pagamentos-compact-table .col-observacoes,
+.pagamentos-compact-table td[style*="min-width:170px"]{
+  width:13% !important;
+  min-width:145px !important;
+}
+.pagamentos-compact-table .col-fonte > div{
+  min-height:unset !important;
+  padding:0 !important;
+  border:none !important;
+  background:transparent !important;
+  text-align:left !important;
+}
+.pagamentos-compact-table .col-fonte p:first-child,
+.pagamentos-compact-table .col-fonte p.font-bold{
+  display:block !important;
+}
+.fonte-empenho-box{
+  width:100%;
+  border:1px solid #dbeafe;
+  background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);
+  border-radius:16px;
+  padding:10px;
+  box-shadow:0 6px 18px rgba(15,52,97,.05);
+}
+.fonte-empenho-box.sem-empenho{
+  background:#fff7ed;
+  border-color:#fed7aa;
+  color:#9a3412;
+}
+.fonte-label-mini{
+  display:block !important;
+  font-size:9px !important;
+  line-height:1.1 !important;
+  font-weight:900 !important;
+  letter-spacing:.08em !important;
+  text-transform:uppercase !important;
+  color:#64748b !important;
+  margin-bottom:5px !important;
+}
+.fonte-empenho-select{
+  width:100% !important;
+  min-height:38px !important;
+  border:1.5px solid #cbd5e1 !important;
+  border-radius:12px !important;
+  background:#fff !important;
+  color:#0f2747 !important;
+  font-size:11px !important;
+  font-weight:800 !important;
+  padding:7px 9px !important;
+  outline:none !important;
+}
+.fonte-empenho-select:focus{
+  border-color:#2563a8 !important;
+  box-shadow:0 0 0 3px rgba(37,99,168,.12) !important;
+}
+.fonte-empenho-resumo{
+  margin-top:8px;
+  padding:8px 9px;
+  border-radius:12px;
+  background:#eff6ff;
+  border:1px solid #bfdbfe;
+  color:#123b6b;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+}
+.fonte-empenho-resumo strong{
+  display:block;
+  font-size:14px;
+  line-height:1.05;
+  font-weight:900;
+  color:#0f2747;
+  word-break:normal;
+  overflow-wrap:normal;
+}
+.fonte-empenho-resumo small{
+  font-size:10px;
+  line-height:1.1;
+  font-weight:800;
+  color:#2563a8;
+  text-align:right;
+  max-width:90px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.fonte-empenho-resumo.vazio{
+  display:block;
+  font-size:11px;
+  font-weight:800;
+  color:#9a3412;
+  background:#fff7ed;
+  border-color:#fed7aa;
+}
+.fonte-ajuda{
+  display:block !important;
+  margin-top:6px !important;
+  font-size:9.5px !important;
+  line-height:1.2 !important;
+  color:#64748b !important;
+  font-weight:700 !important;
+}
+
+
+/* Fonte em Pagamentos: visual sucinto, apenas código da fonte vinculada ao empenho */
+.pagamentos-compact-table .col-fonte{
+  width:7% !important;
+  min-width:96px !important;
+}
+.pagamentos-compact-table .col-fonte > div{
+  padding:0 !important;
+  border:none !important;
+  background:transparent !important;
+  min-height:0 !important;
+}
+.fonte-empenho-box{
+  width:100%;
+  border:1px solid #dbeafe !important;
+  background:#ffffff !important;
+  border-radius:14px !important;
+  padding:7px !important;
+  box-shadow:0 4px 12px rgba(15,52,97,.04) !important;
+}
+.fonte-empenho-box.sem-empenho{
+  background:#fff7ed !important;
+  border-color:#fed7aa !important;
+}
+.fonte-label-mini{
+  display:block !important;
+  font-size:8px !important;
+  line-height:1 !important;
+  font-weight:900 !important;
+  letter-spacing:.08em !important;
+  text-transform:uppercase !important;
+  color:#64748b !important;
+  margin-bottom:4px !important;
+}
+.fonte-codigo-chip{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:100% !important;
+  min-height:30px !important;
+  padding:6px 8px !important;
+  border-radius:12px !important;
+  background:#eff6ff !important;
+  border:1px solid #bfdbfe !important;
+  color:#0f2747 !important;
+  font-size:14px !important;
+  line-height:1 !important;
+  font-weight:900 !important;
+  white-space:nowrap !important;
+}
+.fonte-empenho-ne{
+  display:block !important;
+  margin-top:4px !important;
+  color:#64748b !important;
+  font-size:9px !important;
+  line-height:1.15 !important;
+  font-weight:800 !important;
+  text-align:center !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+}
+.fonte-empenho-select{
+  width:100% !important;
+  min-height:30px !important;
+  height:30px !important;
+  border:1px solid #cbd5e1 !important;
+  border-radius:10px !important;
+  background:#fff !important;
+  color:#0f2747 !important;
+  font-size:10px !important;
+  font-weight:900 !important;
+  padding:4px 6px !important;
+  margin-top:5px !important;
+}
+.fonte-empenho-resumo,
+.fonte-ajuda{
+  display:none !important;
+}
+.fonte-vazio-compacto{
+  display:block;
+  padding:7px 8px;
+  border-radius:12px;
+  background:#fff7ed;
+  border:1px solid #fed7aa;
+  color:#9a3412;
+  font-size:10px;
+  line-height:1.15;
+  font-weight:800;
+  text-align:center;
+}
+
 </style>
   <style>body { box-sizing: border-box; }</style>
  </head>
@@ -915,7 +1125,7 @@
      </div>
      <div>
       <h1 id="main-title" class="text-xl font-bold text-navy-900 leading-tight tracking-wide">SIGECON</h1>
-      <p id="main-subtitle" class="text-sm text-steel-600 leading-tight"> CAS SESAP RN</p>
+      <p id="main-subtitle" class="text-sm text-steel-600 leading-tight">SESAP RN</p>
      </div>
     </div>
     <div class="flex items-center gap-3">
@@ -989,9 +1199,9 @@
     
     // Listas Configuráveis
     let listas={
-      fontes:["Fonte 500 - Tesouro Estadual","Fonte 600 - Federal","Fonte 720","Tesouro Estadual","Receita Própria"],
+      fontes:["0.500","0.600","0.720","4.600"],
       unidades:["HMWG","HRTM","HEMONORTE","HCCPG"],
-      empresas:["MedServ Ltda","Tech Saúde","Bem+Health","Clínica Plus"],
+      empresas:["BIOMED","MEDCAL","JUSTIZ","CMT"],
       servicos:["telemedicina|Telemedicina","homecare|Home Care","hemodialise|Hemodiálise","laboratorio|Laboratórios","cirurgias|Cirurgias Eletivas","opme-ortopedia|OPME Ortopedia","opme-urologia|OPME Urologia"],
       situacoes:["A liquidar","Liquidado","Pago","Na unidade"],
       setoresPagamento:["CAS","UNFIN","NAO","DPLAN","Assessoria","Financeiro","Controle Interno"],
@@ -1548,6 +1758,7 @@
     
     // ─── SESSÃO PERSISTENTE ───
     const CHAVE_SESSAO_SIGECON="sigecon_sessao_ativa";
+    const CHAVE_LOGOUT_INTENCIONAL_SIGECON="sigecon_logout_intencional";
 
     function salvarSessao(){
       if(!usuarioAutenticado) return;
@@ -1557,55 +1768,133 @@
         perfil:currentProfile||usuarioAutenticado.perfil||"gestor",
         exercicio:exercicioAtivo||2026,
         aba:currentTab||"dashboard",
+        filtros:{
+          pagamentos:{
+            situacao:filtroPagamentosSituacao||"",
+            fonte:filtroPagamentosFonte||"",
+            empresa:filtroPagamentosEmpresa||"",
+            unidade:filtroPagamentosUH||"",
+            servico:filtroPagamentosServico||"",
+            competencia:filtroPagamentosCompetencia||"",
+            tipoProcesso:filtroPagamentosTipoProcesso||"",
+            mostrarPagos:!!filtroPagamentosMostrarPagos,
+            busca:window.filtroPagamentosBusca||""
+          }
+        },
         salvaEm:new Date().toISOString()
       };
 
+      // Atualizar/F5 deve manter a sessão. Apenas o botão Sair limpa estes dados.
+      localStorage.removeItem(CHAVE_LOGOUT_INTENCIONAL_SIGECON);
+      sessionStorage.removeItem(CHAVE_LOGOUT_INTENCIONAL_SIGECON);
       localStorage.setItem(CHAVE_SESSAO_SIGECON,JSON.stringify(sessao));
       localStorage.setItem("sigecon_sessao",JSON.stringify(sessao)); // compatibilidade com versões anteriores
+      localStorage.setItem("sigecon_ultima_aba",sessao.aba||"dashboard");
+      sessionStorage.setItem(CHAVE_SESSAO_SIGECON,JSON.stringify(sessao));
     }
 
     function limparSessao(){
+      // Só o botão SAIR chama esta função. Atualizar a página não limpa sessão.
+      localStorage.setItem(CHAVE_LOGOUT_INTENCIONAL_SIGECON,"1");
+      sessionStorage.setItem(CHAVE_LOGOUT_INTENCIONAL_SIGECON,"1");
       localStorage.removeItem(CHAVE_SESSAO_SIGECON);
       localStorage.removeItem("sigecon_sessao");
+      localStorage.removeItem("sigecon_ultima_aba");
+      sessionStorage.removeItem(CHAVE_SESSAO_SIGECON);
     }
 
     function carregarSessao(){
       try{
-        return JSON.parse(localStorage.getItem(CHAVE_SESSAO_SIGECON)||localStorage.getItem("sigecon_sessao")||"null");
+        const bruto=localStorage.getItem(CHAVE_SESSAO_SIGECON)||localStorage.getItem("sigecon_sessao")||sessionStorage.getItem(CHAVE_SESSAO_SIGECON)||"null";
+        const sessao=JSON.parse(bruto);
+        if(sessao && sessao.usuario) return sessao;
+        if(localStorage.getItem(CHAVE_LOGOUT_INTENCIONAL_SIGECON)==="1" || sessionStorage.getItem(CHAVE_LOGOUT_INTENCIONAL_SIGECON)==="1") return null;
+        return null;
       }catch(e){
         return null;
       }
     }
 
-    function aplicarSessaoSalva(){
-      const sessao=carregarSessao();
-      if(!sessao || !sessao.usuario) return false;
-      carregarConfiguracoesLocais();
-      aplicarBancoLocal();
-      reidratarListasPrincipais();
+    function existeSessaoSalva(){
+      return !!carregarSessao();
+    }
 
-      usuarioAutenticado=sessao.usuario;
-      currentProfile=sessao.perfil||sessao.usuario.perfil||"gestor";
-      exercicioAtivo=parseInt(sessao.exercicio)||2026;
-      currentTab=sessao.aba||"dashboard";
-
+    function exibirTelaAutenticada(){
       const loginScreen=document.getElementById("login-screen");
       const app=document.getElementById("app");
-      const badge=document.getElementById("exercicio-badge");
+      if(loginScreen){
+        loginScreen.classList.add("hidden");
+        loginScreen.style.display="none";
+      }
+      if(app){
+        app.classList.remove("hidden");
+        app.style.display="";
+      }
+    }
 
-      if(loginScreen) loginScreen.classList.add("hidden");
-      if(app) app.classList.remove("hidden");
-      if(badge) badge.textContent=exercicioAtivo;
+    function exibirTelaLogin(){
+      const loginScreen=document.getElementById("login-screen");
+      const app=document.getElementById("app");
+      if(loginScreen){
+        loginScreen.style.display="";
+        loginScreen.classList.remove("hidden");
+      }
+      if(app){
+        app.classList.add("hidden");
+        app.style.display="none";
+      }
+    }
 
+    function aplicarSessaoSalva(){
       try{
-        document.getElementById("login-exercicio").value=String(exercicioAtivo);
-      }catch(e){}
+        const sessao=carregarSessao();
+        if(!sessao || !sessao.usuario) return false;
 
-      updateProfileUI();
-      buildNav();
-      renderContent();
-      salvarSessao();
-      return true;
+        carregarConfiguracoesLocais();
+        aplicarBancoLocal();
+        reidratarListasPrincipais();
+
+        usuarioAutenticado=sessao.usuario;
+        currentProfile=sessao.perfil||sessao.usuario.perfil||"gestor";
+        exercicioAtivo=parseInt(sessao.exercicio)||2026;
+        currentTab=sessao.aba||localStorage.getItem("sigecon_ultima_aba")||"dashboard";
+
+        if(sessao.filtros && sessao.filtros.pagamentos){
+          const fp=sessao.filtros.pagamentos;
+          filtroPagamentosSituacao=fp.situacao||"";
+          filtroPagamentosFonte=fp.fonte||"";
+          filtroPagamentosEmpresa=fp.empresa||"";
+          filtroPagamentosUH=fp.unidade||"";
+          filtroPagamentosServico=fp.servico||"";
+          filtroPagamentosCompetencia=fp.competencia||"";
+          filtroPagamentosTipoProcesso=fp.tipoProcesso||"";
+          filtroPagamentosMostrarPagos=!!fp.mostrarPagos;
+          window.filtroPagamentosBusca=fp.busca||"";
+        }
+
+        // Garante que visitantes não retornem em uma aba administrativa salva por engano.
+        if(currentProfile==="visitante" && !["dashboard","contratos","pagamentos"].includes(currentTab)){
+          currentTab="dashboard";
+        }
+
+        const badge=document.getElementById("exercicio-badge");
+        if(badge) badge.textContent=exercicioAtivo;
+
+        try{
+          const campoExercicio=document.getElementById("login-exercicio");
+          if(campoExercicio) campoExercicio.value=String(exercicioAtivo);
+        }catch(e){}
+
+        exibirTelaAutenticada();
+        updateProfileUI();
+        buildNav();
+        renderContent();
+        salvarSessao();
+        return true;
+      }catch(e){
+        console.error("Falha ao restaurar sessão salva:",e);
+        return false;
+      }
     }
 
     if(!window.__sigeconAutosaveBanco){
@@ -1815,8 +2104,7 @@ function autenticar(){
           currentTab="dashboard";
         }
         exercicioAtivo=parseInt(exercicio);
-        document.getElementById("login-screen").classList.add("hidden");
-        document.getElementById("app").classList.remove("hidden");
+        exibirTelaAutenticada();
         document.getElementById("exercicio-badge").textContent=exercicio;
         updateProfileUI();
         buildNav();
@@ -1832,8 +2120,7 @@ function autenticar(){
       currentProfile="gestor";
       currentTab="dashboard";
       exercicioAtivo=2026;
-      document.getElementById("login-screen").classList.remove("hidden");
-      document.getElementById("app").classList.add("hidden");
+      exibirTelaLogin();
       document.getElementById("login-exercicio").value="2026";
       document.getElementById("login-perfil").value="";
       document.getElementById("login-input").value="";
@@ -2126,6 +2413,7 @@ function obterValorMoedaInput(id){
     function navegarPagamentosPorSituacao(situacao){
       filtroPagamentosSituacao=situacao||"";
       currentTab="pagamentos";
+      salvarSessao();
       buildNav();
       renderContent();
       showInlineAlert(situacao?`Filtrando pagamentos: ${situacao}`:"Exibindo todos os pagamentos","info");
@@ -2134,6 +2422,7 @@ function obterValorMoedaInput(id){
     function navegarContratosPorExecucao(status){
       filtroContratosExecucaoStatus=status||"";
       currentTab="contratos";
+      salvarSessao();
       buildNav();
       renderContent();
       showInlineAlert(status?`Filtrando contratos: ${status}`:"Exibindo todos os contratos","info");
@@ -2154,8 +2443,18 @@ function obterValorMoedaInput(id){
     function resumirFonteRecurso(fonte){
       const texto=String(fonte||"").trim();
       if(!texto) return "—";
-      const match=texto.match(/\b(\d{3,4})\b/);
-      if(match) return match[1];
+
+      // Exibe a fonte de forma padronizada e curta na tabela de pagamentos.
+      // Exemplos: "Fonte 600 - Federal" => "0.600"; "500" => "0.500".
+      const match=texto.match(/(?:^|\D)(\d{3})(?:\D|$)/);
+      if(match) return `0.${match[1]}`;
+
+      const matchComPonto=texto.match(/0[.,](\d{3})/);
+      if(matchComPonto) return `0.${matchComPonto[1]}`;
+
+      // Se por algum erro antigo vier valor financeiro no campo fonte, não polui a visualização.
+      if(/^R\$|\d+[,.]\d{2}$/.test(texto)) return "—";
+
       return texto.replace(/^fonte\s*/i,"").split("-")[0].trim() || texto;
     }
 
@@ -2396,6 +2695,7 @@ function contratoTemFonte(c,fonte){
         id="dashboard";
       }
       currentTab=id;
+      localStorage.setItem("sigecon_ultima_aba",id);
       salvarSessao();
       salvarBancoLocal();
       buildNav();
@@ -4699,6 +4999,121 @@ async function alterarSetorPagamentoRapido(id,novoSetor){
       return p?.fonteRecurso||"—";
     }
 
+    function obterEmpenhosContratoPagamento(p){
+      const contrato=obterContratoPagamento(p);
+      return extrairEmpenhosContrato(contrato||{});
+    }
+
+    function obterEmpenhoPrincipalPagamento(p){
+      const empenhosPag=Array.isArray(p?.empenhos)?p.empenhos:[];
+      if(empenhosPag.length && empenhosPag[0]?.numero) return String(empenhosPag[0].numero);
+      const texto=String(p?.empenho||"").split(",").map(x=>x.trim()).filter(Boolean);
+      return texto[0]||"";
+    }
+
+    function obterEmpenhoSelecionadoNoContratoPagamento(p){
+      const empenhosContrato=obterEmpenhosContratoPagamento(p);
+      const atual=obterEmpenhoPrincipalPagamento(p);
+      let selecionado=empenhosContrato.find(e=>String(e.numero||"")===String(atual||""));
+      if(!selecionado && empenhosContrato.length===1) selecionado=empenhosContrato[0];
+      return selecionado||null;
+    }
+
+    function textoFonteEmpenho(e){
+      const fonte=String(e?.fonte||"").trim();
+      const numero=String(e?.numero||"").trim();
+      const codigo=resumirFonteRecurso(fonte);
+      if(codigo && codigo!=="—" && numero) return `${codigo} · NE ${numero}`;
+      if(codigo && codigo!=="—") return codigo;
+      if(numero) return `NE ${numero}`;
+      return "Empenho sem fonte";
+    }
+
+    function renderFontePagamentoResumo(p){
+      const selecionado=obterEmpenhoSelecionadoNoContratoPagamento(p);
+      if(!selecionado){
+        return `<span class="fonte-vazio-compacto">Sem empenho</span>`;
+      }
+      const fonte=selecionado.fonte||p?.fonteRecurso||"";
+      const codigo=resumirFonteRecurso(fonte);
+      const numero=String(selecionado.numero||"").trim();
+      return `
+        <span class="fonte-codigo-chip" title="Fonte vinculada ao empenho do contrato">${escapeHtml(codigo)}</span>
+        ${numero?`<small class="fonte-empenho-ne" title="Empenho ${escapeHtml(numero)}">NE ${escapeHtml(numero)}</small>`:""}
+      `;
+    }
+
+    function renderSelectFonteEmpenhoPagamento(p,bloqueio=""){
+      const empenhosContrato=obterEmpenhosContratoPagamento(p);
+      const selecionadoObj=obterEmpenhoSelecionadoNoContratoPagamento(p);
+      const selecionado=selecionadoObj?String(selecionadoObj.numero||""):"";
+
+      if(!empenhosContrato.length){
+        return `
+          <div class="fonte-empenho-box sem-empenho">
+            <span class="fonte-label-mini">Fonte</span>
+            ${renderFontePagamentoResumo(p)}
+          </div>
+        `;
+      }
+
+      const mostrarSelect=empenhosContrato.length>1 && !bloqueio;
+      return `
+        <div class="fonte-empenho-box">
+          <span class="fonte-label-mini">Fonte</span>
+          ${renderFontePagamentoResumo(p)}
+          ${mostrarSelect?`
+            <select onchange="alterarFonteEmpenhoPagamentoRapido('${p.id}',this.value)" class="fonte-empenho-select" title="Selecionar empenho vinculado à fonte">
+              <option value="" ${!selecionado?"selected":""}>Selecionar NE</option>
+              ${empenhosContrato.map(e=>`
+                <option value="${escapeHtml(e.numero||"")}" ${String(selecionado)===String(e.numero||"")?"selected":""}>${escapeHtml(textoFonteEmpenho(e))}</option>
+              `).join("")}
+            </select>
+          `:""}
+        </div>
+      `;
+    }
+
+    function alterarFonteEmpenhoPagamentoRapido(id,numeroEmpenho){
+      if(bloquearAcaoLeitor()) return;
+      garantirIdsPagamentos();
+
+      const idx=allPagamentos.findIndex(x=>String(x.id)===String(id));
+      if(idx<0){
+        showInlineAlert("❌ Pagamento não encontrado.","error");
+        return;
+      }
+
+      const pagamento=allPagamentos[idx];
+      const empenhoSelecionado=obterEmpenhosContratoPagamento(pagamento).find(e=>String(e.numero||"")===String(numeroEmpenho||""));
+      if(!empenhoSelecionado){
+        showInlineAlert("❌ Selecione um empenho cadastrado no contrato.","error");
+        renderPagamentos(document.getElementById("content-area"));
+        return;
+      }
+
+      const atualizado={
+        ...pagamento,
+        empenhos:[{
+          numero:empenhoSelecionado.numero||"",
+          fonte:empenhoSelecionado.fonte||"",
+          valor:parseValorBR(empenhoSelecionado.valor||0),
+          elementoDespesa:empenhoSelecionado.elementoDespesa||""
+        }],
+        empenho:empenhoSelecionado.numero||"",
+        fonteRecurso:empenhoSelecionado.fonte||"",
+        valorEmpenhoVinculado:parseValorBR(empenhoSelecionado.valor||0),
+        atualizadoEm:new Date().toISOString()
+      };
+
+      allPagamentos[idx]=atualizado;
+      registrarAuditoria("Alteração de fonte/empenho", "pagamentos", atualizado, `Fonte vinculada ao empenho ${empenhoSelecionado.numero||"—"} do contrato.`);
+      salvarDepoisDeAlterar();
+      renderPagamentos(document.getElementById("content-area"));
+      showInlineAlert("✅ Fonte do pagamento atualizada pelo empenho vinculado ao contrato.","info");
+    }
+
+
     function obterValoresPorFontePagamento(p){
       const mapa=new Map();
       const obs=normalizarListaFinanceira(p?.ordensBancarias||[]);
@@ -4769,7 +5184,7 @@ async function alterarSetorPagamentoRapido(id,novoSetor){
       `;
     }
 
-function renderFontePagamentoResumo(p){
+function renderFontePagamentoResumoFinanceiro(p){
       const itens=obterValoresPorFontePagamento(p);
       if(!itens.length) return `<p class="font-bold text-navy-900 mt-1">—</p>`;
       return itens.map(i=>`
@@ -5140,10 +5555,7 @@ function renderPagamentos(el){
                                     </div>
                                   </td>
                                   <td class="col-fonte">
-                                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-2">
-                                      <p class="text-[10px] uppercase tracking-wide text-steel-500 font-black">Fonte</p>
-                                      ${renderFontePagamentoResumo(p)}
-                                    </div>
+                                    ${renderSelectFonteEmpenhoPagamento(p,bloqueioLeitor)}
                                   </td>
                                   <td class="col-setor">
                                     <select ${bloqueioLeitor} onchange="alterarSetorPagamentoRapido('${p.id}',this.value)" class="input-field w-full text-xs">
@@ -8150,8 +8562,6 @@ async function salvarConfiguracoes(){
 
         if(!txt.includes("excluir") && !title.includes("excluir")) return;
 
-        // Se for botão de remover linha de empenho/NF, deixa executar normalmente.
-        if(btn.closest(".linha-empenho") || btn.closest(".nf-row")) return;
       },true);
     }
 
@@ -8171,7 +8581,11 @@ async function salvarConfiguracoes(){
       carregarExerciciosCadastrados();
 
       // Restaura imediatamente a sessão salva antes de qualquer espera do SDK.
-      aplicarSessaoSalva();
+      // Se houver sessão, atualizar/F5 não volta para o login.
+      const sessaoRestauradaInicialmente=aplicarSessaoSalva();
+      if(!sessaoRestauradaInicialmente){
+        exibirTelaLogin();
+      }
       let attempts=0;
       while(!window.dataSdk && attempts<100){
         await new Promise(r=>setTimeout(r,50));
@@ -8212,7 +8626,9 @@ async function salvarConfiguracoes(){
       lucide.createIcons();
 
       // Reforço final: após SDK e ícones carregarem, mantém a sessão aberta.
-      aplicarSessaoSalva();
+      if(existeSessaoSalva()){
+        aplicarSessaoSalva();
+      }
     }
 
     if(document.readyState==="loading"){
