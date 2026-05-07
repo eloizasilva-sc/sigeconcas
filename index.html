@@ -10,6 +10,7 @@
   <script src="/_sdk/data_sdk.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
   <script>
     tailwind.config={theme:{extend:{colors:{navy:{'950':'#0a1628','900':'#0d1f3c','800':'#122b50','700':'#173a6a','600':'#1c4a85','500':'#2563a8','400':'#3b82c4','300':'#6ba3d6','200':'#93c0e8','100':'#c2ddf4','50':'#e8f1fb'},sky:{'50':'#f8fafc','100':'#f0f6ff','200':'#e0ecff','300':'#c2dff4'},steel:{'900':'#1a2332','800':'#243044','700':'#2e3f57','600':'#3a4f6a','500':'#4a6380','400':'#6b8298','300':'#8ea2b5','200':'#b3c3d1','100':'#d5dee6','50':'#edf1f5'}},fontFamily:{sans:['DM Sans','sans-serif'],mono:['Space Mono','monospace']}}}}
@@ -1784,6 +1785,8 @@
     let SIGECON_FIREBASE_CONFIG={...SIGECON_FIREBASE_CONFIG_PADRAO};
     let sigeconFirebaseApp=null;
     let sigeconFirebaseDb=null;
+    let sigeconFirebaseStore=null;
+    let sigeconFirebaseModo=""; // "realtime" ou "firestore"
     let sigeconNuvemAtiva=false;
     let sigeconRecebendoNuvem=false;
     let sigeconTimerNuvem=null;
@@ -1809,10 +1812,16 @@
 
     function configFirebaseValida(cfg){
       cfg=normalizarConfigFirebase(cfg);
-      return !!(cfg.apiKey && cfg.databaseURL && cfg.projectId &&
+      return !!(cfg.apiKey && cfg.projectId && cfg.authDomain && cfg.appId &&
         !cfg.apiKey.includes("COLE_AQUI") &&
-        !cfg.databaseURL.includes("COLE_AQUI") &&
-        cfg.databaseURL.startsWith("https://"));
+        !cfg.projectId.includes("COLE_AQUI") &&
+        !cfg.authDomain.includes("COLE_AQUI") &&
+        !cfg.appId.includes("COLE_AQUI"));
+    }
+
+    function configFirebaseRealtimeValida(cfg){
+      cfg=normalizarConfigFirebase(cfg);
+      return configFirebaseValida(cfg) && !!(cfg.databaseURL && !cfg.databaseURL.includes("COLE_AQUI") && cfg.databaseURL.startsWith("https://"));
     }
 
     function obterConfigFirebaseLocal(){
@@ -1927,19 +1936,37 @@
         await resolverConfigFirebase();
         if(!configFirebaseValida(SIGECON_FIREBASE_CONFIG)){
           sigeconNuvemAtiva=false;
-          sigeconUltimoErroNuvem="Firebase ainda não configurado.";
+          sigeconFirebaseModo="";
+          sigeconUltimoErroNuvem="Firebase ainda não configurado. Cole o firebaseConfig real ou suba o arquivo firebase-config.json no GitHub.";
           atualizarIndicadorNuvem();
           return false;
         }
-        if(!window.firebase || !window.firebase.database){
+        if(!window.firebase){
           sigeconNuvemAtiva=false;
+          sigeconFirebaseModo="";
           sigeconUltimoErroNuvem="SDK do Firebase não carregou. Verifique internet/bloqueio do navegador.";
           atualizarIndicadorNuvem();
           return false;
         }
+
         sigeconFirebaseApp=window.firebase.apps && window.firebase.apps.length ? window.firebase.app() : window.firebase.initializeApp(SIGECON_FIREBASE_CONFIG);
-        sigeconFirebaseDb=window.firebase.database();
-        await sigeconFirebaseDb.ref(SIGECON_FIREBASE_PATH+"/_ping").set({ok:true,em:new Date().toISOString()});
+
+        // Preferência 1: Realtime Database, quando houver databaseURL no firebaseConfig.
+        // Preferência 2: Firestore, quando a pessoa criou Firestore e não Realtime Database.
+        if(configFirebaseRealtimeValida(SIGECON_FIREBASE_CONFIG) && window.firebase.database){
+          sigeconFirebaseDb=window.firebase.database();
+          sigeconFirebaseStore=null;
+          sigeconFirebaseModo="realtime";
+          await sigeconFirebaseDb.ref(SIGECON_FIREBASE_PATH+"/_ping").set({ok:true,em:new Date().toISOString(),modo:"realtime"});
+        }else if(window.firebase.firestore){
+          sigeconFirebaseDb=null;
+          sigeconFirebaseStore=window.firebase.firestore();
+          sigeconFirebaseModo="firestore";
+          await sigeconFirebaseStore.collection("sigecon_cloud").doc("cas_sesap_rn_producao").set({_ping:{ok:true,em:new Date().toISOString(),modo:"firestore"}},{merge:true});
+        }else{
+          throw new Error("Firebase carregou, mas não encontrei Realtime Database nem Firestore. Confira os scripts do Firebase no index.html.");
+        }
+
         sigeconNuvemAtiva=true;
         sigeconUltimoErroNuvem="";
         atualizarIndicadorNuvem();
@@ -1947,6 +1974,7 @@
       }catch(e){
         console.error("Falha ao iniciar Firebase:",e);
         sigeconNuvemAtiva=false;
+        sigeconFirebaseModo="";
         sigeconUltimoErroNuvem=e?.message||String(e||"Erro desconhecido no Firebase.");
         atualizarIndicadorNuvem();
         return false;
@@ -1954,10 +1982,16 @@
     }
 
     async function carregarBancoNuvem(){
-      if(!sigeconNuvemAtiva || !sigeconFirebaseDb) return null;
+      if(!sigeconNuvemAtiva) return null;
       try{
-        const snap=await sigeconFirebaseDb.ref(SIGECON_FIREBASE_PATH).get();
-        const banco=snap.exists()?snap.val():null;
+        let banco=null;
+        if(sigeconFirebaseModo==="realtime" && sigeconFirebaseDb){
+          const snap=await sigeconFirebaseDb.ref(SIGECON_FIREBASE_PATH).get();
+          banco=snap.exists()?snap.val():null;
+        }else if(sigeconFirebaseModo==="firestore" && sigeconFirebaseStore){
+          const doc=await sigeconFirebaseStore.collection("sigecon_cloud").doc("cas_sesap_rn_producao").get();
+          banco=doc.exists?doc.data():null;
+        }
         if(banco){
           delete banco._ping;
           sigeconUltimoHashNuvem=JSON.stringify(banco);
@@ -1971,12 +2005,19 @@
     }
 
     async function salvarBancoNuvemAgora(snapshot){
-      if(!sigeconNuvemAtiva || !sigeconFirebaseDb || sigeconRecebendoNuvem) return false;
+      if(!sigeconNuvemAtiva || sigeconRecebendoNuvem) return false;
       try{
         const banco=snapshot||montarBancoCompletoSnapshot();
         const hash=JSON.stringify(banco);
         if(hash===sigeconUltimoHashNuvem) return true;
-        await sigeconFirebaseDb.ref(SIGECON_FIREBASE_PATH).update({...banco,_ping:{ok:true,em:new Date().toISOString()}});
+        const payload={...banco,_ping:{ok:true,em:new Date().toISOString(),modo:sigeconFirebaseModo||"firebase"}};
+        if(sigeconFirebaseModo==="realtime" && sigeconFirebaseDb){
+          await sigeconFirebaseDb.ref(SIGECON_FIREBASE_PATH).update(payload);
+        }else if(sigeconFirebaseModo==="firestore" && sigeconFirebaseStore){
+          await sigeconFirebaseStore.collection("sigecon_cloud").doc("cas_sesap_rn_producao").set(payload,{merge:true});
+        }else{
+          return false;
+        }
         sigeconUltimoHashNuvem=hash;
         sigeconUltimoErroNuvem="";
         atualizarIndicadorNuvem();
@@ -1997,25 +2038,32 @@
       sigeconTimerNuvem=setTimeout(()=>salvarBancoNuvemAgora(payload),700);
     }
 
+    function processarSnapshotNuvemAoVivo(banco){
+      if(!banco) return;
+      delete banco._ping;
+      const hash=JSON.stringify(banco);
+      if(hash===sigeconUltimoHashNuvem) return;
+      sigeconUltimoHashNuvem=hash;
+      sigeconRecebendoNuvem=true;
+      aplicarBancoCompletoSnapshot(banco,"nuvem");
+      sigeconRecebendoNuvem=false;
+      atualizarIndicadorNuvem();
+      if(usuarioAutenticado && currentTab){
+        if(typeof renderContent==="function") renderContent();
+        if(typeof showInlineAlert==="function") showInlineAlert("☁️ Dados atualizados pela nuvem.","info");
+      }
+    }
+
     function ativarEscutaNuvem(){
-      if(!sigeconNuvemAtiva || !sigeconFirebaseDb) return;
+      if(!sigeconNuvemAtiva) return;
       try{
-        sigeconFirebaseDb.ref(SIGECON_FIREBASE_PATH).on("value",snap=>{
-          const banco=snap.val();
-          if(!banco) return;
-          delete banco._ping;
-          const hash=JSON.stringify(banco);
-          if(hash===sigeconUltimoHashNuvem) return;
-          sigeconUltimoHashNuvem=hash;
-          sigeconRecebendoNuvem=true;
-          aplicarBancoCompletoSnapshot(banco,"nuvem");
-          sigeconRecebendoNuvem=false;
-          atualizarIndicadorNuvem();
-          if(usuarioAutenticado && currentTab){
-            if(typeof renderContent==="function") renderContent();
-            if(typeof showInlineAlert==="function") showInlineAlert("☁️ Dados atualizados pela nuvem.","info");
-          }
-        });
+        if(sigeconFirebaseModo==="realtime" && sigeconFirebaseDb){
+          sigeconFirebaseDb.ref(SIGECON_FIREBASE_PATH).on("value",snap=>processarSnapshotNuvemAoVivo(snap.val()));
+        }else if(sigeconFirebaseModo==="firestore" && sigeconFirebaseStore){
+          sigeconFirebaseStore.collection("sigecon_cloud").doc("cas_sesap_rn_producao").onSnapshot(doc=>{
+            processarSnapshotNuvemAoVivo(doc.exists?doc.data():null);
+          });
+        }
       }catch(e){
         sigeconUltimoErroNuvem=e?.message||String(e);
         console.error("Erro ao escutar alterações da nuvem:",e);
@@ -2023,7 +2071,7 @@
     }
 
     function statusSincronizacaoNuvem(){
-      if(sigeconNuvemAtiva) return "☁️ Nuvem ativa";
+      if(sigeconNuvemAtiva) return "☁️ Nuvem ativa ("+(sigeconFirebaseModo==="firestore"?"Firestore":"Realtime")+")";
       if(configFirebaseValida(SIGECON_FIREBASE_CONFIG)||configFirebaseValida(obterConfigFirebaseLocal())) return "⚠️ Nuvem desconectada";
       return "💾 Modo local";
     }
@@ -2046,7 +2094,7 @@
       try{
         const limpo=texto.replace(/^const\s+firebaseConfig\s*=\s*/i,"").replace(/;\s*$/,"");
         const cfg=normalizarConfigFirebase(Function("return ("+limpo+")")());
-        if(!configFirebaseValida(cfg)) throw new Error("Configuração incompleta. Confira apiKey, databaseURL e projectId.");
+        if(!configFirebaseValida(cfg)) throw new Error("Configuração incompleta. Confira apiKey, authDomain, projectId e appId. O databaseURL só é obrigatório se usar Realtime Database.");
         localStorage.setItem(SIGECON_FIREBASE_CONFIG_LOCAL_KEY,JSON.stringify(cfg));
         SIGECON_FIREBASE_CONFIG=cfg;
         showInlineAlert("✅ Configuração do Firebase salva neste navegador. Clique em Testar Nuvem.","info");
