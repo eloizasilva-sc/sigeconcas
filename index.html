@@ -1364,6 +1364,116 @@
   .pagamentos-compact-table{min-width:1120px !important;}
 }
 
+
+
+/* Ajuste 2026-05-07: Pagamentos - fonte automática e situação com seta discreta */
+.pagamentos-compact-table .col-fonte{
+  width:7% !important;
+  min-width:78px !important;
+  text-align:center !important;
+}
+.pagamentos-compact-table .col-fonte .fonte-empenho-box{
+  min-height:44px !important;
+  padding:0 !important;
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+.fonte-codigo-chip{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  min-width:54px !important;
+  height:34px !important;
+  padding:0 9px !important;
+  border-radius:12px !important;
+  background:#eef6ff !important;
+  color:#123b6b !important;
+  border:1px solid #cfe1f5 !important;
+  font-size:14px !important;
+  font-weight:900 !important;
+  letter-spacing:.01em !important;
+  white-space:nowrap !important;
+}
+.fonte-vazio-compacto{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  min-width:54px !important;
+  height:34px !important;
+  padding:0 8px !important;
+  border-radius:12px !important;
+  background:#f8fafc !important;
+  color:#64748b !important;
+  border:1px dashed #cbd5e1 !important;
+  font-size:10px !important;
+  font-weight:800 !important;
+  line-height:1.1 !important;
+}
+.fonte-empenho-select{display:none !important;}
+
+.pagamentos-compact-table .col-situacao{
+  width:11% !important;
+  min-width:112px !important;
+}
+.situacao-clean-card{
+  position:relative;
+  min-height:58px !important;
+  border-radius:14px !important;
+  padding:8px 34px 8px 8px !important;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.situacao-clean-card .badge{
+  margin:0 !important;
+  max-width:100% !important;
+  text-align:center !important;
+  white-space:normal !important;
+  line-height:1.15 !important;
+  font-size:10px !important;
+  padding:6px 8px !important;
+}
+.situacao-arrow-wrap{
+  position:absolute;
+  right:7px;
+  top:50%;
+  transform:translateY(-50%);
+  width:24px;
+  height:28px;
+  border-radius:9px;
+  background:#ffffff;
+  border:1px solid rgba(15,23,42,.14);
+  box-shadow:0 4px 10px rgba(15,23,42,.05);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#475569;
+  overflow:hidden;
+}
+.situacao-arrow-wrap::after{
+  content:"▾";
+  font-size:12px;
+  font-weight:900;
+  pointer-events:none;
+  line-height:1;
+}
+.situacao-arrow-select{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  opacity:0;
+  cursor:pointer;
+  border:0;
+  padding:0;
+}
+.situacao-arrow-select:disabled{
+  cursor:not-allowed;
+}
 </style>
   <style>body { box-sizing: border-box; }</style>
 
@@ -5471,30 +5581,22 @@ async function alterarSetorPagamentoRapido(id,novoSetor){
     }
 
     function renderSelectFonteEmpenhoPagamento(p,bloqueio=""){
+      // A fonte na tabela é apenas informativa e automática.
+      // Ela vem do empenho já vinculado ao pagamento/contrato, sem lista suspensa na visualização principal.
       const empenhosContrato=obterEmpenhosContratoPagamento(p);
       const selecionadoObj=obterEmpenhoSelecionadoNoContratoPagamento(p);
-      const selecionado=selecionadoObj?String(selecionadoObj.numero||""):"";
 
-      if(!empenhosContrato.length){
-        return `
-          <div class="fonte-empenho-box sem-empenho">
-            ${renderFontePagamentoResumo(p)}
-          </div>
-        `;
+      // Se o contrato possui apenas um empenho e o pagamento antigo ainda não guardou a fonte,
+      // a exibição já usa a fonte desse empenho automaticamente.
+      if(!selecionadoObj && empenhosContrato.length===1){
+        const e=empenhosContrato[0];
+        const codigo=resumirFonteRecurso(e.fonte||p?.fonteRecurso||"");
+        return `<div class="fonte-empenho-box" title="Fonte automática do empenho cadastrado no contrato: ${escapeHtml(e.numero||"—")}"><span class="fonte-codigo-chip">${escapeHtml(codigo||"—")}</span></div>`;
       }
 
-      const mostrarSelect=empenhosContrato.length>1 && !bloqueio;
       return `
-        <div class="fonte-empenho-box">
+        <div class="fonte-empenho-box" title="Fonte automática vinculada ao empenho cadastrado no contrato">
           ${renderFontePagamentoResumo(p)}
-          ${mostrarSelect?`
-            <select onchange="alterarFonteEmpenhoPagamentoRapido('${p.id}',this.value)" class="fonte-empenho-select" title="Selecionar empenho vinculado à fonte">
-              <option value="" ${!selecionado?"selected":""}>Selecionar NE</option>
-              ${empenhosContrato.map(e=>`
-                <option value="${escapeHtml(e.numero||"")}" ${String(selecionado)===String(e.numero||"")?"selected":""}>${escapeHtml(e.numero?`NE ${String(e.numero).slice(-6)}`:resumirFonteRecurso(e.fonte||""))}</option>
-              `).join("")}
-            </select>
-          `:""}
         </div>
       `;
     }
@@ -5975,11 +6077,13 @@ function renderPagamentos(el){
                                     <p class="text-lg font-black text-navy-900">${fmtM(p.nfValor)}</p>
                                   </td>
                                   <td class="col-situacao">
-                                    <div class="rounded-xl border ${situacaoClasseDestaque(p.situacao)} p-2">
-                                      <select ${bloqueioLeitor} onchange="alterarSituacaoPagamentoRapido('${p.id}',this.value)" class="input-field w-full text-xs font-bold bg-white/95 border-current">
-                                        ${(listas.situacoes||["A liquidar","Liquidado","Pago","Na unidade"]).map(s=>`<option value="${escapeHtml(s)}" ${String(p.situacao)===String(s)?"selected":""}>${escapeHtml(s)}</option>`).join("")}
-                                      </select>
-                                      <div class="mt-2">${statusBadge(p.situacao)}</div>
+                                    <div class="situacao-clean-card border ${situacaoClasseDestaque(p.situacao)}" title="Situação atual. Use a seta para alterar.">
+                                      <div>${statusBadge(p.situacao)}</div>
+                                      <div class="situacao-arrow-wrap" title="Alterar situação">
+                                        <select ${bloqueioLeitor} onchange="alterarSituacaoPagamentoRapido('${p.id}',this.value)" class="situacao-arrow-select" aria-label="Alterar situação do pagamento">
+                                          ${(listas.situacoes||["A liquidar","Liquidado","Pago","Na unidade"]).map(s=>`<option value="${escapeHtml(s)}" ${String(p.situacao)===String(s)?"selected":""}>${escapeHtml(s)}</option>`).join("")}
+                                        </select>
+                                      </div>
                                     </div>
                                   </td>
                                   <td class="col-fonte">
