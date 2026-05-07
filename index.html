@@ -1038,6 +1038,118 @@
   text-align:center;
 }
 
+
+
+/* Correção visual 2026-05-07: coluna Fonte mais profissional e menos poluída */
+.pagamentos-compact-table{
+  table-layout: fixed !important;
+}
+.pagamentos-compact-table th,
+.pagamentos-compact-table td{
+  vertical-align: middle !important;
+}
+.pagamentos-compact-table .col-processo{width:22% !important; min-width:190px !important;}
+.pagamentos-compact-table .col-competencia{width:10% !important; min-width:95px !important;}
+.pagamentos-compact-table .col-valor{width:12% !important; min-width:120px !important;}
+.pagamentos-compact-table .col-situacao{width:12% !important; min-width:125px !important;}
+.pagamentos-compact-table .col-fonte{width:9% !important; min-width:105px !important;}
+.pagamentos-compact-table .col-setor{width:13% !important; min-width:130px !important;}
+.pagamentos-compact-table td[style*="min-width:170px"],
+.pagamentos-compact-table .col-observacoes{width:15% !important; min-width:150px !important;}
+.pagamentos-compact-table .col-acoes{width:7% !important; min-width:82px !important;}
+.pagamentos-compact-table .col-fonte > div{
+  padding:0 !important;
+  border:none !important;
+  background:transparent !important;
+  min-height:0 !important;
+  box-shadow:none !important;
+}
+.fonte-empenho-box{
+  width:100% !important;
+  min-height:42px !important;
+  padding:0 !important;
+  border:none !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:5px !important;
+}
+.fonte-codigo-chip{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:74px !important;
+  max-width:100% !important;
+  min-height:34px !important;
+  padding:6px 8px !important;
+  border-radius:12px !important;
+  background:#eef6ff !important;
+  border:1px solid #bfdbfe !important;
+  color:#0f2747 !important;
+  font-size:15px !important;
+  line-height:1 !important;
+  font-weight:900 !important;
+  letter-spacing:.01em !important;
+  white-space:nowrap !important;
+}
+.fonte-empenho-ne,
+.fonte-label-mini{
+  display:none !important;
+}
+.fonte-empenho-select{
+  width:74px !important;
+  max-width:100% !important;
+  height:24px !important;
+  min-height:24px !important;
+  margin-top:0 !important;
+  padding:2px 5px !important;
+  border-radius:9px !important;
+  border:1px solid #dbeafe !important;
+  background:#ffffff !important;
+  color:#475569 !important;
+  font-size:9px !important;
+  font-weight:800 !important;
+  text-align:center !important;
+}
+.fonte-vazio-compacto{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:74px !important;
+  min-height:34px !important;
+  padding:6px 8px !important;
+  border-radius:12px !important;
+  background:#fff7ed !important;
+  border:1px solid #fed7aa !important;
+  color:#9a3412 !important;
+  font-size:10px !important;
+  line-height:1 !important;
+  font-weight:900 !important;
+  white-space:nowrap !important;
+}
+.pag-chip-fonte{
+  background:#f8fbff !important;
+  color:#173a6a !important;
+  border-color:#dbeafe !important;
+  padding:7px 11px !important;
+}
+.pagamentos-compact-table .col-situacao > div{
+  min-height:56px !important;
+  padding:7px !important;
+}
+.pagamentos-compact-table .col-situacao select{
+  min-height:32px !important;
+  height:32px !important;
+}
+.pagamentos-compact-table .col-setor select{
+  min-height:36px !important;
+}
+.pagamentos-compact-table textarea.input-field{
+  min-height:54px !important;
+}
 </style>
   <style>body { box-sizing: border-box; }</style>
  </head>
@@ -1199,9 +1311,9 @@
     
     // Listas Configuráveis
     let listas={
-      fontes:["0.500","0.600","0.720","4.600"],
+      fontes:["Fonte 500 - Tesouro Estadual","Fonte 600 - Federal","Fonte 720","Tesouro Estadual","Receita Própria"],
       unidades:["HMWG","HRTM","HEMONORTE","HCCPG"],
-      empresas:["BIOMED","MEDCAL","JUSTIZ","CMT"],
+      empresas:["MedServ Ltda","Tech Saúde","Bem+Health","Clínica Plus"],
       servicos:["telemedicina|Telemedicina","homecare|Home Care","hemodialise|Hemodiálise","laboratorio|Laboratórios","cirurgias|Cirurgias Eletivas","opme-ortopedia|OPME Ortopedia","opme-urologia|OPME Urologia"],
       situacoes:["A liquidar","Liquidado","Pago","Na unidade"],
       setoresPagamento:["CAS","UNFIN","NAO","DPLAN","Assessoria","Financeiro","Controle Interno"],
@@ -5029,18 +5141,22 @@ async function alterarSetorPagamentoRapido(id,novoSetor){
       return "Empenho sem fonte";
     }
 
+    function obterCodigoFontePagamento(p){
+      const selecionado=obterEmpenhoSelecionadoNoContratoPagamento(p);
+      const fonte=selecionado?.fonte || p?.fonteRecurso || "";
+      return resumirFonteRecurso(fonte);
+    }
+
     function renderFontePagamentoResumo(p){
       const selecionado=obterEmpenhoSelecionadoNoContratoPagamento(p);
       if(!selecionado){
-        return `<span class="fonte-vazio-compacto">Sem empenho</span>`;
+        return `<span class="fonte-vazio-compacto">Sem NE</span>`;
       }
       const fonte=selecionado.fonte||p?.fonteRecurso||"";
       const codigo=resumirFonteRecurso(fonte);
       const numero=String(selecionado.numero||"").trim();
-      return `
-        <span class="fonte-codigo-chip" title="Fonte vinculada ao empenho do contrato">${escapeHtml(codigo)}</span>
-        ${numero?`<small class="fonte-empenho-ne" title="Empenho ${escapeHtml(numero)}">NE ${escapeHtml(numero)}</small>`:""}
-      `;
+      const titulo=[`Fonte ${codigo}`, fonte?`Cadastro: ${fonte}`:"", numero?`Empenho: ${numero}`:""].filter(Boolean).join(" | ");
+      return `<span class="fonte-codigo-chip" title="${escapeHtml(titulo)}">${escapeHtml(codigo)}</span>`;
     }
 
     function renderSelectFonteEmpenhoPagamento(p,bloqueio=""){
@@ -5051,7 +5167,6 @@ async function alterarSetorPagamentoRapido(id,novoSetor){
       if(!empenhosContrato.length){
         return `
           <div class="fonte-empenho-box sem-empenho">
-            <span class="fonte-label-mini">Fonte</span>
             ${renderFontePagamentoResumo(p)}
           </div>
         `;
@@ -5060,13 +5175,12 @@ async function alterarSetorPagamentoRapido(id,novoSetor){
       const mostrarSelect=empenhosContrato.length>1 && !bloqueio;
       return `
         <div class="fonte-empenho-box">
-          <span class="fonte-label-mini">Fonte</span>
           ${renderFontePagamentoResumo(p)}
           ${mostrarSelect?`
             <select onchange="alterarFonteEmpenhoPagamentoRapido('${p.id}',this.value)" class="fonte-empenho-select" title="Selecionar empenho vinculado à fonte">
               <option value="" ${!selecionado?"selected":""}>Selecionar NE</option>
               ${empenhosContrato.map(e=>`
-                <option value="${escapeHtml(e.numero||"")}" ${String(selecionado)===String(e.numero||"")?"selected":""}>${escapeHtml(textoFonteEmpenho(e))}</option>
+                <option value="${escapeHtml(e.numero||"")}" ${String(selecionado)===String(e.numero||"")?"selected":""}>${escapeHtml(e.numero?`NE ${e.numero}`:textoFonteEmpenho(e))}</option>
               `).join("")}
             </select>
           `:""}
@@ -5501,7 +5615,7 @@ function renderPagamentos(el){
                           </div>
                           <div class="flex items-center gap-2 flex-wrap text-xs">
                             <span class="pag-chip"><strong>Contrato(s):</strong> ${[...new Set(lista.map(x=>x.__contrato))].join(", ")}</span>
-                            <span class="pag-chip"><strong>Fonte(s):</strong> ${[...new Set(lista.map(x=>x.fonteRecurso||"—"))].join(", ")}</span>
+                            <span class="pag-chip pag-chip-fonte"><strong>Fonte(s):</strong> ${[...new Set(lista.map(x=>obterCodigoFontePagamento(x)).filter(Boolean))].join(", ")||"—"}</span>
                           </div>
                         </div>
 
