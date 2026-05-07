@@ -1474,6 +1474,82 @@
 .situacao-arrow-select:disabled{
   cursor:not-allowed;
 }
+
+
+/* Ajuste final: Fonte por NL/OB distinta e Situação sem corte */
+.pagamentos-compact-table .col-situacao{
+  width:15% !important;
+  min-width:150px !important;
+}
+.situacao-clean-card{
+  min-height:50px !important;
+  padding:7px 34px 7px 10px !important;
+  justify-content:center !important;
+}
+.situacao-clean-card .badge{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:auto !important;
+  min-width:82px !important;
+  max-width:118px !important;
+  white-space:normal !important;
+  overflow:visible !important;
+  text-overflow:clip !important;
+  word-break:normal !important;
+  line-height:1.12 !important;
+  font-size:9.5px !important;
+  padding:6px 7px !important;
+  letter-spacing:.02em !important;
+}
+.situacao-arrow-wrap{
+  width:24px !important;
+  height:26px !important;
+  right:6px !important;
+}
+.pagamentos-compact-table .col-fonte{
+  width:9% !important;
+  min-width:92px !important;
+}
+.fonte-chips-list{
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:4px !important;
+  width:100% !important;
+}
+.fonte-codigo-chip{
+  min-width:58px !important;
+  height:30px !important;
+  font-size:13px !important;
+  padding:0 8px !important;
+}
+.fonte-codigo-chip.secundaria{
+  height:24px !important;
+  min-width:52px !important;
+  font-size:11px !important;
+  background:#f8fafc !important;
+  color:#334155 !important;
+  border-color:#dbe3ef !important;
+}
+.fonte-multiplas-indicador{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  height:20px !important;
+  min-width:30px !important;
+  padding:0 6px !important;
+  border-radius:999px !important;
+  background:#e0f2fe !important;
+  color:#075985 !important;
+  border:1px solid #bae6fd !important;
+  font-size:10px !important;
+  font-weight:900 !important;
+}
+@media (max-width:1280px){
+  .pagamentos-compact-table{min-width:1180px !important;}
+}
 </style>
   <style>body { box-sizing: border-box; }</style>
 
@@ -1640,6 +1716,22 @@
     let filtroContratosServico="";
     let filtroContratosUH="";
     let filtroContratosFonte="";
+
+    // Filtros específicos da aba Relatórios, espelhando Contratos e Pagamentos
+    let relFiltroContratosEmpresa="";
+    let relFiltroContratosServico="";
+    let relFiltroContratosUH="";
+    let relFiltroContratosFonte="";
+    let relFiltroContratosExecucaoStatus="";
+    let relFiltroPagamentosSituacao="";
+    let relFiltroPagamentosCompetencia="";
+    let relFiltroPagamentosTipoProcesso="";
+    let relFiltroPagamentosFonte="";
+    let relFiltroPagamentosEmpresa="";
+    let relFiltroPagamentosUH="";
+    let relFiltroPagamentosServico="";
+    let relFiltroPagamentosMostrarPagos=true;
+
     let mostrarPagamentosVinculadosContratos=false;
 
     // Filtros da aba Produção precisam existir antes de qualquer renderização da tela.
@@ -5558,26 +5650,63 @@ async function alterarSetorPagamentoRapido(id,novoSetor){
       return "Empenho sem fonte";
     }
 
-    function obterCodigoFontePagamento(p){
+    function obterFontesDistintasPagamento(p){
+      const fontes=[];
+      const adicionar=(fonte,origem="")=>{
+        const codigo=resumirFonteRecurso(fonte||"");
+        if(!codigo || codigo==="—") return;
+        if(!fontes.some(f=>String(f.codigo)===String(codigo))){
+          fontes.push({codigo,fonte:fonte||codigo,origem});
+        }
+      };
+
+      const itensFinanceiros=[
+        ...normalizarListaFinanceira(p?.notasLancamento||[]).map(i=>({...i,tipo:"NL"})),
+        ...normalizarListaFinanceira(p?.ordensBancarias||[]).map(i=>({...i,tipo:"OB"}))
+      ];
+
+      itensFinanceiros.forEach(item=>{
+        if(item.empenho){
+          adicionar(obterFontePorEmpenhoPagamento(p,item.empenho),`${item.tipo} ${item.numero||""} • NE ${item.empenho}`);
+        }
+      });
+
+      const empenhosPag=Array.isArray(p?.empenhos)?p.empenhos:[];
+      empenhosPag.forEach(e=>{
+        adicionar(e.fonte || obterFontePorEmpenhoPagamento(p,e.numero),`NE ${e.numero||""}`);
+      });
+
+      const empenhosTexto=String(p?.empenho||"").split(",").map(x=>x.trim()).filter(Boolean);
+      empenhosTexto.forEach(ne=>adicionar(obterFontePorEmpenhoPagamento(p,ne),`NE ${ne}`));
+
       const selecionado=obterEmpenhoSelecionadoNoContratoPagamento(p);
-      const fonte=selecionado?.fonte || p?.fonteRecurso || "";
-      return resumirFonteRecurso(fonte);
+      if(selecionado) adicionar(selecionado.fonte,`NE ${selecionado.numero||""}`);
+      adicionar(p?.fonteRecurso||"","Fonte registrada no pagamento");
+      return fontes;
+    }
+
+    function obterCodigoFontePagamento(p){
+      const fontes=obterFontesDistintasPagamento(p);
+      return fontes[0]?.codigo || "—";
     }
 
     function renderFontePagamentoResumo(p){
-      const selecionado=obterEmpenhoSelecionadoNoContratoPagamento(p);
-      if(!selecionado){
-        const codigoSemNe=resumirFonteRecurso(p?.fonteRecurso||"");
-        if(codigoSemNe && codigoSemNe!=="—"){
-          return `<span class="fonte-codigo-chip" title="Fonte registrada no pagamento, sem NE vinculada">${escapeHtml(codigoSemNe)}</span>`;
-        }
-        return `<span class="fonte-vazio-compacto" title="Cadastre ou selecione uma NE no contrato para puxar a fonte">Sem NE</span>`;
+      const fontes=obterFontesDistintasPagamento(p);
+      if(!fontes.length){
+        return `<span class="fonte-vazio-compacto" title="Cadastre uma NE no contrato e vincule a NL/OB ao empenho para puxar a fonte">Sem NE</span>`;
       }
-      const fonte=selecionado.fonte||p?.fonteRecurso||"";
-      const codigo=resumirFonteRecurso(fonte);
-      const numero=String(selecionado.numero||"").trim();
-      const titulo=[`Fonte ${codigo}`, fonte?`Cadastro: ${fonte}`:"", numero?`Empenho: ${numero}`:""].filter(Boolean).join(" | ");
-      return `<span class="fonte-codigo-chip" title="${escapeHtml(titulo)}">${escapeHtml(codigo)}</span>`;
+      const titulo=fontes.map(f=>`${f.codigo}${f.origem?` (${f.origem})`:""}`).join(" | ");
+      if(fontes.length===1){
+        return `<span class="fonte-codigo-chip" title="${escapeHtml(titulo)}">${escapeHtml(fontes[0].codigo)}</span>`;
+      }
+      const visiveis=fontes.slice(0,2);
+      const resto=fontes.length-2;
+      return `
+        <div class="fonte-chips-list" title="${escapeHtml(titulo)}">
+          ${visiveis.map((f,i)=>`<span class="fonte-codigo-chip ${i>0?"secundaria":""}">${escapeHtml(f.codigo)}</span>`).join("")}
+          ${resto>0?`<span class="fonte-multiplas-indicador">+${resto}</span>`:""}
+        </div>
+      `;
     }
 
     function renderSelectFonteEmpenhoPagamento(p,bloqueio=""){
@@ -5779,7 +5908,7 @@ function obterPagamentosFiltrados(){
       }
       if(filtroPagamentosFonte){
         pagamentosFiltrados=pagamentosFiltrados.filter(p=>{
-          const fontes=obterValoresPorFontePagamento(p).map(i=>String(i.fonte||"").toLowerCase());
+          const fontes=obterFontesDistintasPagamento(p).map(i=>String(i.codigo||"").toLowerCase());
           const filtro=String(resumirFonteRecurso(filtroPagamentosFonte)).toLowerCase();
           return fontes.some(f=>f===filtro || f.includes(filtro));
         });
@@ -5941,7 +6070,7 @@ function renderPagamentos(el){
           </div>
 
           <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 space-y-3">
-            <div class="grid grid-cols-1 md:grid-cols-[1.4fr_repeat(6,1fr)] gap-3 items-end">
+            <div class="grid grid-cols-1 md:grid-cols-[1.4fr_repeat(7,1fr)] gap-3 items-end">
               <div>
                 <label class="block text-[10px] font-bold text-navy-900 mb-1">Buscar</label>
                 <input class="input-field w-full text-sm" placeholder="Buscar em processo, contrato ou empresa..." oninput="filtroPagamentosBusca=this.value;renderPagamentos(document.getElementById('content-area'))" value="${escapeHtml(window.filtroPagamentosBusca||"")}">
@@ -5967,8 +6096,8 @@ function renderPagamentos(el){
                 </select>
               </div>
               <div>
-                <label class="block text-[10px] font-bold text-navy-900 mb-1">Fonte</label>
-                <select class="input-field w-full text-xs" onchange="filtroPagamentosFonte=this.value;renderPagamentos(document.getElementById('content-area'))">
+                <label class="block text-[10px] font-bold text-navy-900 mb-1">Fonte de Recurso</label>
+                <select class="input-field w-full text-xs" onchange="filtroPagamentosFonte=this.value;renderPagamentos(document.getElementById('content-area'))" title="Filtra pela fonte cadastrada no empenho vinculado ao contrato">
                   ${renderSelectOptions(obterFontesDisponiveis(allContratos), filtroPagamentosFonte, "Todas")}
                 </select>
               </div>
@@ -7903,9 +8032,97 @@ function renderAuditoria(el){
     }
 
 
+    function obterPeriodoRelatorio(){
+      const inicio=document.getElementById("relatorio-periodo-inicial")?.value || `${exercicioAtivo}-01-01`;
+      const fim=document.getElementById("relatorio-periodo-final")?.value || `${exercicioAtivo}-12-31`;
+      return {inicio,fim};
+    }
+
+    function dataEstaNoPeriodo(data, inicio, fim){
+      if(!data) return true;
+      const d=String(data).slice(0,10);
+      if(inicio && d < inicio) return false;
+      if(fim && d > fim) return false;
+      return true;
+    }
+
+    function contratoEstaNoPeriodoRelatorio(c,inicio,fim){
+      // Considera contrato dentro do período quando há intersecção entre a vigência e o período escolhido.
+      const ini=String(c?.vigIni||"").slice(0,10);
+      const fimVig=String(c?.vigFim||"").slice(0,10);
+      if(!ini && !fimVig) return true;
+      if(fim && ini && ini > fim) return false;
+      if(inicio && fimVig && fimVig < inicio) return false;
+      return true;
+    }
+
+    function obterContratosRelatorioFiltrados(){
+      const {inicio,fim}=obterPeriodoRelatorio();
+      let lista=aplicarFiltroLeitorContratos(allContratos).filter(c=>!c.anoExercicio || String(c.anoExercicio)===String(exercicioAtivo));
+      lista=lista.filter(c=>contratoEstaNoPeriodoRelatorio(c,inicio,fim));
+
+      if(relFiltroContratosEmpresa) lista=lista.filter(c=>String(c.empresa||"")===String(relFiltroContratosEmpresa));
+      if(relFiltroContratosServico) lista=lista.filter(c=>String(c.servicoTipo||"")===String(relFiltroContratosServico));
+      if(relFiltroContratosUH) lista=lista.filter(c=>contratoUnidadesArray(c).includes(relFiltroContratosUH));
+      if(relFiltroContratosFonte) lista=lista.filter(c=>contratoTemFonte(c,relFiltroContratosFonte));
+      if(relFiltroContratosExecucaoStatus){
+        lista=lista.filter(c=>calcularExecucaoContrato(c).status===relFiltroContratosExecucaoStatus);
+      }
+      return lista;
+    }
+
+    function pagamentoPassaFiltroFonteRelatorio(p){
+      if(!relFiltroPagamentosFonte) return true;
+      const filtro=String(resumirFonteRecurso(relFiltroPagamentosFonte)).toLowerCase();
+      const fontes=obterFontesDistintasPagamento(p).map(i=>String(i.codigo||"").toLowerCase());
+      return fontes.some(f=>f===filtro || f.includes(filtro));
+    }
+
+    function obterPagamentosRelatorioFiltrados(){
+      const {inicio,fim}=obterPeriodoRelatorio();
+      let lista=aplicarFiltroLeitorPagamentos(allPagamentos).filter(p=>!p.anoExercicio || String(p.anoExercicio)===String(exercicioAtivo));
+
+      if(!relFiltroPagamentosMostrarPagos){
+        lista=lista.filter(p=>!pagamentoEstaPago(p));
+      }
+      lista=lista.filter(p=>dataEstaNoPeriodo(p.atualizadoEm||p.criadoEm,inicio,fim));
+
+      if(relFiltroPagamentosSituacao) lista=lista.filter(p=>String(p.situacao||"")===String(relFiltroPagamentosSituacao));
+      if(relFiltroPagamentosCompetencia) lista=lista.filter(p=>String(p.competencia||"")===String(relFiltroPagamentosCompetencia));
+      if(relFiltroPagamentosTipoProcesso) lista=lista.filter(p=>String(p.tipoProcessoPagamento||"convencional")===String(relFiltroPagamentosTipoProcesso));
+      if(relFiltroPagamentosFonte) lista=lista.filter(p=>pagamentoPassaFiltroFonteRelatorio(p));
+      if(relFiltroPagamentosUH) lista=lista.filter(p=>String(p.uh||"")===String(relFiltroPagamentosUH));
+      if(relFiltroPagamentosEmpresa || relFiltroPagamentosServico){
+        lista=lista.filter(p=>{
+          const contrato=allContratos.find(c=>String(c.id)===String(p.contrato_id));
+          if(relFiltroPagamentosEmpresa && String(contrato?.empresa||"")!==String(relFiltroPagamentosEmpresa)) return false;
+          if(relFiltroPagamentosServico && String(contrato?.servicoTipo||"")!==String(relFiltroPagamentosServico)) return false;
+          return true;
+        });
+      }
+      return lista;
+    }
+
+    function limparFiltrosRelatorios(){
+      relFiltroContratosEmpresa="";
+      relFiltroContratosServico="";
+      relFiltroContratosUH="";
+      relFiltroContratosFonte="";
+      relFiltroContratosExecucaoStatus="";
+      relFiltroPagamentosSituacao="";
+      relFiltroPagamentosCompetencia="";
+      relFiltroPagamentosTipoProcesso="";
+      relFiltroPagamentosFonte="";
+      relFiltroPagamentosEmpresa="";
+      relFiltroPagamentosUH="";
+      relFiltroPagamentosServico="";
+      relFiltroPagamentosMostrarPagos=true;
+      renderRelatorios(document.getElementById("content-area"));
+    }
+
     function montarDadosRelatorio(tipo){
-      const contratos=aplicarFiltroLeitorContratos(allContratos).filter(c=>!c.anoExercicio || String(c.anoExercicio)===String(exercicioAtivo));
-      const pagamentos=obterPagamentosFiltrados ? obterPagamentosFiltrados() : aplicarFiltroLeitorPagamentos(allPagamentos);
+      const contratos=obterContratosRelatorioFiltrados();
+      const pagamentos=obterPagamentosRelatorioFiltrados();
       const auditoria=carregarAuditoria();
 
       if(tipo==="pagamentos"){
@@ -7920,7 +8137,7 @@ function renderAuditoria(el){
             formatarCompetenciaBR(p.competencia),
             fmtM(p.nfValor),
             p.situacao||"—",
-            p.fonteRecurso||"—",
+            obterCodigoFontePagamento(p)||p.fonteRecurso||"—",
             empenhos||"—",
             p.observacoes||""
           ];
@@ -8020,11 +8237,25 @@ function renderAuditoria(el){
     }
 
 function renderRelatorios(el){
+      currentTab="relatorios";
+      localStorage.setItem("sigecon_ultima_aba","relatorios");
+      if(usuarioAutenticado) salvarSessao();
+
       const relatorios=[
         {id:"contratos",nome:"Execução Orçamentária",desc:"Consolidado de contratos, empenhos, execução e saldo",icone:"bar-chart-3"},
         {id:"pagamentos",nome:"Processos de Pagamento",desc:"Relação de processos, competência, situação, fonte e valores",icone:"credit-card"},
         {id:"auditoria",nome:"Auditoria Mensal",desc:"Rastreabilidade de alterações e indicadores auditáveis",icone:"search"},
       ];
+
+      const contratosBase=aplicarFiltroLeitorContratos(allContratos).filter(c=>!c.anoExercicio || String(c.anoExercicio)===String(exercicioAtivo));
+      const pagamentosBase=aplicarFiltroLeitorPagamentos(allPagamentos).filter(p=>!p.anoExercicio || String(p.anoExercicio)===String(exercicioAtivo));
+      const competenciasRel=[...new Set(pagamentosBase.map(p=>p.competencia).filter(Boolean))].sort().reverse();
+      const fontesRel=obterFontesDisponiveis(contratosBase);
+      const empresasRel=obterEmpresasDisponiveis(contratosBase);
+      const servicosRel=obterServicosDisponiveisPorContratos(contratosBase);
+      const unidadesRel=[...new Set([...(listas.unidades||[]),...contratosBase.flatMap(c=>contratoUnidadesArray(c)),...pagamentosBase.map(p=>p.uh).filter(Boolean)])].filter(Boolean).sort((a,b)=>a.localeCompare(b,"pt-BR"));
+      const totalContratosRel=obterContratosRelatorioFiltrados().length;
+      const totalPagamentosRel=obterPagamentosRelatorioFiltrados().length;
 
       el.innerHTML=`
       <div class="fade-in space-y-6">
@@ -8034,15 +8265,25 @@ function renderRelatorios(el){
         </div>
 
         <div class="glass rounded-xl p-6">
-          <h3 class="font-bold text-navy-900 mb-4">Configurações de Relatório</h3>
+          <div class="flex items-start justify-between gap-3 flex-wrap mb-4">
+            <div>
+              <h3 class="font-bold text-navy-900">Configurações e Filtros de Relatório</h3>
+              <p class="text-xs text-steel-500 mt-1">Os filtros abaixo espelham Contratos e Pagamentos para gerar PDF/CSV já refinado.</p>
+            </div>
+            <div class="flex gap-2 flex-wrap">
+              <span class="soft-badge">Contratos: ${totalContratosRel}</span>
+              <span class="soft-badge">Pagamentos: ${totalPagamentosRel}</span>
+            </div>
+          </div>
+
           <div class="grid md:grid-cols-3 gap-4 mb-6">
             <div>
               <label class="block text-xs font-bold text-navy-900 mb-2">Período Inicial</label>
-              <input id="relatorio-periodo-inicial" type="date" class="input-field w-full" value="${exercicioAtivo}-01-01">
+              <input id="relatorio-periodo-inicial" type="date" class="input-field w-full" value="${document.getElementById('relatorio-periodo-inicial')?.value||`${exercicioAtivo}-01-01`}" onchange="renderRelatorios(document.getElementById('content-area'))">
             </div>
             <div>
               <label class="block text-xs font-bold text-navy-900 mb-2">Período Final</label>
-              <input id="relatorio-periodo-final" type="date" class="input-field w-full" value="${exercicioAtivo}-12-31">
+              <input id="relatorio-periodo-final" type="date" class="input-field w-full" value="${document.getElementById('relatorio-periodo-final')?.value||`${exercicioAtivo}-12-31`}" onchange="renderRelatorios(document.getElementById('content-area'))">
             </div>
             <div>
               <label class="block text-xs font-bold text-navy-900 mb-2">Formato preferencial</label>
@@ -8052,7 +8293,98 @@ function renderRelatorios(el){
               </select>
             </div>
           </div>
-          <button onclick="const tipo=document.getElementById('relatorio-formato').value; tipo==='pdf'?baixarRelatorioPDF('contratos'):baixarRelatorioCSV('contratos')" class="btn-primary px-4 py-2 rounded-lg">🔄 Gerar Relatório Geral</button>
+
+          <div class="grid lg:grid-cols-2 gap-4">
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div class="flex items-center gap-2 mb-3">
+                <i data-lucide="file-signature" class="w-4 h-4 text-navy-700"></i>
+                <p class="font-black text-navy-900 text-sm uppercase tracking-wide">Filtros de Contratos</p>
+              </div>
+              <div class="grid md:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[10px] font-bold text-navy-900 mb-1">Empresa</label>
+                  <select class="input-field w-full text-xs" onchange="relFiltroContratosEmpresa=this.value;renderRelatorios(document.getElementById('content-area'))">${renderSelectOptions(empresasRel, relFiltroContratosEmpresa, "Todas")}</select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-navy-900 mb-1">Serviço</label>
+                  <select class="input-field w-full text-xs" onchange="relFiltroContratosServico=this.value;renderRelatorios(document.getElementById('content-area'))">
+                    <option value="">Todos</option>${servicosRel.map(s=>`<option value="${escapeHtml(s)}" ${String(relFiltroContratosServico)===String(s)?"selected":""}>${escapeHtml(servicoLabel(s))}</option>`).join("")}
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-navy-900 mb-1">Unidade</label>
+                  <select class="input-field w-full text-xs" onchange="relFiltroContratosUH=this.value;renderRelatorios(document.getElementById('content-area'))">${renderSelectOptions(unidadesRel, relFiltroContratosUH, "Todas")}</select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-navy-900 mb-1">Fonte de Recurso</label>
+                  <select class="input-field w-full text-xs" onchange="relFiltroContratosFonte=this.value;renderRelatorios(document.getElementById('content-area'))">${renderSelectOptions(fontesRel, relFiltroContratosFonte, "Todas")}</select>
+                </div>
+                <div class="md:col-span-2">
+                  <label class="block text-[10px] font-bold text-navy-900 mb-1">Status de Execução</label>
+                  <select class="input-field w-full text-xs" onchange="relFiltroContratosExecucaoStatus=this.value;renderRelatorios(document.getElementById('content-area'))">
+                    <option value="" ${!relFiltroContratosExecucaoStatus?"selected":""}>Todos</option>
+                    <option value="abaixo" ${relFiltroContratosExecucaoStatus==="abaixo"?"selected":""}>Abaixo do esperado</option>
+                    <option value="dentro" ${relFiltroContratosExecucaoStatus==="dentro"?"selected":""}>Dentro do esperado</option>
+                    <option value="acima" ${relFiltroContratosExecucaoStatus==="acima"?"selected":""}>Acima do esperado</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div class="flex items-center gap-2 mb-3">
+                <i data-lucide="wallet-cards" class="w-4 h-4 text-navy-700"></i>
+                <p class="font-black text-navy-900 text-sm uppercase tracking-wide">Filtros de Pagamentos</p>
+              </div>
+              <div class="grid md:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[10px] font-bold text-navy-900 mb-1">Situação</label>
+                  <select class="input-field w-full text-xs" onchange="relFiltroPagamentosSituacao=this.value;renderRelatorios(document.getElementById('content-area'))">${renderSelectOptions(listas.situacoes||["A liquidar","Liquidado","Pago","Na unidade"], relFiltroPagamentosSituacao, "Todas")}</select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-navy-900 mb-1">Competência</label>
+                  <select class="input-field w-full text-xs" onchange="relFiltroPagamentosCompetencia=this.value;renderRelatorios(document.getElementById('content-area'))">${renderSelectOptions(competenciasRel, relFiltroPagamentosCompetencia, "Todas")}</select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-navy-900 mb-1">Tipo</label>
+                  <select class="input-field w-full text-xs" onchange="relFiltroPagamentosTipoProcesso=this.value;renderRelatorios(document.getElementById('content-area'))">
+                    <option value="" ${!relFiltroPagamentosTipoProcesso?"selected":""}>Todos</option>
+                    <option value="convencional" ${relFiltroPagamentosTipoProcesso==="convencional"?"selected":""}>Convencional</option>
+                    <option value="indenizatorio" ${relFiltroPagamentosTipoProcesso==="indenizatorio"?"selected":""}>Indenizatório</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-navy-900 mb-1">Fonte de Recurso</label>
+                  <select class="input-field w-full text-xs" onchange="relFiltroPagamentosFonte=this.value;renderRelatorios(document.getElementById('content-area'))">${renderSelectOptions(fontesRel, relFiltroPagamentosFonte, "Todas")}</select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-navy-900 mb-1">Empresa</label>
+                  <select class="input-field w-full text-xs" onchange="relFiltroPagamentosEmpresa=this.value;renderRelatorios(document.getElementById('content-area'))">${renderSelectOptions(empresasRel, relFiltroPagamentosEmpresa, "Todas")}</select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-navy-900 mb-1">Unidade</label>
+                  <select class="input-field w-full text-xs" onchange="relFiltroPagamentosUH=this.value;renderRelatorios(document.getElementById('content-area'))">${renderSelectOptions(unidadesRel, relFiltroPagamentosUH, "Todas")}</select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-navy-900 mb-1">Serviço</label>
+                  <select class="input-field w-full text-xs" onchange="relFiltroPagamentosServico=this.value;renderRelatorios(document.getElementById('content-area'))">
+                    <option value="">Todos</option>${servicosRel.map(s=>`<option value="${escapeHtml(s)}" ${String(relFiltroPagamentosServico)===String(s)?"selected":""}>${escapeHtml(servicoLabel(s))}</option>`).join("")}
+                  </select>
+                </div>
+                <div class="flex items-end">
+                  <button onclick="relFiltroPagamentosMostrarPagos=!relFiltroPagamentosMostrarPagos;renderRelatorios(document.getElementById('content-area'))" class="${relFiltroPagamentosMostrarPagos?'bg-emerald-100 text-emerald-700':'bg-white text-navy-700 border border-slate-200'} w-full px-3 py-3 rounded-lg text-xs font-bold">
+                    ${relFiltroPagamentosMostrarPagos?'Incluindo pagos':'Ocultando pagos'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex gap-2 flex-wrap mt-5">
+            <button onclick="const tipo=document.getElementById('relatorio-formato').value; tipo==='pdf'?baixarRelatorioPDF('contratos'):baixarRelatorioCSV('contratos')" class="btn-primary px-4 py-2 rounded-lg">Gerar Relatório de Contratos</button>
+            <button onclick="const tipo=document.getElementById('relatorio-formato').value; tipo==='pdf'?baixarRelatorioPDF('pagamentos'):baixarRelatorioCSV('pagamentos')" class="btn-primary px-4 py-2 rounded-lg">Gerar Relatório de Pagamentos</button>
+            <button onclick="limparFiltrosRelatorios()" class="btn-secondary px-4 py-2 rounded-lg">Limpar filtros</button>
+          </div>
         </div>
 
         <div class="grid md:grid-cols-3 gap-5">
