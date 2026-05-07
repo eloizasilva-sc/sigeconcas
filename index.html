@@ -3002,6 +3002,31 @@ function obterValorMoedaInput(id){
     }
 
 
+    function servicoEhLaboratorio(valor){
+      const v=String(valor||"").toLowerCase();
+      return v.includes("laboratorio") || v.includes("laboratório") || v.includes("laboratorial") || v.includes("teste");
+    }
+
+    function atualizarVisibilidadeParametrosLaboratorio(prefixo="form"){
+      const servico=document.getElementById(`${prefixo}-servico`)?.value||"";
+      const bloco=document.getElementById(`${prefixo}-parametros-lab`);
+      const isLab=servicoEhLaboratorio(servico);
+      if(bloco){
+        bloco.classList.toggle("hidden",!isLab);
+        bloco.style.display=isLab?"":"none";
+      }
+      if(isLab){
+        atualizarTodosEstimadosLab(prefixo);
+      }
+    }
+
+    function obterExamesLaboratorioSeAplicavel(prefixo="form"){
+      const servico=document.getElementById(`${prefixo}-servico`)?.value||"";
+      if(!servicoEhLaboratorio(servico)) return [];
+      return coletarExamesLaboratorio(`${prefixo}-lista-exames-lab`,prefixo);
+    }
+
+
     function calcularEstimadoMensalLaboratorio(qtdTotal,inicio,fim){
       const total=parseInt(qtdTotal||0,10)||0;
       const meses=calcularMesesVigencia(inicio,fim);
@@ -3055,11 +3080,11 @@ function obterValorMoedaInput(id){
             <input type="text" class="input-field w-full lab-exame-nome" value="${nome}" placeholder="Ex.: D-Dímero, Troponina, Locação/Interfaceamento" list="lista-exames-lab">
           </div>
           <div class="col-span-6 md:col-span-3">
-            <label class="block text-[10px] font-bold text-slate-600 mb-1">Qtd. prevista no contrato</label>
+            <label class="block text-[10px] font-bold text-slate-600 mb-1">Nº de testes contratados</label>
             <input type="number" min="0" class="input-field w-full lab-exame-qtd" value="${qtd}" placeholder="Ex.: 20000" oninput="atualizarEstimadoExameLaboratorio(this,'${prefixo}')">
           </div>
           <div class="col-span-6 md:col-span-3">
-            <label class="block text-[10px] font-bold text-slate-600 mb-1">Estimado/mês</label>
+            <label class="block text-[10px] font-bold text-slate-600 mb-1">Nº de testes estimados/mês</label>
             <input type="number" min="0" class="input-field w-full bg-slate-100 lab-exame-estimado" value="${estimado}" placeholder="Auto" readonly>
           </div>
           <div class="col-span-12 md:col-span-2 flex items-end gap-2">
@@ -5015,7 +5040,7 @@ function openNovoContratoModal(){
         <form onsubmit="salvarContrato(event)" class="space-y-4 max-h-96 overflow-y-auto">
           <div class="bg-navy-50 rounded-lg p-4 border border-navy-200/30">
             <label class="block text-xs font-bold text-navy-900 mb-2 flex items-center gap-2"><i data-lucide="briefcase" class="w-4 h-4"></i>TIPO DE SERVIÇO *</label>
-            <select id="form-servico" class="input-field w-full" required>
+            <select id="form-servico" class="input-field w-full" required onchange="atualizarVisibilidadeParametrosLaboratorio('form')">
               ${renderServicoOptions("",true)}
             </select>
           </div>
@@ -5072,7 +5097,7 @@ function openNovoContratoModal(){
             </div>
           </div>
 
-          <div class="bg-violet-50 rounded-lg p-4 border border-violet-200/40">
+          <div id="form-parametros-lab" class="bg-violet-50 rounded-lg p-4 border border-violet-200/40 hidden">
             <datalist id="lista-exames-lab">
               <option value="D-Dímero"></option>
               <option value="Troponina"></option>
@@ -5083,7 +5108,7 @@ function openNovoContratoModal(){
             <div class="flex items-start justify-between gap-3 mb-3">
               <div>
                 <label class="block text-xs font-bold text-navy-900">🧪 Parâmetros de Laboratórios por exame/item</label>
-                <p class="text-[10px] text-steel-600 mt-1">Cadastre cada exame ou item do contrato. O estimado/mês é calculado automaticamente pela vigência do contrato.</p>
+                <p class="text-[10px] text-steel-600 mt-1">Campo exclusivo para contratos de Laboratórios. Cadastre cada exame/item, o nº de testes contratados e o estimado/mês será calculado automaticamente pela vigência do contrato.</p>
               </div>
               <button type="button" onclick="adicionarLinhaExameLaboratorio('form-lista-exames-lab','form')" class="btn-secondary px-3 py-2 rounded-lg text-xs">+ Exame/item</button>
             </div>
@@ -5126,6 +5151,7 @@ function openNovoContratoModal(){
           </div>
         </form>`;
       openModal("Novo Contrato (Multi-Unidade)",content);
+      atualizarVisibilidadeParametrosLaboratorio("form");
     }
 
     async function salvarContrato(e){
@@ -5174,9 +5200,9 @@ function openNovoContratoModal(){
         valorContrato:valorContrato,
         valorEstimadoMensal:valorMensal,
         servicoTipo:document.getElementById("form-servico").value,
-        examesLaboratorio:coletarExamesLaboratorio("form-lista-exames-lab","form"),
-        numTestesContrato:coletarExamesLaboratorio("form-lista-exames-lab","form").reduce((s,e)=>s+(parseInt(e.quantidadeContrato||0,10)||0),0),
-        numTestesEstimadoMes:coletarExamesLaboratorio("form-lista-exames-lab","form").reduce((s,e)=>s+(parseInt(e.estimadoMes||0,10)||0),0),
+        examesLaboratorio:obterExamesLaboratorioSeAplicavel("form"),
+        numTestesContrato:obterExamesLaboratorioSeAplicavel("form").reduce((s,e)=>s+(parseInt(e.quantidadeContrato||0,10)||0),0),
+        numTestesEstimadoMes:obterExamesLaboratorioSeAplicavel("form").reduce((s,e)=>s+(parseInt(e.estimadoMes||0,10)||0),0),
         anoExercicio:exercicioAtivo,
         status:"Ativo",
         valorEmpenho2026:calcularValorEmpenhadoContrato({empenhos}),
@@ -5283,7 +5309,7 @@ function editarContrato(id){
         <form onsubmit="atualizarContrato(event,'${id}')" class="space-y-4 max-h-96 overflow-y-auto">
           <div class="bg-navy-50 rounded-lg p-4 border border-navy-200/30">
             <label class="block text-xs font-semibold text-navy-900 mb-1">Tipo de Serviço</label>
-            <select id="edit-servico" class="input-field w-full" required>
+            <select id="edit-servico" class="input-field w-full" required onchange="atualizarVisibilidadeParametrosLaboratorio('edit')">
               ${renderServicoOptions(c.servicoTipo,true)}
             </select>
           </div>
@@ -5340,7 +5366,7 @@ function editarContrato(id){
             </div>
           </div>
 
-          <div class="bg-violet-50 rounded-lg p-4 border border-violet-200/40">
+          <div id="edit-parametros-lab" class="bg-violet-50 rounded-lg p-4 border border-violet-200/40 hidden">
             <datalist id="lista-exames-lab">
               <option value="D-Dímero"></option>
               <option value="Troponina"></option>
@@ -5351,7 +5377,7 @@ function editarContrato(id){
             <div class="flex items-start justify-between gap-3 mb-3">
               <div>
                 <label class="block text-xs font-semibold text-navy-900">🧪 Parâmetros de Laboratórios por exame/item</label>
-                <p class="text-[10px] text-steel-600 mt-1">Cadastre cada exame ou item do contrato. O estimado/mês é calculado automaticamente pela vigência do contrato.</p>
+                <p class="text-[10px] text-steel-600 mt-1">Campo exclusivo para contratos de Laboratórios. Cadastre cada exame/item, o nº de testes contratados e o estimado/mês será calculado automaticamente pela vigência do contrato.</p>
               </div>
               <button type="button" onclick="adicionarLinhaExameLaboratorio('edit-lista-exames-lab','edit')" class="btn-secondary px-3 py-2 rounded-lg text-xs">+ Exame/item</button>
             </div>
@@ -5387,6 +5413,7 @@ function editarContrato(id){
           </div>
         </form>`;
       openModal("Editar Contrato",content);
+      atualizarVisibilidadeParametrosLaboratorio("edit");
       setTimeout(()=>atualizarValorMensalContrato('edit'),50);
     }
 
@@ -5425,9 +5452,9 @@ function editarContrato(id){
         valorContrato:obterValorMoedaInput("edit-valor-contrato"),
         valorEstimadoMensal:calcularValorMensalContrato(obterValorMoedaInput("edit-valor-contrato"),document.getElementById("edit-vigini").value,document.getElementById("edit-vigfim").value),
         servicoTipo:document.getElementById("edit-servico").value,
-        examesLaboratorio:coletarExamesLaboratorio("edit-lista-exames-lab","edit"),
-        numTestesContrato:coletarExamesLaboratorio("edit-lista-exames-lab","edit").reduce((s,e)=>s+(parseInt(e.quantidadeContrato||0,10)||0),0),
-        numTestesEstimadoMes:coletarExamesLaboratorio("edit-lista-exames-lab","edit").reduce((s,e)=>s+(parseInt(e.estimadoMes||0,10)||0),0),
+        examesLaboratorio:obterExamesLaboratorioSeAplicavel("edit"),
+        numTestesContrato:obterExamesLaboratorioSeAplicavel("edit").reduce((s,e)=>s+(parseInt(e.quantidadeContrato||0,10)||0),0),
+        numTestesEstimadoMes:obterExamesLaboratorioSeAplicavel("edit").reduce((s,e)=>s+(parseInt(e.estimadoMes||0,10)||0),0),
         empenhos:empenhos,
         empenhosTexto:empenhosTexto,
         valorEmpenho2026:calcularValorEmpenhadoContrato({empenhos}),
@@ -7468,7 +7495,7 @@ function editarPagamento(id){
                 <input type="number" min="0" class="input-field w-full bg-slate-100 prod-lab-contrato" value="${parseInt(item.quantidadeContrato||0,10)||0}" readonly>
               </div>
               <div class="col-span-4 md:col-span-3">
-                <label class="block text-[10px] font-bold text-slate-600 mb-1">Estimado/mês</label>
+                <label class="block text-[10px] font-bold text-slate-600 mb-1">Nº de testes estimados/mês</label>
                 <input type="number" min="0" class="input-field w-full bg-slate-100 prod-lab-estimado" value="${parseInt(item.estimadoMes||0,10)||0}" readonly>
               </div>
             </div>`;
@@ -8160,7 +8187,7 @@ function openNovaProducaoModal(pagamentoIdSelecionado=""){
           <p class="text-steel-500 font-semibold">Nenhum exercício cadastrado. Clique em "Novo Exercício" para criar.</p>
         </div>
         `:`
-        <div class="grid md:grid-cols-3 gap-5">
+        <div class="grid md:grid-cols-2 xl:grid-cols-4 gap-5">
           ${exerciciosFiltrados.map((ex,idx)=>`
           <div class="glass rounded-xl p-6 card-hover fade-in" style="animation-delay:${idx*60}ms">
             <div class="flex items-center justify-between mb-4">
@@ -8673,6 +8700,38 @@ function renderAuditoria(el){
       renderRelatorios(document.getElementById("content-area"));
     }
 
+    function obterPagamentosProducaoRelatorioFiltrados(){
+      // A produção é sempre vinculada ao processo de pagamento.
+      // Assim, os mesmos filtros de pagamentos da aba Relatórios também refinam o relatório de produção.
+      return obterPagamentosRelatorioFiltrados().filter(p=>{
+        const contrato=allContratos.find(c=>String(c.id)===String(p.contrato_id));
+        if(!contrato) return false;
+        if(relFiltroContratosEmpresa && String(contrato.empresa||"")!==String(relFiltroContratosEmpresa)) return false;
+        if(relFiltroContratosServico && String(contrato.servicoTipo||"")!==String(relFiltroContratosServico)) return false;
+        if(relFiltroContratosUH && !contratoUnidadesArray(contrato).includes(relFiltroContratosUH)) return false;
+        if(relFiltroContratosFonte && !contratoTemFonte(contrato,relFiltroContratosFonte)) return false;
+        return true;
+      });
+    }
+
+    function obterProducaoRelatorioFiltrada(){
+      const pagamentos=obterPagamentosProducaoRelatorioFiltrados();
+      const ids=new Set(pagamentos.map(p=>String(p.id)));
+      return (allProducao||[]).filter(pr=>ids.has(String(pr.pagamento_id)));
+    }
+
+    function resumoExamesLaboratorioRelatorio(pr){
+      const exames=Array.isArray(pr?.examesLaboratorio)?pr.examesLaboratorio:[];
+      if(!exames.length) return "";
+      return exames.map(e=>{
+        const nome=e.nome||"Exame/item";
+        const realizados=parseInt(e.realizados||0,10)||0;
+        const contratado=parseInt(e.quantidadeContrato||0,10)||0;
+        const estimado=parseInt(e.estimadoMes||0,10)||0;
+        return `${nome}: realizados ${realizados}; contratados ${contratado}; estimado/mês ${estimado}`;
+      }).join(" | ");
+    }
+
     function montarDadosRelatorio(tipo){
       const contratos=obterContratosRelatorioFiltrados();
       const pagamentos=obterPagamentosRelatorioFiltrados();
@@ -8696,6 +8755,38 @@ function renderAuditoria(el){
           ];
         });
         return {titulo:"Relatório de Processos de Pagamento",cab,linhas};
+      }
+
+      if(tipo==="producao"){
+        const pagamentosProd=obterPagamentosProducaoRelatorioFiltrados();
+        const cab=["Processo SEI","Contrato","Empresa","Unidade","Serviço","Competência","Valor Pagamento","Status Produção","Pacientes","Procedimentos/Cirurgias","Sessões HD","Cateter","Testes Realizados","Testes Contratados","Testes Estimados/Mês","Exames/Itens Laboratório","Laudos","Tomografias","Observações"];
+        const linhas=pagamentosProd.map(p=>{
+          const c=allContratos.find(ct=>String(ct.id)===String(p.contrato_id));
+          const pr=(allProducao||[]).find(x=>String(x.pagamento_id)===String(p.id))||{};
+          const procedimentos=(parseInt(pr.numProcedimentos||0,10)||0)+(parseInt(pr.numCirurgias||0,10)||0);
+          return [
+            obterProcessoSEIPagamento(p),
+            c?.nContrato||"—",
+            c?.empresa||"—",
+            p.uh||pr.uh||"—",
+            servicoLabel(c?.servicoTipo||pr.servicoTipo||""),
+            formatarCompetenciaBR(p.competencia||pr.competencia),
+            fmtM(p.nfValor||pr.nfValor),
+            pr.id?"Registrada":"Pendente",
+            pr.id?(parseInt(pr.numPacientes||0,10)||0):"",
+            pr.id?procedimentos:"",
+            pr.id?(parseInt(pr.numSessoesHD||0,10)||0):"",
+            pr.id?(parseInt(pr.numInsercaoCateter||0,10)||0):"",
+            pr.id?(parseInt(pr.numTestesRealizados||0,10)||0):"",
+            pr.id?(parseInt(pr.numTestesContrato||0,10)||0):"",
+            pr.id?(parseInt(pr.numTestesEstimadoMes||0,10)||0):"",
+            pr.id?resumoExamesLaboratorioRelatorio(pr):"",
+            pr.id?(parseInt(pr.numLaudos||0,10)||0):"",
+            pr.id?(parseInt(pr.numTomografias||0,10)||0):"",
+            pr.observacoes||""
+          ];
+        });
+        return {titulo:"Relatório de Produção",cab,linhas};
       }
 
       if(tipo==="auditoria"){
@@ -8797,6 +8888,7 @@ function renderRelatorios(el){
       const relatorios=[
         {id:"contratos",nome:"Execução Orçamentária",desc:"Consolidado de contratos, empenhos, execução e saldo",icone:"bar-chart-3"},
         {id:"pagamentos",nome:"Processos de Pagamento",desc:"Relação de processos, competência, situação, fonte e valores",icone:"credit-card"},
+        {id:"producao",nome:"Produção",desc:"Produção vinculada aos processos de pagamento cadastrados",icone:"activity"},
         {id:"auditoria",nome:"Auditoria Mensal",desc:"Rastreabilidade de alterações e indicadores auditáveis",icone:"search"},
       ];
 
@@ -8809,6 +8901,7 @@ function renderRelatorios(el){
       const unidadesRel=[...new Set([...(listas.unidades||[]),...contratosBase.flatMap(c=>contratoUnidadesArray(c)),...pagamentosBase.map(p=>p.uh).filter(Boolean)])].filter(Boolean).sort((a,b)=>a.localeCompare(b,"pt-BR"));
       const totalContratosRel=obterContratosRelatorioFiltrados().length;
       const totalPagamentosRel=obterPagamentosRelatorioFiltrados().length;
+      const totalProducaoRel=obterProducaoRelatorioFiltrada().length;
 
       el.innerHTML=`
       <div class="fade-in space-y-6">
@@ -8826,6 +8919,7 @@ function renderRelatorios(el){
             <div class="flex gap-2 flex-wrap">
               <span class="soft-badge">Contratos: ${totalContratosRel}</span>
               <span class="soft-badge">Pagamentos: ${totalPagamentosRel}</span>
+              <span class="soft-badge">Produção: ${totalProducaoRel}</span>
             </div>
           </div>
 
@@ -8936,6 +9030,7 @@ function renderRelatorios(el){
           <div class="flex gap-2 flex-wrap mt-5">
             <button onclick="const tipo=document.getElementById('relatorio-formato').value; tipo==='pdf'?baixarRelatorioPDF('contratos'):baixarRelatorioCSV('contratos')" class="btn-primary px-4 py-2 rounded-lg">Gerar Relatório de Contratos</button>
             <button onclick="const tipo=document.getElementById('relatorio-formato').value; tipo==='pdf'?baixarRelatorioPDF('pagamentos'):baixarRelatorioCSV('pagamentos')" class="btn-primary px-4 py-2 rounded-lg">Gerar Relatório de Pagamentos</button>
+            <button onclick="const tipo=document.getElementById('relatorio-formato').value; tipo==='pdf'?baixarRelatorioPDF('producao'):baixarRelatorioCSV('producao')" class="btn-primary px-4 py-2 rounded-lg">Gerar Relatório de Produção</button>
             <button onclick="limparFiltrosRelatorios()" class="btn-secondary px-4 py-2 rounded-lg">Limpar filtros</button>
           </div>
         </div>
