@@ -962,6 +962,7 @@
     let filtroPagamentosServico="";
     let filtroPagamentosCompetencia="";
     let filtroPagamentosTipoProcesso="";
+    let filtroPagamentosFonte="";
     let filtroContratosExecucaoStatus="";
     let filtroContratosEmpresa="";
     let filtroContratosServico="";
@@ -3251,6 +3252,7 @@ function renderListaAlertasVigencia(alertas){
       filtroPagamentosServico="";
       filtroPagamentosCompetencia="";
       filtroPagamentosTipoProcesso="";
+      filtroPagamentosFonte="";
       renderPagamentos(document.getElementById("content-area"));
     }
 
@@ -4224,7 +4226,7 @@ function normalizarListaFinanceira(lista=[]){
           </div>
           <div class="col-span-10 md:col-span-2">
             <label class="block text-[10px] font-bold text-navy-900 mb-1">${valorLabel}</label>
-            <input type="text" inputmode="decimal" class="input-field fin-valor w-full" placeholder="R$ 0,00" value="${formatarMoedaBR(item.valor)||""}" onblur="aplicarMascaraMoedaBR(this)">
+            <input type="text" inputmode="decimal" class="input-field fin-valor w-full" placeholder="R$ 0,00" value="${formatarMoedaBR(item.valor)||""}" oninput="atualizarResumoFinanceiroLinha(this)" onblur="aplicarMascaraMoedaBR(this);atualizarResumoFinanceiroLinha(this)">
           </div>
           <button type="button" onclick="this.closest('.linha-financeira').remove()" class="col-span-2 md:col-span-1 text-red-600 hover:bg-red-50 rounded-lg font-bold h-12">×</button>
         </div>
@@ -4347,8 +4349,11 @@ function normalizarListaFinanceira(lista=[]){
             <p class="font-bold text-navy-900">${escapeHtml(descricao)}</p>
             <p class="text-xs text-steel-500 mt-1">Processo SEI: <strong>${escapeHtml(obterProcessoSEIPagamento(p))}</strong></p>
           </div>
-          <div class="space-y-2" id="modal-complemento-list" data-contrato-id="${escapeHtml(p.contrato_id||"")}">
+          <div class="space-y-2" id="modal-complemento-list" data-contrato-id="${escapeHtml(p.contrato_id||"")}" data-nf-valor="${parseValorBR(p.nfValor||0)}">
             ${renderLinhasFinanceirasHTML(tipo,listaAtual,p.contrato_id||"")}
+          </div>
+          <div id="modal-complemento-resumo" class="rounded-lg bg-slate-50 border border-slate-200 p-3 text-xs font-bold text-navy-900">
+            NF: ${fmtM(p.nfValor)} • ${tipo.toUpperCase()}: ${fmtM(somaListaFinanceira(listaAtual))} • Diferença: ${fmtM(parseValorBR(p.nfValor||0)-somaListaFinanceira(listaAtual))}
           </div>
           <button type="button" onclick="adicionarLinhaFinanceira('modal-complemento-list','${tipo}')" class="btn-secondary px-3 py-2 rounded-lg text-xs">+ Adicionar ${tipo==="ob"?"OB":"NL"}</button>
           <div class="flex justify-end gap-2 pt-4 border-t border-sky-100">
@@ -4360,7 +4365,25 @@ function normalizarListaFinanceira(lista=[]){
       openModal(titulo,content);
     }
 
-    async function salvarComplementoSituacaoPagamento(e,id,novaSituacao,tipo){
+    
+    function atualizarResumoFinanceiroLinha(input){
+      const lista=input?.closest(".space-y-2[id$='-list'], #modal-complemento-list");
+      const modalLista=document.getElementById("modal-complemento-list");
+      if(!lista && !modalLista) return;
+
+      const alvo=lista || modalLista;
+      const resumo=document.getElementById("modal-complemento-resumo");
+      if(!resumo || !alvo) return;
+
+      const nf=parseValorBR(alvo.dataset.nfValor||0);
+      const total=[...alvo.querySelectorAll(".fin-valor")].reduce((s,el)=>s+parseValorBR(el.value||0),0);
+      const dif=nf-total;
+      const cls=total && Math.abs(dif)>0.009 ? "bg-red-50 border-red-200 text-red-700" : "bg-emerald-50 border-emerald-200 text-emerald-700";
+      resumo.className=`rounded-lg border p-3 text-xs font-bold ${cls}`;
+      resumo.innerHTML=`NF: ${fmtM(nf)} • Informado: ${fmtM(total)} • Diferença: ${fmtM(dif)}`;
+    }
+
+async function salvarComplementoSituacaoPagamento(e,id,novaSituacao,tipo){
       e.preventDefault();
       const pagamento=allPagamentos.find(p=>String(p.id)===String(id));
       if(!pagamento){
@@ -4371,6 +4394,12 @@ function normalizarListaFinanceira(lista=[]){
       const linhas=coletarLinhasFinanceiras("modal-complemento-list");
       if(!linhas.length){
         showInlineAlert(tipo==="ob"?"Informe pelo menos uma OB.":"Informe pelo menos uma Nota de Lançamento.","error");
+        return;
+      }
+
+      const validacao=validarLinhasFinanceirasContraNF(pagamento,linhas,tipo);
+      if(!validacao.ok){
+        showInlineAlert(validacao.mensagem,"error");
         return;
       }
 
@@ -4608,6 +4637,110 @@ async function alterarSetorPagamentoRapido(id,novoSetor){
       }
     }
 
+
+    function somaListaFinanceira(lista=[]){
+      return normalizarListaFinanceira(lista).reduce((s,item)=>s+parseValorBR(item.valor||0),0);
+    }
+
+    function validarValoresFinanceirosPagamento(p){
+      const valorNF=parseValorBR(p?.nfValor||0);
+      const totalNL=somaListaFinanceira(p?.notasLancamento||[]);
+      const totalOB=somaListaFinanceira(p?.ordensBancarias||[]);
+      const difNL=totalNL?valorNF-totalNL:0;
+      const difOB=totalOB?valorNF-totalOB:0;
+
+      return {
+        valorNF,
+        totalNL,
+        totalOB,
+        difNL,
+        difOB,
+        nlInferior:totalNL>0 && totalNL<valorNF,
+        obInferior:totalOB>0 && totalOB<valorNF,
+        nlDivergente:totalNL>0 && Math.abs(difNL)>0.009,
+        obDivergente:totalOB>0 && Math.abs(difOB)>0.009
+      };
+    }
+
+    function obterContratoPagamento(p){
+      return allContratos.find(c=>String(c.id)===String(p?.contrato_id));
+    }
+
+    function obterFontePorEmpenhoPagamento(p, empenhoNumero=""){
+      const contrato=obterContratoPagamento(p);
+      const empenhosContrato=extrairEmpenhosContrato(contrato||{});
+      const item=empenhosContrato.find(e=>String(e.numero||"")===String(empenhoNumero||""));
+      if(item?.fonte) return item.fonte;
+
+      const empenhosPag=Array.isArray(p?.empenhos)?p.empenhos:[];
+      const empPag=empenhosPag.find(e=>String(e.numero||"")===String(empenhoNumero||""));
+      if(empPag?.fonte) return empPag.fonte;
+
+      return p?.fonteRecurso||"—";
+    }
+
+    function obterValoresPorFontePagamento(p){
+      const mapa=new Map();
+      const obs=normalizarListaFinanceira(p?.ordensBancarias||[]);
+      const nls=normalizarListaFinanceira(p?.notasLancamento||[]);
+      const base=obs.length?obs:nls;
+
+      if(base.length){
+        base.forEach(item=>{
+          const fonte=obterFontePorEmpenhoPagamento(p,item.empenho);
+          const chave=resumirFonteRecurso(fonte);
+          mapa.set(chave,(mapa.get(chave)||0)+parseValorBR(item.valor||0));
+        });
+      }else{
+        const fonte=resumirFonteRecurso(p?.fonteRecurso||"—");
+        mapa.set(fonte,parseValorBR(p?.nfValor||0));
+      }
+
+      return [...mapa.entries()].map(([fonte,valor])=>({fonte,valor}));
+    }
+
+    function renderFontePagamentoResumo(p){
+      const itens=obterValoresPorFontePagamento(p);
+      if(!itens.length) return `<p class="font-bold text-navy-900 mt-1">—</p>`;
+      return itens.map(i=>`
+        <div class="rounded-lg bg-white/70 border border-slate-200 px-2 py-1 mb-1">
+          <p class="font-black text-navy-900">${escapeHtml(i.fonte)}</p>
+          <p class="text-[10px] text-steel-600">${fmtM(i.valor)}</p>
+        </div>
+      `).join("");
+    }
+
+    function renderAlertaValoresFinanceiros(p){
+      const v=validarValoresFinanceirosPagamento(p);
+      const alertas=[];
+      if(v.nlInferior) alertas.push(`NL inferior à NF: falta ${fmtM(v.valorNF-v.totalNL)}`);
+      else if(v.nlDivergente) alertas.push(`NL divergente da NF: diferença ${fmtM(Math.abs(v.difNL))}`);
+
+      if(v.obInferior) alertas.push(`OB inferior à NF: falta ${fmtM(v.valorNF-v.totalOB)}`);
+      else if(v.obDivergente) alertas.push(`OB divergente da NF: diferença ${fmtM(Math.abs(v.difOB))}`);
+
+      if(!alertas.length) return "";
+      return `<div class="mt-1 rounded-lg bg-red-50 border border-red-200 text-red-700 px-2 py-1 text-[10px] font-bold">${alertas.join(" • ")}</div>`;
+    }
+
+    function validarLinhasFinanceirasContraNF(p, linhas, tipo){
+      const valorNF=parseValorBR(p?.nfValor||0);
+      const total=linhas.reduce((s,item)=>s+parseValorBR(item.valor||0),0);
+      if(valorNF>0 && total<valorNF){
+        return {
+          ok:false,
+          mensagem:`⚠️ O valor total de ${tipo.toUpperCase()} está inferior ao valor da NF. NF: ${fmtM(valorNF)} • ${tipo.toUpperCase()}: ${fmtM(total)} • Diferença: ${fmtM(valorNF-total)}`
+        };
+      }
+      if(valorNF>0 && Math.abs(total-valorNF)>0.009){
+        return {
+          ok:false,
+          mensagem:`⚠️ O valor total de ${tipo.toUpperCase()} está diferente do valor da NF. NF: ${fmtM(valorNF)} • ${tipo.toUpperCase()}: ${fmtM(total)} • Diferença: ${fmtM(Math.abs(valorNF-total))}`
+        };
+      }
+      return {ok:true,mensagem:""};
+    }
+
 function obterPagamentosFiltrados(){
       let pagamentosFiltrados=aplicarFiltroLeitorPagamentos(allPagamentos).filter(p=>String(p.anoExercicio)==String(exercicioAtivo)||!p.anoExercicio);
 
@@ -4631,6 +4764,13 @@ function obterPagamentosFiltrados(){
       }
       if(filtroPagamentosTipoProcesso){
         pagamentosFiltrados=pagamentosFiltrados.filter(p=>String(p.tipoProcessoPagamento||"convencional")===String(filtroPagamentosTipoProcesso));
+      }
+      if(filtroPagamentosFonte){
+        pagamentosFiltrados=pagamentosFiltrados.filter(p=>{
+          const fontes=obterValoresPorFontePagamento(p).map(i=>String(i.fonte||"").toLowerCase());
+          const filtro=String(resumirFonteRecurso(filtroPagamentosFonte)).toLowerCase();
+          return fontes.some(f=>f===filtro || f.includes(filtro));
+        });
       }
       if(filtroPagamentosUH){
         pagamentosFiltrados=pagamentosFiltrados.filter(p=>String(p.uh||"")===String(filtroPagamentosUH));
@@ -4812,6 +4952,12 @@ function renderPagamentos(el){
                 </select>
               </div>
               <div>
+                <label class="block text-[10px] font-bold text-navy-900 mb-1">Fonte</label>
+                <select class="input-field w-full text-xs" onchange="filtroPagamentosFonte=this.value;renderPagamentos(document.getElementById('content-area'))">
+                  ${renderSelectOptions(obterFontesDisponiveis(allContratos), filtroPagamentosFonte, "Todas")}
+                </select>
+              </div>
+              <div>
                 <label class="block text-[10px] font-bold text-navy-900 mb-1">Empresa</label>
                 <select class="input-field w-full text-xs" onchange="filtroPagamentosEmpresa=this.value;renderPagamentos(document.getElementById('content-area'))">
                   ${renderSelectOptions(obterEmpresasDisponiveis(allContratos), filtroPagamentosEmpresa, "Todas")}
@@ -4899,6 +5045,7 @@ function renderPagamentos(el){
                                       <div class="flex-1 min-w-0">
                                         <p class="processo-principal break-all">${escapeHtml(obterProcessoSEIPagamento(p))}</p>
                                         <p class="processo-meta mt-1">Atualização: ${formatarDataHoraBR(p.dataUltimaAtualizacaoSituacao || p.atualizadoEm || p.criadoEm)}</p>
+                                        ${renderAlertaValoresFinanceiros(p)}
                                       </div>
                                       ${String(p.tipoProcessoPagamento||"convencional")==="indenizatorio" ? `
                                         <span class="inline-flex items-center px-2 py-1 rounded-lg bg-red-100 text-red-700 text-[10px] font-black border border-red-200 whitespace-nowrap">
@@ -4924,7 +5071,7 @@ function renderPagamentos(el){
                                   <td class="col-fonte">
                                     <div class="rounded-xl border border-slate-200 bg-slate-50 p-2">
                                       <p class="text-[10px] uppercase tracking-wide text-steel-500 font-black">Fonte</p>
-                                      <p class="font-bold text-navy-900 mt-1">${escapeHtml(resumirFonteRecurso(p.fonteRecurso))}</p>
+                                      ${renderFontePagamentoResumo(p)}
                                     </div>
                                   </td>
                                   <td class="col-setor">
@@ -5221,6 +5368,20 @@ function editarPagamento(id){
       }
 
       const totalNotas=notas.reduce((s,n)=>s+parseValorBR(n.valor),0);
+      const situacaoEdit=document.getElementById("edit-situacao-pag").value;
+      const linhasNLEdit=coletarLinhasFinanceiras("edit-nl-list");
+      const linhasOBEdit=coletarLinhasFinanceiras("edit-ob-list");
+      const pagamentoValidacaoEdit={nfValor:totalNotas, notasLancamento:linhasNLEdit, ordensBancarias:linhasOBEdit};
+
+      if(precisaNotaLancamento(situacaoEdit)){
+        const vnl=validarLinhasFinanceirasContraNF(pagamentoValidacaoEdit,linhasNLEdit,"nl");
+        if(!vnl.ok){ showInlineAlert(vnl.mensagem,"error"); return; }
+      }
+      if(precisaOrdemBancaria(situacaoEdit)){
+        const vob=validarLinhasFinanceirasContraNF(pagamentoValidacaoEdit,linhasOBEdit,"ob");
+        if(!vob.ok){ showInlineAlert(vob.mensagem,"error"); return; }
+      }
+
       const pagamentoAtualizado={
         ...pagamentoBase,
         uh:document.getElementById("edit-uh-pag").value,
@@ -5236,13 +5397,13 @@ function editarPagamento(id){
         processoSEI:(document.getElementById("edit-processo-sei-pag")?.value||"").trim() || notas.map(n=>n.sei).filter(Boolean).join(", "),
         dataEmissao:notas[0]?.dataEmissao||"",
         tipoNF:notas.map(n=>n.tipo).join(","),
-        situacao:document.getElementById("edit-situacao-pag").value,
+        situacao:situacaoEdit,
         setor:document.getElementById("edit-setor-pag")?.value||"",
         tipoProcessoPagamento:document.getElementById("edit-tipo-processo-pag")?.value||"convencional",
         valorIndenizatorio:parseValorBR(document.getElementById("edit-valor-indenizatorio-pag")?.value||0),
         empenhoIndenizatorio:(document.getElementById("edit-empenho-indenizatorio-pag")?.value||"").trim(),
-        notasLancamento:coletarLinhasFinanceiras("edit-nl-list"),
-        ordensBancarias:coletarLinhasFinanceiras("edit-ob-list"),
+        notasLancamento:linhasNLEdit,
+        ordensBancarias:linhasOBEdit,
         atualizadoEm:new Date().toISOString()
       };
 
@@ -5529,6 +5690,18 @@ function editarPagamento(id){
         }
 
         const totalNotas=notas.reduce((s,n)=>s+parseValorBR(n.valor),0);
+        const linhasNLForm=typeof coletarLinhasFinanceiras==="function" ? coletarLinhasFinanceiras("form-nl-list") : [];
+        const linhasOBForm=typeof coletarLinhasFinanceiras==="function" ? coletarLinhasFinanceiras("form-ob-list") : [];
+        const pagamentoValidacaoForm={nfValor:totalNotas, notasLancamento:linhasNLForm, ordensBancarias:linhasOBForm};
+
+        if(precisaNotaLancamento(situacao)){
+          const vnl=validarLinhasFinanceirasContraNF(pagamentoValidacaoForm,linhasNLForm,"nl");
+          if(!vnl.ok){ showInlineAlert(vnl.mensagem,"error"); return false; }
+        }
+        if(precisaOrdemBancaria(situacao)){
+          const vob=validarLinhasFinanceirasContraNF(pagamentoValidacaoForm,linhasOBForm,"ob");
+          if(!vob.ok){ showInlineAlert(vob.mensagem,"error"); return false; }
+        }
 
         const novoPagamento={
           id:`pag_${Date.now()}_${Math.random().toString(16).slice(2)}`,
@@ -5550,8 +5723,8 @@ function editarPagamento(id){
           tipoProcessoPagamento:document.getElementById("form-tipo-processo-pag")?.value||"convencional",
           valorIndenizatorio:parseValorBR(document.getElementById("form-valor-indenizatorio-pag")?.value||0),
           empenhoIndenizatorio:(document.getElementById("form-empenho-indenizatorio-pag")?.value||"").trim(),
-          notasLancamento:typeof coletarLinhasFinanceiras==="function" ? coletarLinhasFinanceiras("form-nl-list") : [],
-          ordensBancarias:typeof coletarLinhasFinanceiras==="function" ? coletarLinhasFinanceiras("form-ob-list") : [],
+          notasLancamento:linhasNLForm,
+          ordensBancarias:linhasOBForm,
           tipoNF:notas.map(n=>n.tipo).join(","),
           anoExercicio:exercicioAtivo,
           criadoEm:new Date().toISOString(),
