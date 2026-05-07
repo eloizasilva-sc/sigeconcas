@@ -1150,8 +1150,240 @@
 .pagamentos-compact-table textarea.input-field{
   min-height:54px !important;
 }
+
+
+/* =========================================================
+   AJUSTE PROFISSIONAL FINAL - PAGAMENTOS + SESSÃO
+   - Layout mais limpo, sem dados quebrados
+   - Fonte objetiva: apenas código da fonte vinculada ao empenho
+   ========================================================= */
+#app.sessao-restaurada, #app:not(.hidden){min-height:100vh;}
+.pagamentos-card-header-clean .rounded-2xl{border-radius:18px !important;}
+.pagamentos-card-header-clean .bg-gradient-to-r.from-blue-600.to-blue-700{
+  padding:12px 18px !important;
+  background:linear-gradient(135deg,#123b6b,#1b4f8c) !important;
+}
+.pagamentos-card-header-clean .bg-gradient-to-r.from-blue-600.to-blue-700 p.text-xl{
+  font-size:15px !important;
+  line-height:1.25 !important;
+}
+.pagamentos-card-header-clean .pag-chip{
+  padding:6px 10px !important;
+  font-size:10.5px !important;
+  line-height:1.1 !important;
+  background:#ffffff !important;
+  border:1px solid #e2e8f0 !important;
+}
+.pagamentos-scroll-wrap{
+  width:100% !important;
+  overflow-x:hidden !important;
+  overflow-y:visible !important;
+}
+.pagamentos-compact-table{
+  width:100% !important;
+  table-layout:fixed !important;
+  border-collapse:separate !important;
+  border-spacing:0 !important;
+  font-size:12px !important;
+}
+.pagamentos-compact-table thead,
+.pagamentos-compact-table thead tr,
+.pagamentos-compact-table thead th{
+  background:#f8fafc !important;
+  color:#475569 !important;
+  border-bottom:1px solid #e2e8f0 !important;
+}
+.pagamentos-compact-table th{
+  padding:11px 10px !important;
+  font-size:10px !important;
+  line-height:1.15 !important;
+  letter-spacing:.06em !important;
+  text-transform:uppercase !important;
+  white-space:nowrap !important;
+}
+.pagamentos-compact-table td{
+  padding:12px 10px !important;
+  vertical-align:middle !important;
+  font-size:12px !important;
+  line-height:1.35 !important;
+  overflow:hidden !important;
+}
+.pagamentos-compact-table .col-processo{width:18% !important;min-width:0 !important;}
+.pagamentos-compact-table .col-competencia{width:9% !important;min-width:0 !important;}
+.pagamentos-compact-table .col-valor{width:11% !important;min-width:0 !important;}
+.pagamentos-compact-table .col-situacao{width:13% !important;min-width:0 !important;}
+.pagamentos-compact-table .col-fonte{width:8% !important;min-width:0 !important;text-align:center !important;}
+.pagamentos-compact-table .col-setor{width:12% !important;min-width:0 !important;}
+.pagamentos-compact-table .col-observacoes,
+.pagamentos-compact-table td.col-observacoes,
+.pagamentos-compact-table th.col-observacoes{width:21% !important;min-width:0 !important;}
+.pagamentos-compact-table .col-acoes{width:8% !important;min-width:0 !important;}
+.pagamentos-compact-table .processo-principal{
+  font-size:15px !important;
+  line-height:1.15 !important;
+  font-weight:900 !important;
+  color:#0f172a !important;
+  word-break:break-word !important;
+  overflow-wrap:anywhere !important;
+}
+.pagamentos-compact-table .processo-meta{
+  font-size:10px !important;
+  line-height:1.25 !important;
+  color:#64748b !important;
+  white-space:normal !important;
+}
+.pagamentos-compact-table .col-competencia span{
+  min-height:38px !important;
+  width:100% !important;
+  justify-content:center !important;
+  padding:8px 7px !important;
+  border-radius:12px !important;
+  font-size:12px !important;
+  white-space:nowrap !important;
+}
+.pagamentos-compact-table .col-valor p{
+  font-size:15px !important;
+  line-height:1.15 !important;
+  white-space:nowrap !important;
+}
+.pagamentos-compact-table .col-situacao > div{
+  min-height:0 !important;
+  padding:8px !important;
+  border-radius:14px !important;
+}
+.pagamentos-compact-table .col-situacao select,
+.pagamentos-compact-table .col-setor select{
+  width:100% !important;
+  min-height:34px !important;
+  height:34px !important;
+  padding:5px 8px !important;
+  border-radius:10px !important;
+  font-size:10.5px !important;
+  line-height:1.1 !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+}
+.pagamentos-compact-table .col-situacao .badge,
+.pagamentos-compact-table .col-situacao span{
+  max-width:100% !important;
+  margin-top:4px !important;
+  padding:5px 7px !important;
+  font-size:9.5px !important;
+  line-height:1.1 !important;
+  white-space:normal !important;
+  word-break:normal !important;
+}
+.pagamentos-compact-table textarea.input-field{
+  min-height:56px !important;
+  max-height:78px !important;
+  padding:8px 10px !important;
+  border-radius:12px !important;
+  font-size:11px !important;
+  line-height:1.25 !important;
+  resize:vertical !important;
+}
+.pagamentos-compact-table .col-acoes > div{
+  display:flex !important;
+  flex-direction:column !important;
+  gap:6px !important;
+  align-items:stretch !important;
+}
+.pagamentos-compact-table .col-acoes button{
+  width:100% !important;
+  min-height:32px !important;
+  padding:6px 8px !important;
+  border-radius:10px !important;
+  font-size:10.5px !important;
+  white-space:nowrap !important;
+}
+.fonte-empenho-box{
+  width:100% !important;
+  min-height:44px !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:4px !important;
+  padding:0 !important;
+  border:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+}
+.fonte-codigo-chip{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:64px !important;
+  max-width:100% !important;
+  min-height:32px !important;
+  padding:6px 7px !important;
+  border-radius:12px !important;
+  background:#eef6ff !important;
+  border:1px solid #bfdbfe !important;
+  color:#0f2747 !important;
+  font-size:14px !important;
+  line-height:1 !important;
+  font-weight:900 !important;
+  letter-spacing:-.01em !important;
+  white-space:nowrap !important;
+}
+.fonte-empenho-select{
+  width:64px !important;
+  height:24px !important;
+  min-height:24px !important;
+  margin:0 !important;
+  padding:2px 5px !important;
+  border-radius:8px !important;
+  border:1px solid #dbeafe !important;
+  background:#fff !important;
+  color:#475569 !important;
+  font-size:9px !important;
+  font-weight:800 !important;
+  text-align:center !important;
+}
+.fonte-empenho-ne,.fonte-label-mini,.fonte-ajuda,.fonte-empenho-resumo{display:none !important;}
+.fonte-vazio-compacto{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:64px !important;
+  min-height:32px !important;
+  padding:6px 7px !important;
+  border-radius:12px !important;
+  background:#fff7ed !important;
+  border:1px solid #fed7aa !important;
+  color:#9a3412 !important;
+  font-size:9.5px !important;
+  line-height:1 !important;
+  font-weight:900 !important;
+  white-space:nowrap !important;
+}
+@media (max-width:1280px){
+  .pagamentos-scroll-wrap{overflow-x:auto !important;}
+  .pagamentos-compact-table{min-width:1120px !important;}
+}
+
 </style>
   <style>body { box-sizing: border-box; }</style>
+
+  <script>
+    (function(){
+      try{
+        var saiu = localStorage.getItem("sigecon_logout_intencional")==="1" || sessionStorage.getItem("sigecon_logout_intencional")==="1";
+        var sessao = localStorage.getItem("sigecon_sessao_ativa") || localStorage.getItem("sigecon_sessao") || sessionStorage.getItem("sigecon_sessao_ativa");
+        if(sessao && !saiu){
+          window.__SIGECON_PREAUTH__ = true;
+          document.documentElement.classList.add("sigecon-session-restoring");
+        }
+      }catch(e){}
+    })();
+  </script>
+  <style>
+    html.sigecon-session-restoring #login-screen{display:none !important;}
+    html.sigecon-session-restoring #app{display:flex !important;}
+  </style>
+
  </head>
  <body class="h-full bg-sky-50 font-sans text-steel-700 overflow-hidden">
   <div id="login-screen" class="h-full w-full fixed inset-0 z-50 flex items-center justify-center">
@@ -1871,6 +2103,7 @@
     // ─── SESSÃO PERSISTENTE ───
     const CHAVE_SESSAO_SIGECON="sigecon_sessao_ativa";
     const CHAVE_LOGOUT_INTENCIONAL_SIGECON="sigecon_logout_intencional";
+    const CHAVE_MANTER_CONECTADO_SIGECON="sigecon_manter_conectado";
 
     function salvarSessao(){
       if(!usuarioAutenticado) return;
@@ -1902,6 +2135,7 @@
       localStorage.setItem(CHAVE_SESSAO_SIGECON,JSON.stringify(sessao));
       localStorage.setItem("sigecon_sessao",JSON.stringify(sessao)); // compatibilidade com versões anteriores
       localStorage.setItem("sigecon_ultima_aba",sessao.aba||"dashboard");
+      localStorage.setItem(CHAVE_MANTER_CONECTADO_SIGECON,"1");
       sessionStorage.setItem(CHAVE_SESSAO_SIGECON,JSON.stringify(sessao));
     }
 
@@ -1912,15 +2146,27 @@
       localStorage.removeItem(CHAVE_SESSAO_SIGECON);
       localStorage.removeItem("sigecon_sessao");
       localStorage.removeItem("sigecon_ultima_aba");
+      localStorage.removeItem(CHAVE_MANTER_CONECTADO_SIGECON);
       sessionStorage.removeItem(CHAVE_SESSAO_SIGECON);
     }
 
     function carregarSessao(){
       try{
-        const bruto=localStorage.getItem(CHAVE_SESSAO_SIGECON)||localStorage.getItem("sigecon_sessao")||sessionStorage.getItem(CHAVE_SESSAO_SIGECON)||"null";
-        const sessao=JSON.parse(bruto);
-        if(sessao && sessao.usuario) return sessao;
+        // Sair do sistema é a única ação que invalida a sessão.
         if(localStorage.getItem(CHAVE_LOGOUT_INTENCIONAL_SIGECON)==="1" || sessionStorage.getItem(CHAVE_LOGOUT_INTENCIONAL_SIGECON)==="1") return null;
+
+        const possiveis=[
+          localStorage.getItem(CHAVE_SESSAO_SIGECON),
+          localStorage.getItem("sigecon_sessao"),
+          sessionStorage.getItem(CHAVE_SESSAO_SIGECON)
+        ].filter(Boolean);
+
+        for(const bruto of possiveis){
+          try{
+            const sessao=JSON.parse(bruto);
+            if(sessao && sessao.usuario) return sessao;
+          }catch(e){}
+        }
         return null;
       }catch(e){
         return null;
@@ -1934,12 +2180,14 @@
     function exibirTelaAutenticada(){
       const loginScreen=document.getElementById("login-screen");
       const app=document.getElementById("app");
+      document.documentElement.classList.add("sigecon-session-restoring");
       if(loginScreen){
         loginScreen.classList.add("hidden");
         loginScreen.style.display="none";
       }
       if(app){
         app.classList.remove("hidden");
+        app.classList.add("sessao-restaurada");
         app.style.display="";
       }
     }
@@ -1947,12 +2195,14 @@
     function exibirTelaLogin(){
       const loginScreen=document.getElementById("login-screen");
       const app=document.getElementById("app");
+      document.documentElement.classList.remove("sigecon-session-restoring");
       if(loginScreen){
         loginScreen.style.display="";
         loginScreen.classList.remove("hidden");
       }
       if(app){
         app.classList.add("hidden");
+        app.classList.remove("sessao-restaurada");
         app.style.display="none";
       }
     }
@@ -2014,6 +2264,15 @@
       setInterval(()=>{salvarBancoLocal();},5000);
     }
 
+    
+
+    window.addEventListener("pageshow",()=>{
+      // Ao voltar/atualizar a página, restaura a tela interna sem exigir novo login.
+      if(existeSessaoSalva() && (!usuarioAutenticado || document.getElementById("app")?.classList.contains("hidden"))){
+        aplicarSessaoSalva();
+      }
+    });
+
     window.addEventListener("beforeunload",()=>{
       salvarBancoLocal();
       if(usuarioAutenticado) salvarSessao();
@@ -2024,8 +2283,22 @@
       if(usuarioAutenticado) salvarSessao();
     });
 
+    window.addEventListener("visibilitychange",()=>{
+      if(document.visibilityState==="hidden"){
+        salvarBancoLocal();
+        if(usuarioAutenticado) salvarSessao();
+      }
+    });
 
-    
+    window.addEventListener("storage",(event)=>{
+      if([CHAVE_SESSAO_SIGECON,"sigecon_sessao","sigecon_ultima_aba"].includes(event.key) && existeSessaoSalva()){
+        if(!usuarioAutenticado || document.getElementById("app")?.classList.contains("hidden")){
+          aplicarSessaoSalva();
+        }
+      }
+    });
+
+
     function servicoOptionLabel(valor){
       return servicoLabel(valor);
     }
@@ -2240,6 +2513,10 @@ function autenticar(){
     }
 
     document.addEventListener("DOMContentLoaded",()=>{
+      if(existeSessaoSalva()){
+        exibirTelaAutenticada();
+        setTimeout(()=>{ if(!usuarioAutenticado) aplicarSessaoSalva(); },0);
+      }
       carregarExerciciosCadastrados();
       
       document.getElementById("login-perfil").addEventListener("change",(e)=>{
@@ -2410,12 +2687,48 @@ function obterValorMoedaInput(id){
       return Math.ceil((fim-hoje)/(1000*60*60*24));
     }
 
+    function obterEscalaVigencia(dias){
+      if(dias===null || dias===undefined || Number.isNaN(dias)){
+        return {
+          classe:"bg-slate-50 text-slate-700 border-slate-200",
+          tom:"neutra",
+          legenda:"Vigência não informada"
+        };
+      }
+      if(dias<=30){
+        return {
+          classe:"bg-red-50 text-red-800 border-red-200",
+          tom:"critica",
+          legenda:dias < 0 ? `Vencido há ${Math.abs(dias)} dia(s)` : `${dias} dia(s) restantes`
+        };
+      }
+      if(dias>=31 && dias<=59){
+        return {
+          classe:"bg-orange-50 text-orange-800 border-orange-200",
+          tom:"atencao",
+          legenda:`${dias} dia(s) restantes`
+        };
+      }
+      if(dias>=60 && dias<=90){
+        return {
+          classe:"bg-yellow-50 text-yellow-800 border-yellow-200",
+          tom:"alerta",
+          legenda:`${dias} dia(s) restantes`
+        };
+      }
+      return {
+        classe:"bg-emerald-50 text-emerald-800 border-emerald-200",
+        tom:"estavel",
+        legenda:`${dias} dia(s) restantes`
+      };
+    }
+
     function renderVigenciaBadge(c){
       const dias=calcularDiasRestantes(c?.vigFim);
-      const cor=dias<0?"bg-red-100 text-red-700 border-red-200":dias<=90?"bg-yellow-100 text-yellow-700 border-yellow-200":"bg-emerald-100 text-emerald-700 border-emerald-200";
-      const texto=!c?.vigFim?"Vigência não informada":dias<0?`Vencido há ${Math.abs(dias)} dia(s)`:dias<=90?`${dias} dia(s) restantes`:`${dias} dia(s) restantes`;
+      const escala=obterEscalaVigencia(c?.vigFim?dias:null);
+      const texto=!c?.vigFim?"Vigência não informada":escala.legenda;
       return `
-        <div class="inline-flex flex-col gap-1 px-3 py-2 rounded-xl border ${cor} font-bold text-xs">
+        <div class="inline-flex flex-col gap-1 px-3 py-2 rounded-xl border ${escala.classe} font-bold text-xs">
           <span>${formatarDataBR(c?.vigIni)} até ${formatarDataBR(c?.vigFim)}</span>
           <span class="font-semibold opacity-80">${texto}</span>
         </div>
@@ -3618,19 +3931,13 @@ function renderListaAlertasVigencia(alertas){
 
     function renderVigenciaResumoContrato(c){
       const atual=obterResumoVigenteContrato(c);
-      const dias=calcularDiasRestantes(atual.vigFim);
-
-      let cls="bg-emerald-50 text-emerald-800 border-emerald-200"; // acima de 90
-      if(dias!==null && dias>=1 && dias<=30){
-        cls="bg-red-50 text-red-800 border-red-200";
-      }else if(dias!==null && dias>=31 && dias<=90){
-        cls="bg-amber-50 text-amber-800 border-amber-200";
-      }
+      const dias=atual.vigFim?calcularDiasRestantes(atual.vigFim):null;
+      const escala=obterEscalaVigencia(dias);
 
       return `
-        <div class="inline-flex flex-col px-3 py-2 rounded-xl border ${cls}">
+        <div class="inline-flex flex-col px-3 py-2 rounded-xl border ${escala.classe}">
           <span class="font-black">${formatarDataBR(atual.vigIni)} até ${formatarDataBR(atual.vigFim)}</span>
-          <span class="text-[10px]">${dias!==null?`${dias} dia(s) restantes`:"Vigência não informada"} ${atual.temAditivo?"• aditivo vigente":"• contrato inicial"}</span>
+          <span class="text-[10px]">${escala.legenda} ${atual.temAditivo?"• aditivo vigente":"• contrato inicial"}</span>
         </div>
       `;
     }
@@ -5150,7 +5457,11 @@ async function alterarSetorPagamentoRapido(id,novoSetor){
     function renderFontePagamentoResumo(p){
       const selecionado=obterEmpenhoSelecionadoNoContratoPagamento(p);
       if(!selecionado){
-        return `<span class="fonte-vazio-compacto">Sem NE</span>`;
+        const codigoSemNe=resumirFonteRecurso(p?.fonteRecurso||"");
+        if(codigoSemNe && codigoSemNe!=="—"){
+          return `<span class="fonte-codigo-chip" title="Fonte registrada no pagamento, sem NE vinculada">${escapeHtml(codigoSemNe)}</span>`;
+        }
+        return `<span class="fonte-vazio-compacto" title="Cadastre ou selecione uma NE no contrato para puxar a fonte">Sem NE</span>`;
       }
       const fonte=selecionado.fonte||p?.fonteRecurso||"";
       const codigo=resumirFonteRecurso(fonte);
@@ -5180,7 +5491,7 @@ async function alterarSetorPagamentoRapido(id,novoSetor){
             <select onchange="alterarFonteEmpenhoPagamentoRapido('${p.id}',this.value)" class="fonte-empenho-select" title="Selecionar empenho vinculado à fonte">
               <option value="" ${!selecionado?"selected":""}>Selecionar NE</option>
               ${empenhosContrato.map(e=>`
-                <option value="${escapeHtml(e.numero||"")}" ${String(selecionado)===String(e.numero||"")?"selected":""}>${escapeHtml(e.numero?`NE ${e.numero}`:textoFonteEmpenho(e))}</option>
+                <option value="${escapeHtml(e.numero||"")}" ${String(selecionado)===String(e.numero||"")?"selected":""}>${escapeHtml(e.numero?`NE ${String(e.numero).slice(-6)}`:resumirFonteRecurso(e.fonte||""))}</option>
               `).join("")}
             </select>
           `:""}
@@ -5457,6 +5768,9 @@ function obterPagamentosFiltrados(){
     }
 
 function renderPagamentos(el){
+      currentTab="pagamentos";
+      localStorage.setItem("sigecon_ultima_aba","pagamentos");
+      if(usuarioAutenticado) salvarSessao();
       garantirIdsPagamentos();
       const bloqueioLeitor = isPerfilSomenteLeitura() ? "disabled title='Somente leitura'" : "";
 
@@ -5629,7 +5943,7 @@ function renderPagamentos(el){
                                 <th class="col-situacao">Situação</th>
                                 <th class="col-fonte">Fonte</th>
                                 <th class="col-setor">Setor</th>
-                                <th style="width:170px;">Observações</th>
+                                <th class="col-observacoes">Observações</th>
                                 <th class="col-acoes">Ações</th>
                               </tr>
                             </thead>
@@ -5677,7 +5991,7 @@ function renderPagamentos(el){
                                       ${obterSetoresPagamento().map(setor=>`<option value="${escapeHtml(setor)}" ${String(p.setor||"")===String(setor)?"selected":""}>${escapeHtml(setor)}</option>`).join("")}
                                     </select>
                                   </td>
-                                  <td style="min-width:170px;">
+                                  <td class="col-observacoes">
                                     <textarea
                                       class="input-field w-full text-xs min-h-[70px]"
                                       placeholder="Inserir observações"
@@ -8741,7 +9055,12 @@ async function salvarConfiguracoes(){
 
       // Reforço final: após SDK e ícones carregarem, mantém a sessão aberta.
       if(existeSessaoSalva()){
-        aplicarSessaoSalva();
+        const restaurou = aplicarSessaoSalva();
+        if(restaurou){
+          exibirTelaAutenticada();
+        }
+      } else {
+        exibirTelaLogin();
       }
     }
 
