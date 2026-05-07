@@ -4865,6 +4865,7 @@ function openNovoContratoModal(){
             <div><p class="text-[10px] text-steel-600">Status</p><p class="badge bg-emerald-100 text-emerald-700">${escapeHtml(c.status||"Ativo")}</p></div>
             <div class="col-span-2"><p class="text-[10px] text-steel-600">Objeto do contrato</p><p class="font-semibold text-navy-900 whitespace-pre-wrap">${escapeHtml(c.objeto||"—")}</p></div>
             <div class="col-span-2"><p class="text-[10px] text-steel-600 mb-2">Empenhos / Fontes de recurso do contrato inicial</p><div class="grid grid-cols-1 gap-2 bg-yellow-50 border border-yellow-200 rounded p-2">${listaEmpenhos}</div></div>
+            ${renderMemoriaIndenizatoriaContrato(c)}
             <div class="col-span-2"><p class="text-[10px] text-steel-600 mb-2">Histórico de aditivos</p><div class="grid grid-cols-1 gap-2 bg-blue-50 border border-blue-200 rounded p-2">${listaAditivos}</div></div>
           </div>
 
@@ -5556,6 +5557,58 @@ async function alterarSetorPagamentoRapido(id,novoSetor){
       if(box) box.classList.toggle("hidden", tipo!=="indenizatorio");
     }
 
+    function obterEmpenhoIndenizatorio(prefix){
+      return {
+        numero:(document.getElementById(`${prefix}-empenho-indenizatorio-pag`)?.value||"").trim(),
+        valor:parseValorBR(document.getElementById(`${prefix}-valor-indenizatorio-pag`)?.value||0),
+        elementoDespesa:(document.getElementById(`${prefix}-elemento-indenizatorio-pag`)?.value||"").trim(),
+        fonte:(document.getElementById(`${prefix}-fonte-indenizatoria-pag`)?.value||"").trim()
+      };
+    }
+
+    function validarEmpenhoIndenizatorio(prefix){
+      const emp=obterEmpenhoIndenizatorio(prefix);
+      if(!emp.valor) return "Informe o valor do empenho indenizatório.";
+      if(!emp.numero) return "Informe o número do empenho indenizatório.";
+      if(!emp.elementoDespesa) return "Informe o elemento de despesa do empenho indenizatório.";
+      if(!emp.fonte) return "Informe a fonte de recurso do empenho indenizatório.";
+      return "";
+    }
+
+    function renderSelectFontesIndenizatorias(id, selecionada=""){
+      const fontes=[...new Set([...(listas.fontes||[]), selecionada].filter(Boolean))];
+      return `<select id="${id}" class="input-field w-full" required>
+        <option value="">— Fonte de recurso —</option>
+        ${fontes.map(f=>`<option value="${escapeHtml(f)}" ${String(f)===String(selecionada)?"selected":""}>${escapeHtml(f)}</option>`).join("")}
+      </select>`;
+    }
+
+    function renderMemoriaIndenizatoriaContrato(c){
+      const itens=(allPagamentos||[]).filter(p=>String(p.contrato_id)===String(c.id) && String(p.tipoProcessoPagamento||"")==="indenizatorio");
+      if(!itens.length) return "";
+      const cards=itens.map(p=>{
+        const emp=p.empenhoIndenizatorioObj || {
+          numero:p.empenhoIndenizatorio||"—",
+          valor:p.valorIndenizatorio||0,
+          elementoDespesa:p.elementoDespesaIndenizatorio||"—",
+          fonte:p.fonteIndenizatoria||"—"
+        };
+        return `<div class="border border-red-200 bg-white rounded-lg p-3">
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <p class="font-bold text-red-800">Processo ${escapeHtml(obterProcessoSEIPagamento(p)||"—")}</p>
+            <span class="badge bg-red-50 text-red-700 border border-red-200">Indenizatório</span>
+          </div>
+          <div class="grid md:grid-cols-4 gap-2 mt-2 text-xs">
+            <p><strong>Empenho:</strong> ${escapeHtml(emp.numero||"—")}</p>
+            <p><strong>Valor:</strong> ${fmtM(emp.valor||0)}</p>
+            <p><strong>Fonte:</strong> ${escapeHtml(resumirFonteRecurso(emp.fonte||"—"))}</p>
+            <p><strong>Elemento:</strong> ${escapeHtml(emp.elementoDespesa||"—")}</p>
+          </div>
+          <p class="text-[10px] text-steel-600 mt-2">Memória vinculada ao contrato por extrapolação de saldo contratual na respectiva vigência.</p>
+        </div>`;
+      }).join("");
+      return `<div class="col-span-2"><p class="text-[10px] text-red-700 mb-2 font-bold">Memória de empenhos indenizatórios vinculados ao contrato</p><div class="grid grid-cols-1 gap-2 bg-red-50 border border-red-200 rounded p-2">${cards}</div></div>`;
+    }
 
     function garantirIdsPagamentos(){
       let alterou=false;
@@ -5799,12 +5852,15 @@ async function alterarSetorPagamentoRapido(id,novoSetor){
       const mapa=new Map();
       (allPagamentos||[]).forEach(p=>{
         if(String(p.tipoProcessoPagamento||"convencional")!=="indenizatorio") return;
-        const emp=String(p.empenhoIndenizatorio||"").trim() || "Empenho indenizatório não informado";
-        const valor=parseValorBR(p.valorIndenizatorio||p.nfValor||0);
-        if(!mapa.has(emp)){
-          mapa.set(emp,{empenho:emp,fonte:"500",valor:0,processos:0});
+        const empObj=p.empenhoIndenizatorioObj || {};
+        const emp=String(empObj.numero||p.empenhoIndenizatorio||"").trim() || "Empenho indenizatório não informado";
+        const valor=parseValorBR(empObj.valor||p.valorIndenizatorio||p.nfValor||0);
+        const fonte=resumirFonteRecurso(empObj.fonte||p.fonteIndenizatoria||"Fonte não informada");
+        const chave=`${emp}|${fonte}`;
+        if(!mapa.has(chave)){
+          mapa.set(chave,{empenho:emp,fonte,valor:0,processos:0});
         }
-        const item=mapa.get(emp);
+        const item=mapa.get(chave);
         item.valor+=valor;
         item.processos+=1;
       });
@@ -5820,7 +5876,7 @@ async function alterarSetorPagamentoRapido(id,novoSetor){
           <div class="flex items-center justify-between gap-3 mb-3">
             <div>
               <p class="font-black text-red-800">Execução Indenizatória por Empenho</p>
-              <p class="text-xs text-red-700">Fonte fixa: 500 - Estadual</p>
+              <p class="text-xs text-red-700">Fontes conforme empenho indenizatório cadastrado</p>
             </div>
             <span class="badge bg-red-100 text-red-700">${itens.length} empenho(s)</span>
           </div>
@@ -5832,7 +5888,7 @@ async function alterarSetorPagamentoRapido(id,novoSetor){
                   <p class="text-xs font-black text-red-700">${fmtM(i.valor)}</p>
                 </div>
                 <div class="bar-track"><div class="bar-fill" style="width:${Math.max(3,Math.round((i.valor/max)*100))}%;background:linear-gradient(90deg,#dc2626,#fb7185)"></div></div>
-                <p class="text-[10px] text-steel-500 mt-1">${i.processos} processo(s) • Fonte 500</p>
+                <p class="text-[10px] text-steel-500 mt-1">${i.processos} processo(s) • Fonte ${escapeHtml(i.fonte||"—")}</p>
               </div>
             `).join("")}
           </div>
@@ -6293,7 +6349,7 @@ function viewPagamento(id){
             <div class="rounded-xl border ${tipoProcessoPagamentoClasse(p.tipoProcessoPagamento)} p-3">
               <p class="text-[10px] font-black uppercase tracking-wide">Tipo do processo</p>
               <p class="font-bold mt-1">${tipoProcessoPagamentoLabel(p.tipoProcessoPagamento)}</p>
-              ${String(p.tipoProcessoPagamento||"convencional")==="indenizatorio"?`<p class="text-xs mt-1">Valor indenizatório: <strong>${fmtM(p.valorIndenizatorio||0)}</strong> • Empenho específico: <strong>${escapeHtml(p.empenhoIndenizatorio||"—")}</strong></p>`:""}
+              ${String(p.tipoProcessoPagamento||"convencional")==="indenizatorio"?`<p class="text-xs mt-1">Empenho indenizatório: <strong>${escapeHtml(p.empenhoIndenizatorio||"—")}</strong> • ${fmtM(p.valorIndenizatorio||0)} • Fonte <strong>${escapeHtml(resumirFonteRecurso(p.fonteIndenizatoria||"—"))}</strong> • Elemento <strong>${escapeHtml(p.elementoDespesaIndenizatorio||"—")}</strong></p>`:""}
             </div>
             <div class="rounded-xl border border-slate-200 p-3">
               <p class="text-[10px] text-steel-600 uppercase font-black">Setor / Fonte</p>
@@ -6419,18 +6475,26 @@ function editarPagamento(id){
               </select>
             </div>
             <div id="edit-indenizatorio-box" class="${String(p.tipoProcessoPagamento||"convencional")==="indenizatorio"?"":"hidden"} col-span-2 bg-red-50 border border-red-100 rounded-xl p-4">
-              <p class="font-bold text-red-700 mb-2">Dados do pagamento indenizatório</p>
-              <div class="grid md:grid-cols-2 gap-3">
+              <p class="font-bold text-red-700 mb-1">Dados do empenho indenizatório</p>
+              <p class="text-[10px] text-red-700 mb-3">Use quando o processo extrapolar o saldo contratual. Este empenho é específico do processo de pagamento e ficará registrado como memória no contrato.</p>
+              <div class="grid md:grid-cols-4 gap-3">
                 <div>
-                  <label class="block text-xs font-semibold text-navy-900 mb-1">Valor indenizatório</label>
-                  <input type="text" inputmode="decimal" id="edit-valor-indenizatorio-pag" class="input-field w-full" value="${formatarMoedaBR(p.valorIndenizatorio||0)}" placeholder="R$ 0,00" onblur="aplicarMascaraMoedaBR(this)">
+                  <label class="block text-xs font-semibold text-navy-900 mb-1">Nº do empenho</label>
+                  <input type="text" id="edit-empenho-indenizatorio-pag" class="input-field w-full" value="${escapeHtml((p.empenhoIndenizatorioObj&&p.empenhoIndenizatorioObj.numero)||p.empenhoIndenizatorio||"")}" placeholder="Ex: NE-IND-2026-0001">
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-navy-900 mb-1">Empenho específico indenizatório</label>
-                  <input type="text" id="edit-empenho-indenizatorio-pag" class="input-field w-full" value="${escapeHtml(p.empenhoIndenizatorio||"")}" placeholder="Ex: NE-IND-2026-0001">
+                  <label class="block text-xs font-semibold text-navy-900 mb-1">Valor</label>
+                  <input type="text" inputmode="decimal" id="edit-valor-indenizatorio-pag" class="input-field w-full" value="${formatarMoedaBR((p.empenhoIndenizatorioObj&&p.empenhoIndenizatorioObj.valor)||p.valorIndenizatorio||0)}" placeholder="R$ 0,00" onblur="aplicarMascaraMoedaBR(this)">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-navy-900 mb-1">Elemento de despesa</label>
+                  <input type="text" id="edit-elemento-indenizatorio-pag" class="input-field w-full" value="${escapeHtml((p.empenhoIndenizatorioObj&&p.empenhoIndenizatorioObj.elementoDespesa)||p.elementoDespesaIndenizatorio||"")}" placeholder="Ex: 339039">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-navy-900 mb-1">Fonte de recurso</label>
+                  ${renderSelectFontesIndenizatorias("edit-fonte-indenizatoria-pag", (p.empenhoIndenizatorioObj&&p.empenhoIndenizatorioObj.fonte)||p.fonteIndenizatoria||"")}
                 </div>
               </div>
-              <p class="text-[10px] text-red-700 mt-2">Use quando o processo extrapolar o saldo contratual da respectiva vigência. A fonte indenizatória será automaticamente <strong>500 - Estadual</strong>.</p>
             </div>
           </div>
 
@@ -6499,14 +6563,9 @@ function editarPagamento(id){
 
       const tipoProcessoPagamento=document.getElementById("edit-tipo-processo-pag")?.value||"convencional";
       if(tipoProcessoPagamento==="indenizatorio"){
-        const valorInd=parseValorBR(document.getElementById("edit-valor-indenizatorio-pag")?.value||0);
-        const empInd=(document.getElementById("edit-empenho-indenizatorio-pag")?.value||"").trim();
-        if(!valorInd){
-          showInlineAlert("❌ Informe o valor indenizatório.","error");
-          return;
-        }
-        if(!empInd){
-          showInlineAlert("❌ Informe o empenho específico indenizatório.","error");
+        const erroInd=validarEmpenhoIndenizatorio("edit");
+        if(erroInd){
+          showInlineAlert("❌ "+erroInd,"error");
           return;
         }
       }
@@ -6526,6 +6585,8 @@ function editarPagamento(id){
         if(!vob.ok){ showInlineAlert(vob.mensagem,"error"); return; }
       }
 
+      const empIndenizatorioAtualizado=obterEmpenhoIndenizatorio("edit");
+
       const pagamentoAtualizado={
         ...pagamentoBase,
         uh:document.getElementById("edit-uh-pag").value,
@@ -6544,9 +6605,11 @@ function editarPagamento(id){
         situacao:situacaoEdit,
         setor:document.getElementById("edit-setor-pag")?.value||"",
         tipoProcessoPagamento:document.getElementById("edit-tipo-processo-pag")?.value||"convencional",
-        valorIndenizatorio:parseValorBR(document.getElementById("edit-valor-indenizatorio-pag")?.value||0),
-        empenhoIndenizatorio:(document.getElementById("edit-empenho-indenizatorio-pag")?.value||"").trim(),
-        fonteIndenizatoria:"500",
+        valorIndenizatorio:empIndenizatorioAtualizado.valor,
+        empenhoIndenizatorio:empIndenizatorioAtualizado.numero,
+        elementoDespesaIndenizatorio:empIndenizatorioAtualizado.elementoDespesa,
+        fonteIndenizatoria:empIndenizatorioAtualizado.fonte,
+        empenhoIndenizatorioObj:empIndenizatorioAtualizado,
         notasLancamento:linhasNLEdit,
         ordensBancarias:linhasOBEdit,
         atualizadoEm:new Date().toISOString()
@@ -6651,18 +6714,26 @@ function editarPagamento(id){
               </select>
             </div>
             <div id="form-indenizatorio-box" class="hidden col-span-2 bg-red-50 border border-red-100 rounded-xl p-4">
-              <p class="font-bold text-red-700 mb-2">Dados do pagamento indenizatório</p>
-              <div class="grid md:grid-cols-2 gap-3">
+              <p class="font-bold text-red-700 mb-1">Dados do empenho indenizatório</p>
+              <p class="text-[10px] text-red-700 mb-3">Use quando o processo extrapolar o saldo contratual. Este empenho é específico do processo de pagamento e ficará registrado como memória no contrato.</p>
+              <div class="grid md:grid-cols-4 gap-3">
                 <div>
-                  <label class="block text-xs font-semibold text-navy-900 mb-1">Valor indenizatório</label>
+                  <label class="block text-xs font-semibold text-navy-900 mb-1">Nº do empenho</label>
+                  <input type="text" id="form-empenho-indenizatorio-pag" class="input-field w-full" placeholder="Ex: NE-IND-2026-0001">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-navy-900 mb-1">Valor</label>
                   <input type="text" inputmode="decimal" id="form-valor-indenizatorio-pag" class="input-field w-full" placeholder="R$ 0,00" onblur="aplicarMascaraMoedaBR(this)">
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-navy-900 mb-1">Empenho específico indenizatório</label>
-                  <input type="text" id="form-empenho-indenizatorio-pag" class="input-field w-full" placeholder="Ex: NE-IND-2026-0001">
+                  <label class="block text-xs font-semibold text-navy-900 mb-1">Elemento de despesa</label>
+                  <input type="text" id="form-elemento-indenizatorio-pag" class="input-field w-full" placeholder="Ex: 339039">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-navy-900 mb-1">Fonte de recurso</label>
+                  ${renderSelectFontesIndenizatorias("form-fonte-indenizatoria-pag")}
                 </div>
               </div>
-              <p class="text-[10px] text-red-700 mt-2">Use quando o processo extrapolar o saldo contratual da respectiva vigência. A fonte indenizatória será automaticamente <strong>500 - Estadual</strong>.</p>
             </div>
           </div>
 
@@ -6778,14 +6849,9 @@ function editarPagamento(id){
 
         const tipoProcessoPagamento=document.getElementById("form-tipo-processo-pag")?.value||"convencional";
         if(tipoProcessoPagamento==="indenizatorio"){
-          const valorInd=parseValorBR(document.getElementById("form-valor-indenizatorio-pag")?.value||0);
-          const empInd=(document.getElementById("form-empenho-indenizatorio-pag")?.value||"").trim();
-          if(!valorInd){
-            showInlineAlert("❌ Informe o valor indenizatório.","error");
-            return false;
-          }
-          if(!empInd){
-            showInlineAlert("❌ Informe o empenho específico indenizatório.","error");
+          const erroInd=validarEmpenhoIndenizatorio("form");
+          if(erroInd){
+            showInlineAlert("❌ "+erroInd,"error");
             return false;
           }
         }
@@ -6848,6 +6914,8 @@ function editarPagamento(id){
           if(!vob.ok){ showInlineAlert(vob.mensagem,"error"); return false; }
         }
 
+        const empIndenizatorioNovo=obterEmpenhoIndenizatorio("form");
+
         const novoPagamento={
           id:`pag_${Date.now()}_${Math.random().toString(16).slice(2)}`,
           tipo:"pagamento",
@@ -6866,9 +6934,11 @@ function editarPagamento(id){
           situacao:situacao,
           setor:document.getElementById("form-setor-pag")?.value||"",
           tipoProcessoPagamento:document.getElementById("form-tipo-processo-pag")?.value||"convencional",
-          valorIndenizatorio:parseValorBR(document.getElementById("form-valor-indenizatorio-pag")?.value||0),
-          empenhoIndenizatorio:(document.getElementById("form-empenho-indenizatorio-pag")?.value||"").trim(),
-          fonteIndenizatoria:"500",
+          valorIndenizatorio:empIndenizatorioNovo.valor,
+          empenhoIndenizatorio:empIndenizatorioNovo.numero,
+          elementoDespesaIndenizatorio:empIndenizatorioNovo.elementoDespesa,
+          fonteIndenizatoria:empIndenizatorioNovo.fonte,
+          empenhoIndenizatorioObj:empIndenizatorioNovo,
           notasLancamento:linhasNLForm,
           ordensBancarias:linhasOBForm,
           tipoNF:notas.map(n=>n.tipo).join(","),
