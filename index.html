@@ -1768,15 +1768,14 @@
     // o SIGECON precisa de um banco online. Esta versão usa Firebase Realtime Database.
 
     const SIGECON_FIREBASE_CONFIG_PADRAO={
-      apiKey: "AIzaSyCK533OD4U5KRJ4F4xft58D1TA0vx94S0g",
-  authDomain: "sigecon-7297c.firebaseapp.com",
-  databaseURL: "https://sigecon-7297c-default-rtdb.firebaseio.com",
-  projectId: "sigecon-7297c",
-  storageBucket: "sigecon-7297c.firebasestorage.app",
-  messagingSenderId: "82877370824",
-  appId: "1:82877370824:web:be1807d4371f0dbe0570fd",
-  measurementId: "G-LJ0DBH7Q6Q"
-};
+      apiKey:"AIzaSyCK533OD4U5KRJ4F4xft58D1TA0vx94S0g",
+      authDomain:"sigecon-7297c.firebaseapp.com",
+      databaseURL:"https://sigecon-7297c-default-rtdb.firebaseio.com",
+      projectId:"sigecon-7297c",
+      storageBucket:"sigecon-7297c.firebasestorage.app",
+      messagingSenderId:"82877370824",
+      appId:"1:82877370824:web:be1807d4371f0dbe0570fd"
+    };
 
     // Caminho único do banco do SIGECON na nuvem.
     // Pode alterar apenas se quiser separar bases por ambiente.
@@ -1837,7 +1836,7 @@
         const resp=await fetch(url,{cache:"no-store"});
         if(!resp.ok) return null;
         const cfg=normalizarConfigFirebase(await resp.json());
-        return configFirebaseValida(cfg)?cfg:null;
+        return configFirebaseRealtimeValida(cfg)?cfg:null;
       }catch(e){
         return null;
       }
@@ -1849,12 +1848,16 @@
       // 2) arquivo firebase-config.json hospedado no GitHub Pages;
       // 3) configuração colada diretamente no código.
       const local=obterConfigFirebaseLocal();
-      if(configFirebaseValida(local)){
+      if(configFirebaseRealtimeValida(local)){
         SIGECON_FIREBASE_CONFIG=local;
         return local;
+      }else if(configFirebaseValida(local)){
+        // Configuração antiga sem databaseURL atrapalha a conexão em tempo real.
+        // Ignora e remove para usar o Realtime Database correto do código/GitHub.
+        localStorage.removeItem(SIGECON_FIREBASE_CONFIG_LOCAL_KEY);
       }
       const externa=await carregarConfigFirebaseExterna();
-      if(configFirebaseValida(externa)){
+      if(configFirebaseRealtimeValida(externa)){
         SIGECON_FIREBASE_CONFIG=externa;
         return externa;
       }
@@ -1864,7 +1867,7 @@
     }
 
     function firebaseConfigurado(){
-      return configFirebaseValida(SIGECON_FIREBASE_CONFIG) || configFirebaseValida(obterConfigFirebaseLocal());
+      return configFirebaseRealtimeValida(SIGECON_FIREBASE_CONFIG) || configFirebaseRealtimeValida(obterConfigFirebaseLocal());
     }
 
     function clonarSeguro(obj){
@@ -1881,7 +1884,7 @@
 
     function montarBancoCompletoSnapshot(){
       return {
-        versao:"SIGECON-CLOUD-BACKUP-2026-05-07-ROBUSTO",
+        versao:"SIGECON-CLOUD-REALTIME-FIX-2026-05-08",
         atualizadoEm:new Date().toISOString(),
         atualizadoPor:usuarioAutenticado?.nome||usuarioAutenticado?.matricula||"Sistema",
         exercicioAtivo:exercicioAtivo||2026,
@@ -1935,10 +1938,10 @@
     async function inicializarNuvemSigec(){
       try{
         await resolverConfigFirebase();
-        if(!configFirebaseValida(SIGECON_FIREBASE_CONFIG)){
+        if(!configFirebaseRealtimeValida(SIGECON_FIREBASE_CONFIG)){
           sigeconNuvemAtiva=false;
           sigeconFirebaseModo="";
-          sigeconUltimoErroNuvem="Firebase ainda não configurado. Cole o firebaseConfig real ou suba o arquivo firebase-config.json no GitHub.";
+          sigeconUltimoErroNuvem="Firebase Realtime Database sem databaseURL. Use databaseURL: https://sigecon-7297c-default-rtdb.firebaseio.com";
           atualizarIndicadorNuvem();
           return false;
         }
@@ -1952,20 +1955,14 @@
 
         sigeconFirebaseApp=window.firebase.apps && window.firebase.apps.length ? window.firebase.app() : window.firebase.initializeApp(SIGECON_FIREBASE_CONFIG);
 
-        // Preferência 1: Realtime Database, quando houver databaseURL no firebaseConfig.
-        // Preferência 2: Firestore, quando a pessoa criou Firestore e não Realtime Database.
+        // Esta versão usa somente Realtime Database, para os dados aparecerem iguais em qualquer aparelho.
         if(configFirebaseRealtimeValida(SIGECON_FIREBASE_CONFIG) && window.firebase.database){
           sigeconFirebaseDb=window.firebase.database();
           sigeconFirebaseStore=null;
           sigeconFirebaseModo="realtime";
           await sigeconFirebaseDb.ref(SIGECON_FIREBASE_PATH+"/_ping").set({ok:true,em:new Date().toISOString(),modo:"realtime"});
-        }else if(window.firebase.firestore){
-          sigeconFirebaseDb=null;
-          sigeconFirebaseStore=window.firebase.firestore();
-          sigeconFirebaseModo="firestore";
-          await sigeconFirebaseStore.collection("sigecon_cloud").doc("cas_sesap_rn_producao").set({_ping:{ok:true,em:new Date().toISOString(),modo:"firestore"}},{merge:true});
         }else{
-          throw new Error("Firebase carregou, mas não encontrei Realtime Database nem Firestore. Confira os scripts do Firebase no index.html.");
+          throw new Error("Realtime Database não carregou ou databaseURL está ausente. Confira o script firebase-database e a URL do banco.");
         }
 
         sigeconNuvemAtiva=true;
@@ -2072,7 +2069,7 @@
     }
 
     function statusSincronizacaoNuvem(){
-      if(sigeconNuvemAtiva) return "☁️ Nuvem ativa ("+(sigeconFirebaseModo==="firestore"?"Firestore":"Realtime")+")";
+      if(sigeconNuvemAtiva) return "☁️ Nuvem ativa (Realtime)";
       if(configFirebaseValida(SIGECON_FIREBASE_CONFIG)||configFirebaseValida(obterConfigFirebaseLocal())) return "⚠️ Nuvem desconectada";
       return "💾 Modo local";
     }
@@ -2095,7 +2092,7 @@
       try{
         const limpo=texto.replace(/^const\s+firebaseConfig\s*=\s*/i,"").replace(/;\s*$/,"");
         const cfg=normalizarConfigFirebase(Function("return ("+limpo+")")());
-        if(!configFirebaseValida(cfg)) throw new Error("Configuração incompleta. Confira apiKey, authDomain, projectId e appId. O databaseURL só é obrigatório se usar Realtime Database.");
+        if(!configFirebaseRealtimeValida(cfg)) throw new Error("Configuração incompleta. Precisa conter apiKey, authDomain, projectId, appId e databaseURL do Realtime Database.");
         localStorage.setItem(SIGECON_FIREBASE_CONFIG_LOCAL_KEY,JSON.stringify(cfg));
         SIGECON_FIREBASE_CONFIG=cfg;
         showInlineAlert("✅ Configuração do Firebase salva neste navegador. Clique em Testar Nuvem.","info");
@@ -2112,6 +2109,17 @@
         return;
       }
       showInlineAlert("✅ Firebase conectado. Agora clique em Sincronizar Nuvem para enviar os dados atuais.","info");
+    }
+
+
+    function limparConfigFirebaseLocal(){
+      localStorage.removeItem(SIGECON_FIREBASE_CONFIG_LOCAL_KEY);
+      SIGECON_FIREBASE_CONFIG={...SIGECON_FIREBASE_CONFIG_PADRAO};
+      sigeconNuvemAtiva=false;
+      sigeconFirebaseModo="";
+      sigeconUltimoErroNuvem="Configuração local limpa. Atualize a página para usar o Firebase Realtime do código.";
+      atualizarIndicadorNuvem();
+      if(typeof showInlineAlert==="function") showInlineAlert("✅ Configuração local do Firebase limpa. Aperte Ctrl+F5 e teste novamente.","info");
     }
 
     // ─── BANCO LOCAL: PERSISTÊNCIA GERAL DO SISTEMA ───
@@ -10726,6 +10734,7 @@ async function salvarConfiguracoes(){
     window.confirmarExclusaoProducao=typeof confirmarExclusaoProducao!=="undefined"?confirmarExclusaoProducao:null;
     window.salvarConfigFirebasePorPrompt=salvarConfigFirebasePorPrompt;
     window.testarConexaoFirebaseManual=testarConexaoFirebaseManual;
+    window.limparConfigFirebaseLocal=limparConfigFirebaseLocal;
     window.sincronizarNuvemManual=sincronizarNuvemManual;
     window.exportarBaseCompletaJSON=exportarBaseCompletaJSON;
     window.importarBaseCompletaJSON=importarBaseCompletaJSON;
@@ -10793,6 +10802,7 @@ async function salvarConfiguracoes(){
       reidratarListasPrincipais();
       ativarEscutaNuvem();
       atualizarIndicadorNuvem();
+      window.addEventListener("online",()=>inicializarNuvemSigec().then(ok=>{if(ok){ativarEscutaNuvem(); salvarBancoNuvemAgora(montarBancoCompletoSnapshot());}}));
       lucide.createIcons();
 
       // Reforço final: após SDK e ícones carregarem, mantém a sessão aberta.
