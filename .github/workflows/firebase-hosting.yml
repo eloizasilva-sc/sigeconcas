@@ -1,0 +1,41 @@
+name: Deploy to Firebase Hosting
+
+on:
+  push:
+    branches:
+      - main # <--- IMPORTANTE: Altere para 'master' se seu branch principal for 'master'
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4 # Faz o checkout do seu código do GitHub
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # <--- IMPORTANTE: Use a versão do Node.js que seu projeto precisa (ex: '18', '20', '22')
+
+      - name: Install dependencies
+        run: npm install # <--- IMPORTANTE: Se você usa Yarn, mude para 'yarn install'
+
+      - name: Build your app
+        # <--- IMPORTANTE: Este passo é CRUCIAL se seu app TypeScript/JavaScript precisa ser compilado (ex: React, Angular, Vue, Svelte).
+        # Substitua 'npm run build' pelo comando de build do seu projeto.
+        # EXEMPLOS: 'npm run build', 'yarn build', 'ng build --configuration production', 'vite build'
+        # Se seu projeto for APENAS HTML/CSS/JS estático sem necessidade de compilação (ex: um site simples),
+        # você pode REMOVER ou COMENTAR esta linha inteira.
+        run: npm run build 
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}' # Token padrão do GitHub
+          firebaseServiceAccount: '${{ secrets.FIREBASE_TOKEN }}' # Usa o segredo que você criou no GitHub
+          projectId: 'sigecon-7297c' # <--- CONFIRA: Este é o seu Project ID do Firebase. Eu o peguei dos fatos que você me deu.
+          channelId: live # Isso faz o deploy para o canal principal (produção)
+          
+          # Se a pasta onde seus arquivos estáticos (após o build) estão não for 'public' (o padrão do Firebase),
+          # você pode precisar de uma configuração adicional no seu 'firebase.json'
+          # ou usar a opção 'entryPoint' aqui (por exemplo, 'entryPoint: 'dist'' se seus arquivos estiverem na pasta 'dist').
+          # Consulte seu arquivo firebase.json para verificar a configuração de 'public'.
