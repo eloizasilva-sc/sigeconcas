@@ -3,11 +3,14 @@
  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SIGECON - SESAP RN</title>
+  <title>SIGECON - CAS SESAP RN</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
   <script src="/_sdk/element_sdk.js"></script>
   <script src="/_sdk/data_sdk.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
   <script>
     tailwind.config={theme:{extend:{colors:{navy:{'950':'#0a1628','900':'#0d1f3c','800':'#122b50','700':'#173a6a','600':'#1c4a85','500':'#2563a8','400':'#3b82c4','300':'#6ba3d6','200':'#93c0e8','100':'#c2ddf4','50':'#e8f1fb'},sky:{'50':'#f8fafc','100':'#f0f6ff','200':'#e0ecff','300':'#c2dff4'},steel:{'900':'#1a2332','800':'#243044','700':'#2e3f57','600':'#3a4f6a','500':'#4a6380','400':'#6b8298','300':'#8ea2b5','200':'#b3c3d1','100':'#d5dee6','50':'#edf1f5'}},fontFamily:{sans:['DM Sans','sans-serif'],mono:['Space Mono','monospace']}}}}
@@ -828,8 +831,748 @@
 .config-card .cfg-list-input{
   min-height: 38px;
 }
+
+
+/* Correção 2026: sessão persistente e Fonte por Empenho em Pagamentos */
+.pagamentos-compact-table .col-fonte{
+  width:16% !important;
+  min-width:210px !important;
+}
+.pagamentos-compact-table .col-situacao{
+  width:12% !important;
+  min-width:135px !important;
+}
+.pagamentos-compact-table .col-setor{
+  width:12% !important;
+  min-width:135px !important;
+}
+.pagamentos-compact-table .col-observacoes,
+.pagamentos-compact-table td[style*="min-width:170px"]{
+  width:13% !important;
+  min-width:145px !important;
+}
+.pagamentos-compact-table .col-fonte > div{
+  min-height:unset !important;
+  padding:0 !important;
+  border:none !important;
+  background:transparent !important;
+  text-align:left !important;
+}
+.pagamentos-compact-table .col-fonte p:first-child,
+.pagamentos-compact-table .col-fonte p.font-bold{
+  display:block !important;
+}
+.fonte-empenho-box{
+  width:100%;
+  border:1px solid #dbeafe;
+  background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);
+  border-radius:16px;
+  padding:10px;
+  box-shadow:0 6px 18px rgba(15,52,97,.05);
+}
+.fonte-empenho-box.sem-empenho{
+  background:#fff7ed;
+  border-color:#fed7aa;
+  color:#9a3412;
+}
+.fonte-label-mini{
+  display:block !important;
+  font-size:9px !important;
+  line-height:1.1 !important;
+  font-weight:900 !important;
+  letter-spacing:.08em !important;
+  text-transform:uppercase !important;
+  color:#64748b !important;
+  margin-bottom:5px !important;
+}
+.fonte-empenho-select{
+  width:100% !important;
+  min-height:38px !important;
+  border:1.5px solid #cbd5e1 !important;
+  border-radius:12px !important;
+  background:#fff !important;
+  color:#0f2747 !important;
+  font-size:11px !important;
+  font-weight:800 !important;
+  padding:7px 9px !important;
+  outline:none !important;
+}
+.fonte-empenho-select:focus{
+  border-color:#2563a8 !important;
+  box-shadow:0 0 0 3px rgba(37,99,168,.12) !important;
+}
+.fonte-empenho-resumo{
+  margin-top:8px;
+  padding:8px 9px;
+  border-radius:12px;
+  background:#eff6ff;
+  border:1px solid #bfdbfe;
+  color:#123b6b;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+}
+.fonte-empenho-resumo strong{
+  display:block;
+  font-size:14px;
+  line-height:1.05;
+  font-weight:900;
+  color:#0f2747;
+  word-break:normal;
+  overflow-wrap:normal;
+}
+.fonte-empenho-resumo small{
+  font-size:10px;
+  line-height:1.1;
+  font-weight:800;
+  color:#2563a8;
+  text-align:right;
+  max-width:90px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.fonte-empenho-resumo.vazio{
+  display:block;
+  font-size:11px;
+  font-weight:800;
+  color:#9a3412;
+  background:#fff7ed;
+  border-color:#fed7aa;
+}
+.fonte-ajuda{
+  display:block !important;
+  margin-top:6px !important;
+  font-size:9.5px !important;
+  line-height:1.2 !important;
+  color:#64748b !important;
+  font-weight:700 !important;
+}
+
+
+/* Fonte em Pagamentos: visual sucinto, apenas código da fonte vinculada ao empenho */
+.pagamentos-compact-table .col-fonte{
+  width:7% !important;
+  min-width:96px !important;
+}
+.pagamentos-compact-table .col-fonte > div{
+  padding:0 !important;
+  border:none !important;
+  background:transparent !important;
+  min-height:0 !important;
+}
+.fonte-empenho-box{
+  width:100%;
+  border:1px solid #dbeafe !important;
+  background:#ffffff !important;
+  border-radius:14px !important;
+  padding:7px !important;
+  box-shadow:0 4px 12px rgba(15,52,97,.04) !important;
+}
+.fonte-empenho-box.sem-empenho{
+  background:#fff7ed !important;
+  border-color:#fed7aa !important;
+}
+.fonte-label-mini{
+  display:block !important;
+  font-size:8px !important;
+  line-height:1 !important;
+  font-weight:900 !important;
+  letter-spacing:.08em !important;
+  text-transform:uppercase !important;
+  color:#64748b !important;
+  margin-bottom:4px !important;
+}
+.fonte-codigo-chip{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:100% !important;
+  min-height:30px !important;
+  padding:6px 8px !important;
+  border-radius:12px !important;
+  background:#eff6ff !important;
+  border:1px solid #bfdbfe !important;
+  color:#0f2747 !important;
+  font-size:14px !important;
+  line-height:1 !important;
+  font-weight:900 !important;
+  white-space:nowrap !important;
+}
+.fonte-empenho-ne{
+  display:block !important;
+  margin-top:4px !important;
+  color:#64748b !important;
+  font-size:9px !important;
+  line-height:1.15 !important;
+  font-weight:800 !important;
+  text-align:center !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+}
+.fonte-empenho-select{
+  width:100% !important;
+  min-height:30px !important;
+  height:30px !important;
+  border:1px solid #cbd5e1 !important;
+  border-radius:10px !important;
+  background:#fff !important;
+  color:#0f2747 !important;
+  font-size:10px !important;
+  font-weight:900 !important;
+  padding:4px 6px !important;
+  margin-top:5px !important;
+}
+.fonte-empenho-resumo,
+.fonte-ajuda{
+  display:none !important;
+}
+.fonte-vazio-compacto{
+  display:block;
+  padding:7px 8px;
+  border-radius:12px;
+  background:#fff7ed;
+  border:1px solid #fed7aa;
+  color:#9a3412;
+  font-size:10px;
+  line-height:1.15;
+  font-weight:800;
+  text-align:center;
+}
+
+
+
+/* Correção visual 2026-05-07: coluna Fonte mais profissional e menos poluída */
+.pagamentos-compact-table{
+  table-layout: fixed !important;
+}
+.pagamentos-compact-table th,
+.pagamentos-compact-table td{
+  vertical-align: middle !important;
+}
+.pagamentos-compact-table .col-processo{width:22% !important; min-width:190px !important;}
+.pagamentos-compact-table .col-competencia{width:10% !important; min-width:95px !important;}
+.pagamentos-compact-table .col-valor{width:12% !important; min-width:120px !important;}
+.pagamentos-compact-table .col-situacao{width:12% !important; min-width:125px !important;}
+.pagamentos-compact-table .col-fonte{width:9% !important; min-width:105px !important;}
+.pagamentos-compact-table .col-setor{width:13% !important; min-width:130px !important;}
+.pagamentos-compact-table td[style*="min-width:170px"],
+.pagamentos-compact-table .col-observacoes{width:15% !important; min-width:150px !important;}
+.pagamentos-compact-table .col-acoes{width:7% !important; min-width:82px !important;}
+.pagamentos-compact-table .col-fonte > div{
+  padding:0 !important;
+  border:none !important;
+  background:transparent !important;
+  min-height:0 !important;
+  box-shadow:none !important;
+}
+.fonte-empenho-box{
+  width:100% !important;
+  min-height:42px !important;
+  padding:0 !important;
+  border:none !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:5px !important;
+}
+.fonte-codigo-chip{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:74px !important;
+  max-width:100% !important;
+  min-height:34px !important;
+  padding:6px 8px !important;
+  border-radius:12px !important;
+  background:#eef6ff !important;
+  border:1px solid #bfdbfe !important;
+  color:#0f2747 !important;
+  font-size:15px !important;
+  line-height:1 !important;
+  font-weight:900 !important;
+  letter-spacing:.01em !important;
+  white-space:nowrap !important;
+}
+.fonte-empenho-ne,
+.fonte-label-mini{
+  display:none !important;
+}
+.fonte-empenho-select{
+  width:74px !important;
+  max-width:100% !important;
+  height:24px !important;
+  min-height:24px !important;
+  margin-top:0 !important;
+  padding:2px 5px !important;
+  border-radius:9px !important;
+  border:1px solid #dbeafe !important;
+  background:#ffffff !important;
+  color:#475569 !important;
+  font-size:9px !important;
+  font-weight:800 !important;
+  text-align:center !important;
+}
+.fonte-vazio-compacto{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:74px !important;
+  min-height:34px !important;
+  padding:6px 8px !important;
+  border-radius:12px !important;
+  background:#fff7ed !important;
+  border:1px solid #fed7aa !important;
+  color:#9a3412 !important;
+  font-size:10px !important;
+  line-height:1 !important;
+  font-weight:900 !important;
+  white-space:nowrap !important;
+}
+.pag-chip-fonte{
+  background:#f8fbff !important;
+  color:#173a6a !important;
+  border-color:#dbeafe !important;
+  padding:7px 11px !important;
+}
+.pagamentos-compact-table .col-situacao > div{
+  min-height:56px !important;
+  padding:7px !important;
+}
+.pagamentos-compact-table .col-situacao select{
+  min-height:32px !important;
+  height:32px !important;
+}
+.pagamentos-compact-table .col-setor select{
+  min-height:36px !important;
+}
+.pagamentos-compact-table textarea.input-field{
+  min-height:54px !important;
+}
+
+
+/* =========================================================
+   AJUSTE PROFISSIONAL FINAL - PAGAMENTOS + SESSÃO
+   - Layout mais limpo, sem dados quebrados
+   - Fonte objetiva: apenas código da fonte vinculada ao empenho
+   ========================================================= */
+#app.sessao-restaurada, #app:not(.hidden){min-height:100vh;}
+.pagamentos-card-header-clean .rounded-2xl{border-radius:18px !important;}
+.pagamentos-card-header-clean .bg-gradient-to-r.from-blue-600.to-blue-700{
+  padding:12px 18px !important;
+  background:linear-gradient(135deg,#123b6b,#1b4f8c) !important;
+}
+.pagamentos-card-header-clean .bg-gradient-to-r.from-blue-600.to-blue-700 p.text-xl{
+  font-size:15px !important;
+  line-height:1.25 !important;
+}
+.pagamentos-card-header-clean .pag-chip{
+  padding:6px 10px !important;
+  font-size:10.5px !important;
+  line-height:1.1 !important;
+  background:#ffffff !important;
+  border:1px solid #e2e8f0 !important;
+}
+.pagamentos-scroll-wrap{
+  width:100% !important;
+  overflow-x:hidden !important;
+  overflow-y:visible !important;
+}
+.pagamentos-compact-table{
+  width:100% !important;
+  table-layout:fixed !important;
+  border-collapse:separate !important;
+  border-spacing:0 !important;
+  font-size:12px !important;
+}
+.pagamentos-compact-table thead,
+.pagamentos-compact-table thead tr,
+.pagamentos-compact-table thead th{
+  background:#f8fafc !important;
+  color:#475569 !important;
+  border-bottom:1px solid #e2e8f0 !important;
+}
+.pagamentos-compact-table th{
+  padding:11px 10px !important;
+  font-size:10px !important;
+  line-height:1.15 !important;
+  letter-spacing:.06em !important;
+  text-transform:uppercase !important;
+  white-space:nowrap !important;
+}
+.pagamentos-compact-table td{
+  padding:12px 10px !important;
+  vertical-align:middle !important;
+  font-size:12px !important;
+  line-height:1.35 !important;
+  overflow:hidden !important;
+}
+.pagamentos-compact-table .col-processo{width:18% !important;min-width:0 !important;}
+.pagamentos-compact-table .col-competencia{width:9% !important;min-width:0 !important;}
+.pagamentos-compact-table .col-valor{width:11% !important;min-width:0 !important;}
+.pagamentos-compact-table .col-situacao{width:13% !important;min-width:0 !important;}
+.pagamentos-compact-table .col-fonte{width:8% !important;min-width:0 !important;text-align:center !important;}
+.pagamentos-compact-table .col-setor{width:12% !important;min-width:0 !important;}
+.pagamentos-compact-table .col-observacoes,
+.pagamentos-compact-table td.col-observacoes,
+.pagamentos-compact-table th.col-observacoes{width:21% !important;min-width:0 !important;}
+.pagamentos-compact-table .col-acoes{width:8% !important;min-width:0 !important;}
+.pagamentos-compact-table .processo-principal{
+  font-size:15px !important;
+  line-height:1.15 !important;
+  font-weight:900 !important;
+  color:#0f172a !important;
+  word-break:break-word !important;
+  overflow-wrap:anywhere !important;
+}
+.pagamentos-compact-table .processo-meta{
+  font-size:10px !important;
+  line-height:1.25 !important;
+  color:#64748b !important;
+  white-space:normal !important;
+}
+.pagamentos-compact-table .col-competencia span{
+  min-height:38px !important;
+  width:100% !important;
+  justify-content:center !important;
+  padding:8px 7px !important;
+  border-radius:12px !important;
+  font-size:12px !important;
+  white-space:nowrap !important;
+}
+.pagamentos-compact-table .col-valor p{
+  font-size:15px !important;
+  line-height:1.15 !important;
+  white-space:nowrap !important;
+}
+.pagamentos-compact-table .col-situacao > div{
+  min-height:0 !important;
+  padding:8px !important;
+  border-radius:14px !important;
+}
+.pagamentos-compact-table .col-situacao select,
+.pagamentos-compact-table .col-setor select{
+  width:100% !important;
+  min-height:34px !important;
+  height:34px !important;
+  padding:5px 8px !important;
+  border-radius:10px !important;
+  font-size:10.5px !important;
+  line-height:1.1 !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+}
+.pagamentos-compact-table .col-situacao .badge,
+.pagamentos-compact-table .col-situacao span{
+  max-width:100% !important;
+  margin-top:4px !important;
+  padding:5px 7px !important;
+  font-size:9.5px !important;
+  line-height:1.1 !important;
+  white-space:normal !important;
+  word-break:normal !important;
+}
+.pagamentos-compact-table textarea.input-field{
+  min-height:56px !important;
+  max-height:78px !important;
+  padding:8px 10px !important;
+  border-radius:12px !important;
+  font-size:11px !important;
+  line-height:1.25 !important;
+  resize:vertical !important;
+}
+.pagamentos-compact-table .col-acoes > div{
+  display:flex !important;
+  flex-direction:column !important;
+  gap:6px !important;
+  align-items:stretch !important;
+}
+.pagamentos-compact-table .col-acoes button{
+  width:100% !important;
+  min-height:32px !important;
+  padding:6px 8px !important;
+  border-radius:10px !important;
+  font-size:10.5px !important;
+  white-space:nowrap !important;
+}
+.fonte-empenho-box{
+  width:100% !important;
+  min-height:44px !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:4px !important;
+  padding:0 !important;
+  border:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+}
+.fonte-codigo-chip{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:64px !important;
+  max-width:100% !important;
+  min-height:32px !important;
+  padding:6px 7px !important;
+  border-radius:12px !important;
+  background:#eef6ff !important;
+  border:1px solid #bfdbfe !important;
+  color:#0f2747 !important;
+  font-size:14px !important;
+  line-height:1 !important;
+  font-weight:900 !important;
+  letter-spacing:-.01em !important;
+  white-space:nowrap !important;
+}
+.fonte-empenho-select{
+  width:64px !important;
+  height:24px !important;
+  min-height:24px !important;
+  margin:0 !important;
+  padding:2px 5px !important;
+  border-radius:8px !important;
+  border:1px solid #dbeafe !important;
+  background:#fff !important;
+  color:#475569 !important;
+  font-size:9px !important;
+  font-weight:800 !important;
+  text-align:center !important;
+}
+.fonte-empenho-ne,.fonte-label-mini,.fonte-ajuda,.fonte-empenho-resumo{display:none !important;}
+.fonte-vazio-compacto{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:64px !important;
+  min-height:32px !important;
+  padding:6px 7px !important;
+  border-radius:12px !important;
+  background:#fff7ed !important;
+  border:1px solid #fed7aa !important;
+  color:#9a3412 !important;
+  font-size:9.5px !important;
+  line-height:1 !important;
+  font-weight:900 !important;
+  white-space:nowrap !important;
+}
+@media (max-width:1280px){
+  .pagamentos-scroll-wrap{overflow-x:auto !important;}
+  .pagamentos-compact-table{min-width:1120px !important;}
+}
+
+
+
+/* Ajuste 2026-05-07: Pagamentos - fonte automática e situação com seta discreta */
+.pagamentos-compact-table .col-fonte{
+  width:7% !important;
+  min-width:78px !important;
+  text-align:center !important;
+}
+.pagamentos-compact-table .col-fonte .fonte-empenho-box{
+  min-height:44px !important;
+  padding:0 !important;
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+.fonte-codigo-chip{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  min-width:54px !important;
+  height:34px !important;
+  padding:0 9px !important;
+  border-radius:12px !important;
+  background:#eef6ff !important;
+  color:#123b6b !important;
+  border:1px solid #cfe1f5 !important;
+  font-size:14px !important;
+  font-weight:900 !important;
+  letter-spacing:.01em !important;
+  white-space:nowrap !important;
+}
+.fonte-vazio-compacto{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  min-width:54px !important;
+  height:34px !important;
+  padding:0 8px !important;
+  border-radius:12px !important;
+  background:#f8fafc !important;
+  color:#64748b !important;
+  border:1px dashed #cbd5e1 !important;
+  font-size:10px !important;
+  font-weight:800 !important;
+  line-height:1.1 !important;
+}
+.fonte-empenho-select{display:none !important;}
+
+.pagamentos-compact-table .col-situacao{
+  width:11% !important;
+  min-width:112px !important;
+}
+.situacao-clean-card{
+  position:relative;
+  min-height:58px !important;
+  border-radius:14px !important;
+  padding:8px 34px 8px 8px !important;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.situacao-clean-card .badge{
+  margin:0 !important;
+  max-width:100% !important;
+  text-align:center !important;
+  white-space:normal !important;
+  line-height:1.15 !important;
+  font-size:10px !important;
+  padding:6px 8px !important;
+}
+.situacao-arrow-wrap{
+  position:absolute;
+  right:7px;
+  top:50%;
+  transform:translateY(-50%);
+  width:24px;
+  height:28px;
+  border-radius:9px;
+  background:#ffffff;
+  border:1px solid rgba(15,23,42,.14);
+  box-shadow:0 4px 10px rgba(15,23,42,.05);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#475569;
+  overflow:hidden;
+}
+.situacao-arrow-wrap::after{
+  content:"▾";
+  font-size:12px;
+  font-weight:900;
+  pointer-events:none;
+  line-height:1;
+}
+.situacao-arrow-select{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  opacity:0;
+  cursor:pointer;
+  border:0;
+  padding:0;
+}
+.situacao-arrow-select:disabled{
+  cursor:not-allowed;
+}
+
+
+/* Ajuste final: Fonte por NL/OB distinta e Situação sem corte */
+.pagamentos-compact-table .col-situacao{
+  width:15% !important;
+  min-width:150px !important;
+}
+.situacao-clean-card{
+  min-height:50px !important;
+  padding:7px 34px 7px 10px !important;
+  justify-content:center !important;
+}
+.situacao-clean-card .badge{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:auto !important;
+  min-width:82px !important;
+  max-width:118px !important;
+  white-space:normal !important;
+  overflow:visible !important;
+  text-overflow:clip !important;
+  word-break:normal !important;
+  line-height:1.12 !important;
+  font-size:9.5px !important;
+  padding:6px 7px !important;
+  letter-spacing:.02em !important;
+}
+.situacao-arrow-wrap{
+  width:24px !important;
+  height:26px !important;
+  right:6px !important;
+}
+.pagamentos-compact-table .col-fonte{
+  width:9% !important;
+  min-width:92px !important;
+}
+.fonte-chips-list{
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:4px !important;
+  width:100% !important;
+}
+.fonte-codigo-chip{
+  min-width:58px !important;
+  height:30px !important;
+  font-size:13px !important;
+  padding:0 8px !important;
+}
+.fonte-codigo-chip.secundaria{
+  height:24px !important;
+  min-width:52px !important;
+  font-size:11px !important;
+  background:#f8fafc !important;
+  color:#334155 !important;
+  border-color:#dbe3ef !important;
+}
+.fonte-multiplas-indicador{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  height:20px !important;
+  min-width:30px !important;
+  padding:0 6px !important;
+  border-radius:999px !important;
+  background:#e0f2fe !important;
+  color:#075985 !important;
+  border:1px solid #bae6fd !important;
+  font-size:10px !important;
+  font-weight:900 !important;
+}
+@media (max-width:1280px){
+  .pagamentos-compact-table{min-width:1180px !important;}
+}
 </style>
   <style>body { box-sizing: border-box; }</style>
+
+  <script>
+    (function(){
+      try{
+        var saiu = localStorage.getItem("sigecon_logout_intencional")==="1" || sessionStorage.getItem("sigecon_logout_intencional")==="1";
+        var sessao = localStorage.getItem("sigecon_sessao_ativa") || localStorage.getItem("sigecon_sessao") || sessionStorage.getItem("sigecon_sessao_ativa");
+        if(sessao && !saiu){
+          window.__SIGECON_PREAUTH__ = true;
+          document.documentElement.classList.add("sigecon-session-restoring");
+        }
+      }catch(e){}
+    })();
+  </script>
+  <style>
+    html.sigecon-session-restoring #login-screen{display:none !important;}
+    html.sigecon-session-restoring #app{display:flex !important;}
+  </style>
+
  </head>
  <body class="h-full bg-sky-50 font-sans text-steel-700 overflow-hidden">
   <div id="login-screen" class="h-full w-full fixed inset-0 z-50 flex items-center justify-center">
@@ -845,7 +1588,7 @@
       </div>
       <div>
        <h1 class="login-title">SIGECON</h1>
-       <p class="login-subtitle">SESAP RN</p>
+       <p class="login-subtitle"> CAS SESAP RN</p>
        <p class="login-system-name">Gestão Contratual</p>
       </div>
      </div>
@@ -901,7 +1644,8 @@
       <button type="button" onclick="autenticar()" class="btn-primary w-full font-bold flex items-center justify-center gap-2 text-sm">
        <i data-lucide="log-in" class="w-5 h-5"></i>Entrar
       </button>
-      <p class="login-muted">Desenvolvido por Maria Eloiza da Silva</p>
+      <p class="login-muted">Desenvolvido por Maria Eloiza da Silva - Sanitarista </p>
+      
      </div>
     </div>
    </div>
@@ -915,7 +1659,7 @@
      </div>
      <div>
       <h1 id="main-title" class="text-xl font-bold text-navy-900 leading-tight tracking-wide">SIGECON</h1>
-      <p id="main-subtitle" class="text-sm text-steel-600 leading-tight">SESAP RN</p>
+      <p id="main-subtitle" class="text-sm text-steel-600 leading-tight">CAS SESAP RN</p>
      </div>
     </div>
     <div class="flex items-center gap-3">
@@ -933,9 +1677,11 @@
      <div id="nav-items" class="flex flex-col gap-2"></div>
      <div class="mt-auto pt-4 border-t border-navy-200/50 text-center">
       <p class="text-xs text-steel-700 font-bold">SIGECON</p>
-      <p class="text-xs text-steel-500 font-semibold">SESAP RN</p>
+      <p class="text-xs text-steel-500 font-semibold"> CAS SESAP RN</p>
       <p class="text-[10px] text-steel-400 font-semibold mt-2">Desenvolvido por</p>
       <p class="text-xs text-navy-700 font-bold">Maria Eloiza da Silva</p>
+       <p class="text-xs text-navy-200 font-semibold">Sanitarista</p>
+  
      </div>
     </nav><!-- Content Area -->
     <main id="content-area" class="flex-1 overflow-y-auto pr-2"></main>
@@ -976,6 +1722,22 @@
     let filtroContratosServico="";
     let filtroContratosUH="";
     let filtroContratosFonte="";
+
+    // Filtros específicos da aba Relatórios, espelhando Contratos e Pagamentos
+    let relFiltroContratosEmpresa="";
+    let relFiltroContratosServico="";
+    let relFiltroContratosUH="";
+    let relFiltroContratosFonte="";
+    let relFiltroContratosExecucaoStatus="";
+    let relFiltroPagamentosSituacao="";
+    let relFiltroPagamentosCompetencia="";
+    let relFiltroPagamentosTipoProcesso="";
+    let relFiltroPagamentosFonte="";
+    let relFiltroPagamentosEmpresa="";
+    let relFiltroPagamentosUH="";
+    let relFiltroPagamentosServico="";
+    let relFiltroPagamentosMostrarPagos=true;
+
     let mostrarPagamentosVinculadosContratos=false;
 
     // Filtros da aba Produção precisam existir antes de qualquer renderização da tela.
@@ -999,6 +1761,357 @@
     };
 
     
+
+    // ─── SINCRONIZAÇÃO EM NUVEM + BACKUP PORTÁVEL ───
+    // GitHub Pages publica o sistema, mas não grava dados sozinho.
+    // Para os cadastros aparecerem em qualquer computador/celular/navegador,
+    // o SIGECON precisa de um banco online. Esta versão usa Firebase Realtime Database.
+
+    const SIGECON_FIREBASE_CONFIG_PADRAO={
+      apiKey:"COLE_AQUI_SUA_API_KEY",
+      authDomain:"COLE_AQUI_SEU_AUTH_DOMAIN",
+      databaseURL:"COLE_AQUI_SUA_DATABASE_URL",
+      projectId:"COLE_AQUI_SEU_PROJECT_ID",
+      storageBucket:"COLE_AQUI_SEU_STORAGE_BUCKET",
+      messagingSenderId:"COLE_AQUI_SEU_MESSAGING_SENDER_ID",
+      appId:"COLE_AQUI_SEU_APP_ID"
+    };
+
+    // Caminho único do banco do SIGECON na nuvem.
+    // Pode alterar apenas se quiser separar bases por ambiente.
+    const SIGECON_FIREBASE_PATH="sigecon/cas_sesap_rn/producao";
+    const SIGECON_FIREBASE_CONFIG_LOCAL_KEY="sigecon_firebase_config";
+
+    let SIGECON_FIREBASE_CONFIG={...SIGECON_FIREBASE_CONFIG_PADRAO};
+    let sigeconFirebaseApp=null;
+    let sigeconFirebaseDb=null;
+    let sigeconFirebaseStore=null;
+    let sigeconFirebaseModo=""; // "realtime" ou "firestore"
+    let sigeconNuvemAtiva=false;
+    let sigeconRecebendoNuvem=false;
+    let sigeconTimerNuvem=null;
+    let sigeconUltimoHashNuvem="";
+    let sigeconUltimoErroNuvem="";
+
+    function limparTextoConfigFirebase(v){
+      return String(v||"").trim();
+    }
+
+    function normalizarConfigFirebase(cfg){
+      if(!cfg || typeof cfg!=="object") return {};
+      return {
+        apiKey:limparTextoConfigFirebase(cfg.apiKey),
+        authDomain:limparTextoConfigFirebase(cfg.authDomain),
+        databaseURL:limparTextoConfigFirebase(cfg.databaseURL),
+        projectId:limparTextoConfigFirebase(cfg.projectId),
+        storageBucket:limparTextoConfigFirebase(cfg.storageBucket),
+        messagingSenderId:limparTextoConfigFirebase(cfg.messagingSenderId),
+        appId:limparTextoConfigFirebase(cfg.appId)
+      };
+    }
+
+    function configFirebaseValida(cfg){
+      cfg=normalizarConfigFirebase(cfg);
+      return !!(cfg.apiKey && cfg.projectId && cfg.authDomain && cfg.appId &&
+        !cfg.apiKey.includes("COLE_AQUI") &&
+        !cfg.projectId.includes("COLE_AQUI") &&
+        !cfg.authDomain.includes("COLE_AQUI") &&
+        !cfg.appId.includes("COLE_AQUI"));
+    }
+
+    function configFirebaseRealtimeValida(cfg){
+      cfg=normalizarConfigFirebase(cfg);
+      return configFirebaseValida(cfg) && !!(cfg.databaseURL && !cfg.databaseURL.includes("COLE_AQUI") && cfg.databaseURL.startsWith("https://"));
+    }
+
+    function obterConfigFirebaseLocal(){
+      try{return normalizarConfigFirebase(JSON.parse(localStorage.getItem(SIGECON_FIREBASE_CONFIG_LOCAL_KEY)||"{}"));}catch(e){return {};}
+    }
+
+    async function carregarConfigFirebaseExterna(){
+      // Permite configurar pelo GitHub sem mexer no index.html: crie o arquivo firebase-config.json no repositório.
+      // Exemplo do caminho público: https://eloizasilva-sc.github.io/sigeconcas/firebase-config.json
+      try{
+        const url="./firebase-config.json?v="+Date.now();
+        const resp=await fetch(url,{cache:"no-store"});
+        if(!resp.ok) return null;
+        const cfg=normalizarConfigFirebase(await resp.json());
+        return configFirebaseValida(cfg)?cfg:null;
+      }catch(e){
+        return null;
+      }
+    }
+
+    async function resolverConfigFirebase(){
+      // Ordem de prioridade:
+      // 1) configuração salva neste navegador pela tela de relatórios;
+      // 2) arquivo firebase-config.json hospedado no GitHub Pages;
+      // 3) configuração colada diretamente no código.
+      const local=obterConfigFirebaseLocal();
+      if(configFirebaseValida(local)){
+        SIGECON_FIREBASE_CONFIG=local;
+        return local;
+      }
+      const externa=await carregarConfigFirebaseExterna();
+      if(configFirebaseValida(externa)){
+        SIGECON_FIREBASE_CONFIG=externa;
+        return externa;
+      }
+      const padrao=normalizarConfigFirebase(SIGECON_FIREBASE_CONFIG_PADRAO);
+      SIGECON_FIREBASE_CONFIG=padrao;
+      return padrao;
+    }
+
+    function firebaseConfigurado(){
+      return configFirebaseValida(SIGECON_FIREBASE_CONFIG) || configFirebaseValida(obterConfigFirebaseLocal());
+    }
+
+    function clonarSeguro(obj){
+      try{return JSON.parse(JSON.stringify(obj||{}));}catch(e){return obj||{};}
+    }
+
+    function obterConfiguracoesLocaisSnapshot(){
+      try{return JSON.parse(localStorage.getItem("sigecon_configuracoes")||"{}");}catch(e){return {}}
+    }
+
+    function obterListasConfiguracaoSnapshot(){
+      try{return JSON.parse(localStorage.getItem("sigecon_listas_configuracao")||"{}");}catch(e){return {}}
+    }
+
+    function montarBancoCompletoSnapshot(){
+      return {
+        versao:"SIGECON-CLOUD-BACKUP-2026-05-07-ROBUSTO",
+        atualizadoEm:new Date().toISOString(),
+        atualizadoPor:usuarioAutenticado?.nome||usuarioAutenticado?.matricula||"Sistema",
+        exercicioAtivo:exercicioAtivo||2026,
+        contratos:clonarSeguro(allContratos||[]),
+        pagamentos:clonarSeguro(allPagamentos||[]),
+        producao:clonarSeguro(allProducao||[]),
+        tecnicos:clonarSeguro((allTecnicos||[]).filter(t=>t.tipo==="tecnico"||t.tipo==="exercicio")),
+        listas:clonarSeguro(listas||{}),
+        configuracoes:clonarSeguro(obterConfiguracoesLocaisSnapshot()),
+        listasConfiguracao:clonarSeguro(obterListasConfiguracaoSnapshot()),
+        exercicios:clonarSeguro(typeof carregarExerciciosLocais==="function" ? carregarExerciciosLocais() : []),
+        tecnicosExcluidos:clonarSeguro(typeof carregarTecnicosExcluidos==="function" ? carregarTecnicosExcluidos() : []),
+        auditoria:clonarSeguro(typeof carregarAuditoria==="function" ? carregarAuditoria() : [])
+      };
+    }
+
+    function aplicarBancoCompletoSnapshot(banco,origem="backup"){
+      if(!banco || typeof banco!=="object") return false;
+      try{
+        if(Array.isArray(banco.contratos)) allContratos=mesclarPorId(allContratos,banco.contratos);
+        if(Array.isArray(banco.pagamentos)) allPagamentos=mesclarPorId(allPagamentos,banco.pagamentos);
+        if(Array.isArray(banco.producao)) allProducao=mesclarPorId(allProducao,banco.producao);
+        if(Array.isArray(banco.tecnicos)) allTecnicos=mesclarExerciciosLocais(mesclarTecnicosLocais(mesclarPorId(allTecnicos,banco.tecnicos)));
+        if(banco.listas && typeof banco.listas==="object") listas={...listas,...banco.listas};
+        if(banco.configuracoes && typeof banco.configuracoes==="object") localStorage.setItem("sigecon_configuracoes",JSON.stringify(banco.configuracoes));
+        if(banco.listasConfiguracao && typeof banco.listasConfiguracao==="object") localStorage.setItem("sigecon_listas_configuracao",JSON.stringify(banco.listasConfiguracao));
+        if(Array.isArray(banco.exercicios)) localStorage.setItem("sigecon_exercicios",JSON.stringify(banco.exercicios));
+        if(Array.isArray(banco.tecnicosExcluidos)) localStorage.setItem("sigecon_tecnicos_excluidos",JSON.stringify(banco.tecnicosExcluidos));
+        if(Array.isArray(banco.auditoria)) localStorage.setItem("sigecon_auditoria_alteracoes",JSON.stringify(banco.auditoria.slice(0,500)));
+        if(banco.exercicioAtivo) exercicioAtivo=banco.exercicioAtivo;
+
+        const localBasico={
+          contratos:allContratos||[],
+          pagamentos:allPagamentos||[],
+          producao:allProducao||[],
+          tecnicos:(allTecnicos||[]).filter(t=>t.tipo==="tecnico"||t.tipo==="exercicio"),
+          atualizadoEm:banco.atualizadoEm||new Date().toISOString(),
+          origem
+        };
+        try{localStorage.setItem(CHAVE_BANCO_SIGECON,JSON.stringify(localBasico));}catch(e){}
+        if(typeof persistirListasPrincipais==="function") persistirListasPrincipais();
+        if(typeof carregarConfiguracoesLocais==="function") carregarConfiguracoesLocais();
+        if(typeof carregarExerciciosCadastrados==="function") carregarExerciciosCadastrados();
+        return true;
+      }catch(e){
+        console.error("Erro ao aplicar banco/backup:",e);
+        return false;
+      }
+    }
+
+    async function inicializarNuvemSigec(){
+      try{
+        await resolverConfigFirebase();
+        if(!configFirebaseValida(SIGECON_FIREBASE_CONFIG)){
+          sigeconNuvemAtiva=false;
+          sigeconFirebaseModo="";
+          sigeconUltimoErroNuvem="Firebase ainda não configurado. Cole o firebaseConfig real ou suba o arquivo firebase-config.json no GitHub.";
+          atualizarIndicadorNuvem();
+          return false;
+        }
+        if(!window.firebase){
+          sigeconNuvemAtiva=false;
+          sigeconFirebaseModo="";
+          sigeconUltimoErroNuvem="SDK do Firebase não carregou. Verifique internet/bloqueio do navegador.";
+          atualizarIndicadorNuvem();
+          return false;
+        }
+
+        sigeconFirebaseApp=window.firebase.apps && window.firebase.apps.length ? window.firebase.app() : window.firebase.initializeApp(SIGECON_FIREBASE_CONFIG);
+
+        // Preferência 1: Realtime Database, quando houver databaseURL no firebaseConfig.
+        // Preferência 2: Firestore, quando a pessoa criou Firestore e não Realtime Database.
+        if(configFirebaseRealtimeValida(SIGECON_FIREBASE_CONFIG) && window.firebase.database){
+          sigeconFirebaseDb=window.firebase.database();
+          sigeconFirebaseStore=null;
+          sigeconFirebaseModo="realtime";
+          await sigeconFirebaseDb.ref(SIGECON_FIREBASE_PATH+"/_ping").set({ok:true,em:new Date().toISOString(),modo:"realtime"});
+        }else if(window.firebase.firestore){
+          sigeconFirebaseDb=null;
+          sigeconFirebaseStore=window.firebase.firestore();
+          sigeconFirebaseModo="firestore";
+          await sigeconFirebaseStore.collection("sigecon_cloud").doc("cas_sesap_rn_producao").set({_ping:{ok:true,em:new Date().toISOString(),modo:"firestore"}},{merge:true});
+        }else{
+          throw new Error("Firebase carregou, mas não encontrei Realtime Database nem Firestore. Confira os scripts do Firebase no index.html.");
+        }
+
+        sigeconNuvemAtiva=true;
+        sigeconUltimoErroNuvem="";
+        atualizarIndicadorNuvem();
+        return true;
+      }catch(e){
+        console.error("Falha ao iniciar Firebase:",e);
+        sigeconNuvemAtiva=false;
+        sigeconFirebaseModo="";
+        sigeconUltimoErroNuvem=e?.message||String(e||"Erro desconhecido no Firebase.");
+        atualizarIndicadorNuvem();
+        return false;
+      }
+    }
+
+    async function carregarBancoNuvem(){
+      if(!sigeconNuvemAtiva) return null;
+      try{
+        let banco=null;
+        if(sigeconFirebaseModo==="realtime" && sigeconFirebaseDb){
+          const snap=await sigeconFirebaseDb.ref(SIGECON_FIREBASE_PATH).get();
+          banco=snap.exists()?snap.val():null;
+        }else if(sigeconFirebaseModo==="firestore" && sigeconFirebaseStore){
+          const doc=await sigeconFirebaseStore.collection("sigecon_cloud").doc("cas_sesap_rn_producao").get();
+          banco=doc.exists?doc.data():null;
+        }
+        if(banco){
+          delete banco._ping;
+          sigeconUltimoHashNuvem=JSON.stringify(banco);
+          return banco;
+        }
+      }catch(e){
+        sigeconUltimoErroNuvem=e?.message||String(e);
+        console.error("Não foi possível carregar dados da nuvem:",e);
+      }
+      return null;
+    }
+
+    async function salvarBancoNuvemAgora(snapshot){
+      if(!sigeconNuvemAtiva || sigeconRecebendoNuvem) return false;
+      try{
+        const banco=snapshot||montarBancoCompletoSnapshot();
+        const hash=JSON.stringify(banco);
+        if(hash===sigeconUltimoHashNuvem) return true;
+        const payload={...banco,_ping:{ok:true,em:new Date().toISOString(),modo:sigeconFirebaseModo||"firebase"}};
+        if(sigeconFirebaseModo==="realtime" && sigeconFirebaseDb){
+          await sigeconFirebaseDb.ref(SIGECON_FIREBASE_PATH).update(payload);
+        }else if(sigeconFirebaseModo==="firestore" && sigeconFirebaseStore){
+          await sigeconFirebaseStore.collection("sigecon_cloud").doc("cas_sesap_rn_producao").set(payload,{merge:true});
+        }else{
+          return false;
+        }
+        sigeconUltimoHashNuvem=hash;
+        sigeconUltimoErroNuvem="";
+        atualizarIndicadorNuvem();
+        return true;
+      }catch(e){
+        sigeconUltimoErroNuvem=e?.message||String(e);
+        console.error("Erro ao salvar dados na nuvem:",e);
+        if(typeof showInlineAlert==="function") showInlineAlert("⚠️ Dados salvos neste navegador, mas a nuvem não sincronizou: "+sigeconUltimoErroNuvem,"error");
+        atualizarIndicadorNuvem();
+        return false;
+      }
+    }
+
+    function agendarSalvamentoNuvem(snapshot){
+      if(!sigeconNuvemAtiva || sigeconRecebendoNuvem) return;
+      clearTimeout(sigeconTimerNuvem);
+      const payload=clonarSeguro(snapshot||montarBancoCompletoSnapshot());
+      sigeconTimerNuvem=setTimeout(()=>salvarBancoNuvemAgora(payload),700);
+    }
+
+    function processarSnapshotNuvemAoVivo(banco){
+      if(!banco) return;
+      delete banco._ping;
+      const hash=JSON.stringify(banco);
+      if(hash===sigeconUltimoHashNuvem) return;
+      sigeconUltimoHashNuvem=hash;
+      sigeconRecebendoNuvem=true;
+      aplicarBancoCompletoSnapshot(banco,"nuvem");
+      sigeconRecebendoNuvem=false;
+      atualizarIndicadorNuvem();
+      if(usuarioAutenticado && currentTab){
+        if(typeof renderContent==="function") renderContent();
+        if(typeof showInlineAlert==="function") showInlineAlert("☁️ Dados atualizados pela nuvem.","info");
+      }
+    }
+
+    function ativarEscutaNuvem(){
+      if(!sigeconNuvemAtiva) return;
+      try{
+        if(sigeconFirebaseModo==="realtime" && sigeconFirebaseDb){
+          sigeconFirebaseDb.ref(SIGECON_FIREBASE_PATH).on("value",snap=>processarSnapshotNuvemAoVivo(snap.val()));
+        }else if(sigeconFirebaseModo==="firestore" && sigeconFirebaseStore){
+          sigeconFirebaseStore.collection("sigecon_cloud").doc("cas_sesap_rn_producao").onSnapshot(doc=>{
+            processarSnapshotNuvemAoVivo(doc.exists?doc.data():null);
+          });
+        }
+      }catch(e){
+        sigeconUltimoErroNuvem=e?.message||String(e);
+        console.error("Erro ao escutar alterações da nuvem:",e);
+      }
+    }
+
+    function statusSincronizacaoNuvem(){
+      if(sigeconNuvemAtiva) return "☁️ Nuvem ativa ("+(sigeconFirebaseModo==="firestore"?"Firestore":"Realtime")+")";
+      if(configFirebaseValida(SIGECON_FIREBASE_CONFIG)||configFirebaseValida(obterConfigFirebaseLocal())) return "⚠️ Nuvem desconectada";
+      return "💾 Modo local";
+    }
+
+    function atualizarIndicadorNuvem(){
+      try{
+        ["sigecon-cloud-status","sigecon-cloud-status-card"].forEach(id=>{
+          const el=document.getElementById(id);
+          if(el) el.textContent=statusSincronizacaoNuvem();
+        });
+        const detalhe=document.getElementById("sigecon-cloud-detail");
+        if(detalhe) detalhe.textContent=sigeconUltimoErroNuvem ? "Último erro: "+sigeconUltimoErroNuvem : "Sincronização pronta. O GitHub abre o sistema; o Firebase guarda os dados.";
+      }catch(e){}
+    }
+
+    function salvarConfigFirebasePorPrompt(){
+      const atual=JSON.stringify(SIGECON_FIREBASE_CONFIG&&configFirebaseValida(SIGECON_FIREBASE_CONFIG)?SIGECON_FIREBASE_CONFIG:SIGECON_FIREBASE_CONFIG_PADRAO,null,2);
+      const texto=prompt("Cole aqui o objeto firebaseConfig completo, entre chaves { ... }.\n\nVocê também pode criar um arquivo firebase-config.json no GitHub com esse mesmo conteúdo.",atual);
+      if(!texto) return;
+      try{
+        const limpo=texto.replace(/^const\s+firebaseConfig\s*=\s*/i,"").replace(/;\s*$/,"");
+        const cfg=normalizarConfigFirebase(Function("return ("+limpo+")")());
+        if(!configFirebaseValida(cfg)) throw new Error("Configuração incompleta. Confira apiKey, authDomain, projectId e appId. O databaseURL só é obrigatório se usar Realtime Database.");
+        localStorage.setItem(SIGECON_FIREBASE_CONFIG_LOCAL_KEY,JSON.stringify(cfg));
+        SIGECON_FIREBASE_CONFIG=cfg;
+        showInlineAlert("✅ Configuração do Firebase salva neste navegador. Clique em Testar Nuvem.","info");
+        atualizarIndicadorNuvem();
+      }catch(e){
+        alert("Não consegui ler a configuração do Firebase. Cole o objeto completo exatamente como aparece no Firebase.\n\nErro: "+(e?.message||e));
+      }
+    }
+
+    async function testarConexaoFirebaseManual(){
+      await inicializarNuvemSigec();
+      if(!sigeconNuvemAtiva){
+        showInlineAlert("⚠️ Nuvem não conectou: "+(sigeconUltimoErroNuvem||"verifique a configuração e as regras do Realtime Database."),"error");
+        return;
+      }
+      showInlineAlert("✅ Firebase conectado. Agora clique em Sincronizar Nuvem para enviar os dados atuais.","info");
+    }
 
     // ─── BANCO LOCAL: PERSISTÊNCIA GERAL DO SISTEMA ───
     const CHAVE_BANCO_SIGECON="sigecon_banco_geral";
@@ -1080,11 +2193,13 @@
         const atual=contarBancoLocalAtual();
 
         const proximos={
+          ...montarBancoCompletoSnapshot(),
           contratos:allContratos||[],
           pagamentos:allPagamentos||[],
           producao:allProducao||[],
           tecnicos:(allTecnicos||[]).filter(t=>t.tipo==="tecnico"||t.tipo==="exercicio"),
-          atualizadoEm:new Date().toISOString()
+          atualizadoEm:new Date().toISOString(),
+          sincronizacao:statusSincronizacaoNuvem()
         };
 
         // Proteção contra perda acidental em atualização/F5 ou falha de carregamento:
@@ -1103,6 +2218,8 @@
 
         persistirListasPrincipais();
         localStorage.setItem(CHAVE_BANCO_SIGECON,JSON.stringify(proximos));
+        if(!sigeconRecebendoNuvem) agendarSalvamentoNuvem(proximos);
+        atualizarIndicadorNuvem();
         return true;
       }catch(e){
         console.error("Erro ao salvar banco local:",e);
@@ -1548,6 +2665,8 @@
     
     // ─── SESSÃO PERSISTENTE ───
     const CHAVE_SESSAO_SIGECON="sigecon_sessao_ativa";
+    const CHAVE_LOGOUT_INTENCIONAL_SIGECON="sigecon_logout_intencional";
+    const CHAVE_MANTER_CONECTADO_SIGECON="sigecon_manter_conectado";
 
     function salvarSessao(){
       if(!usuarioAutenticado) return;
@@ -1557,61 +2676,165 @@
         perfil:currentProfile||usuarioAutenticado.perfil||"gestor",
         exercicio:exercicioAtivo||2026,
         aba:currentTab||"dashboard",
+        filtros:{
+          pagamentos:{
+            situacao:filtroPagamentosSituacao||"",
+            fonte:filtroPagamentosFonte||"",
+            empresa:filtroPagamentosEmpresa||"",
+            unidade:filtroPagamentosUH||"",
+            servico:filtroPagamentosServico||"",
+            competencia:filtroPagamentosCompetencia||"",
+            tipoProcesso:filtroPagamentosTipoProcesso||"",
+            mostrarPagos:!!filtroPagamentosMostrarPagos,
+            busca:window.filtroPagamentosBusca||""
+          }
+        },
         salvaEm:new Date().toISOString()
       };
 
+      // Atualizar/F5 deve manter a sessão. Apenas o botão Sair limpa estes dados.
+      localStorage.removeItem(CHAVE_LOGOUT_INTENCIONAL_SIGECON);
+      sessionStorage.removeItem(CHAVE_LOGOUT_INTENCIONAL_SIGECON);
       localStorage.setItem(CHAVE_SESSAO_SIGECON,JSON.stringify(sessao));
       localStorage.setItem("sigecon_sessao",JSON.stringify(sessao)); // compatibilidade com versões anteriores
+      localStorage.setItem("sigecon_ultima_aba",sessao.aba||"dashboard");
+      localStorage.setItem(CHAVE_MANTER_CONECTADO_SIGECON,"1");
+      sessionStorage.setItem(CHAVE_SESSAO_SIGECON,JSON.stringify(sessao));
     }
 
     function limparSessao(){
+      // Só o botão SAIR chama esta função. Atualizar a página não limpa sessão.
+      localStorage.setItem(CHAVE_LOGOUT_INTENCIONAL_SIGECON,"1");
+      sessionStorage.setItem(CHAVE_LOGOUT_INTENCIONAL_SIGECON,"1");
       localStorage.removeItem(CHAVE_SESSAO_SIGECON);
       localStorage.removeItem("sigecon_sessao");
+      localStorage.removeItem("sigecon_ultima_aba");
+      localStorage.removeItem(CHAVE_MANTER_CONECTADO_SIGECON);
+      sessionStorage.removeItem(CHAVE_SESSAO_SIGECON);
     }
 
     function carregarSessao(){
       try{
-        return JSON.parse(localStorage.getItem(CHAVE_SESSAO_SIGECON)||localStorage.getItem("sigecon_sessao")||"null");
+        // Sair do sistema é a única ação que invalida a sessão.
+        if(localStorage.getItem(CHAVE_LOGOUT_INTENCIONAL_SIGECON)==="1" || sessionStorage.getItem(CHAVE_LOGOUT_INTENCIONAL_SIGECON)==="1") return null;
+
+        const possiveis=[
+          localStorage.getItem(CHAVE_SESSAO_SIGECON),
+          localStorage.getItem("sigecon_sessao"),
+          sessionStorage.getItem(CHAVE_SESSAO_SIGECON)
+        ].filter(Boolean);
+
+        for(const bruto of possiveis){
+          try{
+            const sessao=JSON.parse(bruto);
+            if(sessao && sessao.usuario) return sessao;
+          }catch(e){}
+        }
+        return null;
       }catch(e){
         return null;
       }
     }
 
-    function aplicarSessaoSalva(){
-      const sessao=carregarSessao();
-      if(!sessao || !sessao.usuario) return false;
-      carregarConfiguracoesLocais();
-      aplicarBancoLocal();
-      reidratarListasPrincipais();
+    function existeSessaoSalva(){
+      return !!carregarSessao();
+    }
 
-      usuarioAutenticado=sessao.usuario;
-      currentProfile=sessao.perfil||sessao.usuario.perfil||"gestor";
-      exercicioAtivo=parseInt(sessao.exercicio)||2026;
-      currentTab=sessao.aba||"dashboard";
-
+    function exibirTelaAutenticada(){
       const loginScreen=document.getElementById("login-screen");
       const app=document.getElementById("app");
-      const badge=document.getElementById("exercicio-badge");
+      document.documentElement.classList.add("sigecon-session-restoring");
+      if(loginScreen){
+        loginScreen.classList.add("hidden");
+        loginScreen.style.display="none";
+      }
+      if(app){
+        app.classList.remove("hidden");
+        app.classList.add("sessao-restaurada");
+        app.style.display="";
+      }
+    }
 
-      if(loginScreen) loginScreen.classList.add("hidden");
-      if(app) app.classList.remove("hidden");
-      if(badge) badge.textContent=exercicioAtivo;
+    function exibirTelaLogin(){
+      const loginScreen=document.getElementById("login-screen");
+      const app=document.getElementById("app");
+      document.documentElement.classList.remove("sigecon-session-restoring");
+      if(loginScreen){
+        loginScreen.style.display="";
+        loginScreen.classList.remove("hidden");
+      }
+      if(app){
+        app.classList.add("hidden");
+        app.classList.remove("sessao-restaurada");
+        app.style.display="none";
+      }
+    }
 
+    function aplicarSessaoSalva(){
       try{
-        document.getElementById("login-exercicio").value=String(exercicioAtivo);
-      }catch(e){}
+        const sessao=carregarSessao();
+        if(!sessao || !sessao.usuario) return false;
 
-      updateProfileUI();
-      buildNav();
-      renderContent();
-      salvarSessao();
-      return true;
+        carregarConfiguracoesLocais();
+        aplicarBancoLocal();
+        reidratarListasPrincipais();
+
+        usuarioAutenticado=sessao.usuario;
+        currentProfile=sessao.perfil||sessao.usuario.perfil||"gestor";
+        exercicioAtivo=parseInt(sessao.exercicio)||2026;
+        currentTab=sessao.aba||localStorage.getItem("sigecon_ultima_aba")||"dashboard";
+
+        if(sessao.filtros && sessao.filtros.pagamentos){
+          const fp=sessao.filtros.pagamentos;
+          filtroPagamentosSituacao=fp.situacao||"";
+          filtroPagamentosFonte=fp.fonte||"";
+          filtroPagamentosEmpresa=fp.empresa||"";
+          filtroPagamentosUH=fp.unidade||"";
+          filtroPagamentosServico=fp.servico||"";
+          filtroPagamentosCompetencia=fp.competencia||"";
+          filtroPagamentosTipoProcesso=fp.tipoProcesso||"";
+          filtroPagamentosMostrarPagos=!!fp.mostrarPagos;
+          window.filtroPagamentosBusca=fp.busca||"";
+        }
+
+        // Garante que visitantes não retornem em uma aba administrativa salva por engano.
+        if(currentProfile==="visitante" && !["dashboard","contratos","pagamentos"].includes(currentTab)){
+          currentTab="dashboard";
+        }
+
+        const badge=document.getElementById("exercicio-badge");
+        if(badge) badge.textContent=exercicioAtivo;
+
+        try{
+          const campoExercicio=document.getElementById("login-exercicio");
+          if(campoExercicio) campoExercicio.value=String(exercicioAtivo);
+        }catch(e){}
+
+        exibirTelaAutenticada();
+        updateProfileUI();
+        buildNav();
+        renderContent();
+        salvarSessao();
+        return true;
+      }catch(e){
+        console.error("Falha ao restaurar sessão salva:",e);
+        return false;
+      }
     }
 
     if(!window.__sigeconAutosaveBanco){
       window.__sigeconAutosaveBanco=true;
       setInterval(()=>{salvarBancoLocal();},5000);
     }
+
+    
+
+    window.addEventListener("pageshow",()=>{
+      // Ao voltar/atualizar a página, restaura a tela interna sem exigir novo login.
+      if(existeSessaoSalva() && (!usuarioAutenticado || document.getElementById("app")?.classList.contains("hidden"))){
+        aplicarSessaoSalva();
+      }
+    });
 
     window.addEventListener("beforeunload",()=>{
       salvarBancoLocal();
@@ -1623,8 +2846,22 @@
       if(usuarioAutenticado) salvarSessao();
     });
 
+    window.addEventListener("visibilitychange",()=>{
+      if(document.visibilityState==="hidden"){
+        salvarBancoLocal();
+        if(usuarioAutenticado) salvarSessao();
+      }
+    });
 
-    
+    window.addEventListener("storage",(event)=>{
+      if([CHAVE_SESSAO_SIGECON,"sigecon_sessao","sigecon_ultima_aba"].includes(event.key) && existeSessaoSalva()){
+        if(!usuarioAutenticado || document.getElementById("app")?.classList.contains("hidden")){
+          aplicarSessaoSalva();
+        }
+      }
+    });
+
+
     function servicoOptionLabel(valor){
       return servicoLabel(valor);
     }
@@ -1815,8 +3052,7 @@ function autenticar(){
           currentTab="dashboard";
         }
         exercicioAtivo=parseInt(exercicio);
-        document.getElementById("login-screen").classList.add("hidden");
-        document.getElementById("app").classList.remove("hidden");
+        exibirTelaAutenticada();
         document.getElementById("exercicio-badge").textContent=exercicio;
         updateProfileUI();
         buildNav();
@@ -1832,8 +3068,7 @@ function autenticar(){
       currentProfile="gestor";
       currentTab="dashboard";
       exercicioAtivo=2026;
-      document.getElementById("login-screen").classList.remove("hidden");
-      document.getElementById("app").classList.add("hidden");
+      exibirTelaLogin();
       document.getElementById("login-exercicio").value="2026";
       document.getElementById("login-perfil").value="";
       document.getElementById("login-input").value="";
@@ -1841,6 +3076,10 @@ function autenticar(){
     }
 
     document.addEventListener("DOMContentLoaded",()=>{
+      if(existeSessaoSalva()){
+        exibirTelaAutenticada();
+        setTimeout(()=>{ if(!usuarioAutenticado) aplicarSessaoSalva(); },0);
+      }
       carregarExerciciosCadastrados();
       
       document.getElementById("login-perfil").addEventListener("change",(e)=>{
@@ -2011,12 +3250,48 @@ function obterValorMoedaInput(id){
       return Math.ceil((fim-hoje)/(1000*60*60*24));
     }
 
+    function obterEscalaVigencia(dias){
+      if(dias===null || dias===undefined || Number.isNaN(dias)){
+        return {
+          classe:"bg-slate-50 text-slate-700 border-slate-200",
+          tom:"neutra",
+          legenda:"Vigência não informada"
+        };
+      }
+      if(dias<=30){
+        return {
+          classe:"bg-red-50 text-red-800 border-red-200",
+          tom:"critica",
+          legenda:dias < 0 ? `Vencido há ${Math.abs(dias)} dia(s)` : `${dias} dia(s) restantes`
+        };
+      }
+      if(dias>=31 && dias<=59){
+        return {
+          classe:"bg-orange-50 text-orange-800 border-orange-200",
+          tom:"atencao",
+          legenda:`${dias} dia(s) restantes`
+        };
+      }
+      if(dias>=60 && dias<=90){
+        return {
+          classe:"bg-yellow-50 text-yellow-800 border-yellow-200",
+          tom:"alerta",
+          legenda:`${dias} dia(s) restantes`
+        };
+      }
+      return {
+        classe:"bg-emerald-50 text-emerald-800 border-emerald-200",
+        tom:"estavel",
+        legenda:`${dias} dia(s) restantes`
+      };
+    }
+
     function renderVigenciaBadge(c){
       const dias=calcularDiasRestantes(c?.vigFim);
-      const cor=dias<0?"bg-red-100 text-red-700 border-red-200":dias<=90?"bg-yellow-100 text-yellow-700 border-yellow-200":"bg-emerald-100 text-emerald-700 border-emerald-200";
-      const texto=!c?.vigFim?"Vigência não informada":dias<0?`Vencido há ${Math.abs(dias)} dia(s)`:dias<=90?`${dias} dia(s) restantes`:`${dias} dia(s) restantes`;
+      const escala=obterEscalaVigencia(c?.vigFim?dias:null);
+      const texto=!c?.vigFim?"Vigência não informada":escala.legenda;
       return `
-        <div class="inline-flex flex-col gap-1 px-3 py-2 rounded-xl border ${cor} font-bold text-xs">
+        <div class="inline-flex flex-col gap-1 px-3 py-2 rounded-xl border ${escala.classe} font-bold text-xs">
           <span>${formatarDataBR(c?.vigIni)} até ${formatarDataBR(c?.vigFim)}</span>
           <span class="font-semibold opacity-80">${texto}</span>
         </div>
@@ -2062,16 +3337,17 @@ function obterValorMoedaInput(id){
       const dtFim=new Date(fim+"T00:00:00");
       if(isNaN(dtIni.getTime()) || isNaN(dtFim.getTime()) || dtFim < dtIni) return 0;
 
-      // Conta meses de forma prática para contratos:
-      // considera o período total em dias e divide por média mensal.
-      const dias=Math.max(1,Math.ceil((dtFim-dtIni)/(1000*60*60*24))+1);
+      // Cálculo financeiro proporcional por dias, incluindo o primeiro e o último dia da vigência.
+      // Ex.: 01/01 a 31/12 = aproximadamente 12 meses.
+      const msPorDia=1000*60*60*24;
+      const dias=Math.max(1,Math.round((dtFim-dtIni)/msPorDia)+1);
       return Math.max(1,dias/30.4375);
     }
 
     function calcularValorMensalContrato(valorTotal,inicio,fim){
       const valor=parseValorBR(valorTotal);
       const meses=calcularMesesVigencia(inicio,fim);
-      if(!valor || !meses) return 0;
+      if(valor <= 0 || meses <= 0) return 0;
       return valor/meses;
     }
 
@@ -2084,26 +3360,203 @@ function obterValorMoedaInput(id){
 
       if(!campoMensal) return 0;
 
-      const valor=campoValor?.value || "";
+      const valor=campoValor?.value || 0;
       const vigIni=campoIni?.value || "";
       const vigFim=campoFim?.value || "";
-      const mensal=calcularValorMensalContrato(valor,vigIni,vigFim);
       const meses=calcularMesesVigencia(vigIni,vigFim);
+      const mensal=calcularValorMensalContrato(valor,vigIni,vigFim);
 
-      campoMensal.value=mensal?mensal.toLocaleString("pt-BR",{style:"currency",currency:"BRL"}):"";
+      campoMensal.value=mensal>0 ? mensal.toLocaleString("pt-BR",{style:"currency",currency:"BRL"}) : "";
+      campoMensal.dataset.valor=mensal>0 ? String(mensal) : "";
 
       if(info){
-        if(mensal){
-          info.textContent=`Calculado automaticamente: ${meses.toFixed(1).replace(".",",")} mês(es) de vigência.`;
+        if(mensal>0){
+          info.textContent=`Calculado automaticamente: ${meses.toFixed(1)} mês(es) de vigência. Valor estimado mensal: ${campoMensal.value}.`;
+          info.className="text-[10px] text-emerald-700 mt-1 font-bold";
+        }else if(parseValorBR(valor)>0 && (!vigIni || !vigFim)){
+          info.textContent="Informe a vigência inicial e final para calcular automaticamente.";
+          info.className="text-[10px] text-amber-700 mt-1 font-bold";
+        }else if(vigIni && vigFim && new Date(vigFim+"T00:00:00") < new Date(vigIni+"T00:00:00")){
+          info.textContent="A vigência final não pode ser anterior à vigência inicial.";
+          info.className="text-[10px] text-red-700 mt-1 font-bold";
         }else{
-          info.textContent="Informe valor total, vigência inicial e vigência final para calcular automaticamente.";
+          info.textContent="Informe valor total e vigência para calcular automaticamente.";
+          info.className="text-[10px] text-steel-500 mt-1";
         }
       }
 
       return mensal;
     }
 
-function calcularValorEmpenhadoContrato(c){
+    function instalarAutoCalculoValorMensalContrato(prefixo){
+      const ids=[`${prefixo}-valor-contrato`,`${prefixo}-vigini`,`${prefixo}-vigfim`];
+      ids.forEach(id=>{
+        const el=document.getElementById(id);
+        if(!el || el.dataset.autoCalculoMensalInstalado==="1") return;
+        el.dataset.autoCalculoMensalInstalado="1";
+        ["input","change","keyup","blur"].forEach(evt=>{
+          el.addEventListener(evt,()=>{
+            atualizarValorMensalContrato(prefixo);
+            if(typeof atualizarTodosEstimadosLab==="function") atualizarTodosEstimadosLab(prefixo);
+          });
+        });
+      });
+      setTimeout(()=>atualizarValorMensalContrato(prefixo),50);
+      setTimeout(()=>atualizarValorMensalContrato(prefixo),250);
+    }
+
+
+    function servicoEhLaboratorio(valor){
+      const v=String(valor||"").toLowerCase();
+      return v.includes("laboratorio") || v.includes("laboratório") || v.includes("laboratorial") || v.includes("teste");
+    }
+
+    function atualizarVisibilidadeParametrosLaboratorio(prefixo="form"){
+      const servico=document.getElementById(`${prefixo}-servico`)?.value||"";
+      const bloco=document.getElementById(`${prefixo}-parametros-lab`);
+      const isLab=servicoEhLaboratorio(servico);
+      if(bloco){
+        bloco.classList.toggle("hidden",!isLab);
+        bloco.style.display=isLab?"":"none";
+      }
+      if(isLab){
+        atualizarTodosEstimadosLab(prefixo);
+      }
+    }
+
+    function obterExamesLaboratorioSeAplicavel(prefixo="form"){
+      const servico=document.getElementById(`${prefixo}-servico`)?.value||"";
+      if(!servicoEhLaboratorio(servico)) return [];
+      return coletarExamesLaboratorio(`${prefixo}-lista-exames-lab`,prefixo);
+    }
+
+
+    function calcularEstimadoMensalLaboratorio(qtdTotal,inicio,fim){
+      const total=parseInt(qtdTotal||0,10)||0;
+      const meses=calcularMesesVigencia(inicio,fim);
+      if(!total || !meses) return 0;
+      return Math.ceil(total/meses);
+    }
+
+    function normalizarExamesLaboratorio(c={}){
+      const base=Array.isArray(c.examesLaboratorio)?c.examesLaboratorio:[];
+      if(base.length){
+        return base.map((e,idx)=>({
+          id:e.id||`lab-${idx}-${Date.now()}`,
+          nome:e.nome||e.tipo||"",
+          tipo:e.tipo||e.nome||"",
+          quantidadeContrato:parseInt(e.quantidadeContrato ?? e.qtdContrato ?? e.numTestesContrato ?? 0,10)||0,
+          estimadoMes:parseInt(e.estimadoMes ?? e.numTestesEstimadoMes ?? 0,10)||calcularEstimadoMensalLaboratorio(e.quantidadeContrato ?? e.qtdContrato ?? e.numTestesContrato ?? 0,c.vigIni,c.vigFim),
+          categoria:e.categoria||"exame"
+        })).filter(e=>e.nome||e.quantidadeContrato||e.estimadoMes);
+      }
+      const total=parseInt(c.numTestesContrato||0,10)||0;
+      if(total){
+        return [{
+          id:`lab-legado-${c.id||Date.now()}`,
+          nome:"Testes laboratoriais",
+          tipo:"Testes laboratoriais",
+          quantidadeContrato:total,
+          estimadoMes:parseInt(c.numTestesEstimadoMes||0,10)||calcularEstimadoMensalLaboratorio(total,c.vigIni,c.vigFim),
+          categoria:"exame"
+        }];
+      }
+      return [];
+    }
+
+    function somarTestesContratoLaboratorio(c={}){
+      return normalizarExamesLaboratorio(c).reduce((s,e)=>s+(parseInt(e.quantidadeContrato||0,10)||0),0);
+    }
+
+    function somarEstimadoMesLaboratorio(c={}){
+      return normalizarExamesLaboratorio(c).reduce((s,e)=>s+(parseInt(e.estimadoMes||0,10)||0),0);
+    }
+
+    function renderLinhaExameLaboratorio(e={},prefixo="form"){
+      const id=e.id||`lab-${Math.random().toString(36).slice(2)}`;
+      const nome=escapeHtml(e.nome||e.tipo||"");
+      const qtd=parseInt(e.quantidadeContrato||0,10)||"";
+      const estimado=parseInt(e.estimadoMes||0,10)||"";
+      return `
+        <div class="linha-lab-exame grid grid-cols-12 gap-2 border border-violet-200 bg-white rounded-xl p-3" data-id="${escapeHtml(id)}">
+          <div class="col-span-12 md:col-span-4">
+            <label class="block text-[10px] font-bold text-slate-600 mb-1">Tipo de exame/item</label>
+            <input type="text" class="input-field w-full lab-exame-nome" value="${nome}" placeholder="Ex.: D-Dímero, Troponina, Locação/Interfaceamento" list="lista-exames-lab">
+          </div>
+          <div class="col-span-6 md:col-span-3">
+            <label class="block text-[10px] font-bold text-slate-600 mb-1">Nº de testes contratados</label>
+            <input type="number" min="0" class="input-field w-full lab-exame-qtd" value="${qtd}" placeholder="Ex.: 20000" oninput="atualizarEstimadoExameLaboratorio(this,'${prefixo}')">
+          </div>
+          <div class="col-span-6 md:col-span-3">
+            <label class="block text-[10px] font-bold text-slate-600 mb-1">Nº de testes estimados/mês</label>
+            <input type="number" min="0" class="input-field w-full bg-slate-100 lab-exame-estimado" value="${estimado}" placeholder="Auto" readonly>
+          </div>
+          <div class="col-span-12 md:col-span-2 flex items-end gap-2">
+            <button type="button" onclick="this.closest('.linha-lab-exame').remove();atualizarResumoLaboratorioContrato('${prefixo}')" class="px-3 py-2 rounded-lg text-xs font-bold text-red-700 bg-red-50 border border-red-100 w-full">Remover</button>
+          </div>
+        </div>`;
+    }
+
+    function renderExamesLaboratorioRowsHTML(exames=[],prefixo="form"){
+      const lista=(exames&&exames.length)?exames:[
+        {nome:"D-Dímero",quantidadeContrato:"",estimadoMes:""},
+        {nome:"Troponina",quantidadeContrato:"",estimadoMes:""},
+        {nome:"Locação/Interfaceamento",quantidadeContrato:"",estimadoMes:""}
+      ];
+      return lista.map(e=>renderLinhaExameLaboratorio(e,prefixo)).join("");
+    }
+
+    function adicionarLinhaExameLaboratorio(containerId,prefixo="form"){
+      const container=document.getElementById(containerId);
+      if(!container) return;
+      container.insertAdjacentHTML("beforeend",renderLinhaExameLaboratorio({},prefixo));
+      atualizarResumoLaboratorioContrato(prefixo);
+    }
+
+    function atualizarEstimadoExameLaboratorio(input,prefixo="form"){
+      const row=input.closest('.linha-lab-exame');
+      if(!row) return;
+      const qtd=parseInt(row.querySelector('.lab-exame-qtd')?.value||0,10)||0;
+      const vigIni=document.getElementById(`${prefixo}-vigini`)?.value;
+      const vigFim=document.getElementById(`${prefixo}-vigfim`)?.value;
+      const estimado=calcularEstimadoMensalLaboratorio(qtd,vigIni,vigFim);
+      const campo=row.querySelector('.lab-exame-estimado');
+      if(campo) campo.value=estimado||"";
+      atualizarResumoLaboratorioContrato(prefixo);
+    }
+
+    function atualizarTodosEstimadosLab(prefixo="form"){
+      document.querySelectorAll(`#${prefixo}-lista-exames-lab .linha-lab-exame .lab-exame-qtd`).forEach(input=>atualizarEstimadoExameLaboratorio(input,prefixo));
+      atualizarResumoLaboratorioContrato(prefixo);
+    }
+
+    function coletarExamesLaboratorio(containerId,prefixo="form"){
+      const container=document.getElementById(containerId);
+      if(!container) return [];
+      const vigIni=document.getElementById(`${prefixo}-vigini`)?.value;
+      const vigFim=document.getElementById(`${prefixo}-vigfim`)?.value;
+      return [...container.querySelectorAll('.linha-lab-exame')].map((row,idx)=>{
+        const nome=row.querySelector('.lab-exame-nome')?.value?.trim()||"";
+        const qtd=parseInt(row.querySelector('.lab-exame-qtd')?.value||0,10)||0;
+        const estimado=parseInt(row.querySelector('.lab-exame-estimado')?.value||0,10)||calcularEstimadoMensalLaboratorio(qtd,vigIni,vigFim);
+        return {id:row.dataset.id||`lab-${idx}-${Date.now()}`,nome,tipo:nome,quantidadeContrato:qtd,estimadoMes:estimado,categoria:nome.toLowerCase().includes('loca')||nome.toLowerCase().includes('interface')?'interfaceamento':'exame'};
+      }).filter(e=>e.nome||e.quantidadeContrato||e.estimadoMes);
+    }
+
+    function atualizarResumoLaboratorioContrato(prefixo="form"){
+      const lista=coletarExamesLaboratorio(`${prefixo}-lista-exames-lab`,prefixo);
+      const total=lista.reduce((s,e)=>s+(parseInt(e.quantidadeContrato||0,10)||0),0);
+      const estimado=lista.reduce((s,e)=>s+(parseInt(e.estimadoMes||0,10)||0),0);
+      const el=document.getElementById(`${prefixo}-lab-resumo`);
+      const vigIni=document.getElementById(`${prefixo}-vigini`)?.value;
+      const vigFim=document.getElementById(`${prefixo}-vigfim`)?.value;
+      const meses=calcularMesesVigencia(vigIni,vigFim);
+      if(el){
+        el.innerHTML=`<span class="font-bold">Total previsto:</span> ${total||0} teste(s)/item(ns) • <span class="font-bold">Estimado/mês:</span> ${estimado||0} • <span class="font-bold">Vigência:</span> ${meses?meses.toFixed(1):'—'} mês(es)`;
+      }
+    }
+
+    function calcularValorEmpenhadoContrato(c){
       return extrairEmpenhosContrato(c).reduce((acc,e)=>acc+parseValorBR(e.valor),0);
     }
 
@@ -2142,6 +3595,7 @@ function calcularValorEmpenhadoContrato(c){
     function navegarPagamentosPorSituacao(situacao){
       filtroPagamentosSituacao=situacao||"";
       currentTab="pagamentos";
+      salvarSessao();
       buildNav();
       renderContent();
       showInlineAlert(situacao?`Filtrando pagamentos: ${situacao}`:"Exibindo todos os pagamentos","info");
@@ -2150,6 +3604,7 @@ function calcularValorEmpenhadoContrato(c){
     function navegarContratosPorExecucao(status){
       filtroContratosExecucaoStatus=status||"";
       currentTab="contratos";
+      salvarSessao();
       buildNav();
       renderContent();
       showInlineAlert(status?`Filtrando contratos: ${status}`:"Exibindo todos os contratos","info");
@@ -2170,8 +3625,18 @@ function calcularValorEmpenhadoContrato(c){
     function resumirFonteRecurso(fonte){
       const texto=String(fonte||"").trim();
       if(!texto) return "—";
-      const match=texto.match(/\b(\d{3,4})\b/);
-      if(match) return match[1];
+
+      // Exibe a fonte de forma padronizada e curta na tabela de pagamentos.
+      // Exemplos: "Fonte 600 - Federal" => "0.600"; "500" => "0.500".
+      const match=texto.match(/(?:^|\D)(\d{3})(?:\D|$)/);
+      if(match) return `0.${match[1]}`;
+
+      const matchComPonto=texto.match(/0[.,](\d{3})/);
+      if(matchComPonto) return `0.${matchComPonto[1]}`;
+
+      // Se por algum erro antigo vier valor financeiro no campo fonte, não polui a visualização.
+      if(/^R\$|\d+[,.]\d{2}$/.test(texto)) return "—";
+
       return texto.replace(/^fonte\s*/i,"").split("-")[0].trim() || texto;
     }
 
@@ -2390,7 +3855,7 @@ function contratoTemFonte(c,fonte){
       {id:"auditoria",icon:"search",label:"Auditoria",onlyGestor:true},
       {id:"sigef",icon:"bell-ring",label:"Vinculação SIGEF",onlyGestor:true},
       {id:"relatorios",icon:"bar-chart-3",label:"Relatórios"},
-      {id:"configuracoes",icon:"settings",label:"⚙️ Configurações",onlyGestor:true},
+      {id:"configuracoes",icon:"settings",label:"Configurações",onlyGestor:true},
     ];
 
     function buildNav(){
@@ -2412,6 +3877,7 @@ function contratoTemFonte(c,fonte){
         id="dashboard";
       }
       currentTab=id;
+      localStorage.setItem("sigecon_ultima_aba",id);
       salvarSessao();
       salvarBancoLocal();
       buildNav();
@@ -2674,6 +4140,415 @@ function renderListaAlertasVigencia(alertas){
     function renderServicoOptions(selected="", incluirPlaceholder=true){
       const opts=obterServicosDisponiveis().map(s=>`<option value="${escapeHtml(s.codigo)}" ${String(selected)===String(s.codigo)?"selected":""}>${escapeHtml(s.nome)}</option>`).join("");
       return (incluirPlaceholder?`<option value="">— Selecione —</option>`:"") + opts;
+    }
+
+
+    function obterCategoriaProducao(servico){
+      const s=String(servico||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+      if(s.includes("hemodialise")) return "hemodialise";
+      if(s.includes("laboratorio") || s.includes("laboratorial") || s.includes("teste")) return "laboratorio";
+      if(s.includes("opme") && s.includes("urolog")) return "opme_urologia";
+      if(s.includes("opme") && s.includes("ortop")) return "opme_ortopedia";
+      if(s.includes("telemedicina") || s.includes("tele") || s.includes("laudo") || s.includes("tomografia")) return "telemedicina";
+      if(s.includes("cirurgia") || s.includes("cirurgias") || s.includes("eletiva")) return "cirurgias";
+      return "outros";
+    }
+
+    function numeroProd(dados,key){
+      return Number.parseInt(dados?.[key] ?? 0,10) || 0;
+    }
+
+    function renderCampoNumeroProducao(id,label,valor="",placeholder="0",extra=""){
+      return `
+        <div>
+          <label class="block text-xs font-semibold text-navy-900 mb-1">${label}</label>
+          <input id="${id}" type="number" min="0" class="input-field w-full" value="${valor||""}" placeholder="${placeholder}">
+          ${extra?`<p class="text-[10px] text-steel-500 mt-1">${extra}</p>`:""}
+        </div>
+      `;
+    }
+
+    function montarIndicadoresProducao(prod={}, contrato={}){
+      if(!prod) return "Pendente";
+      const cat=obterCategoriaProducao(prod.servicoTipo || contrato.servicoTipo);
+      const partes=[];
+      if(cat==="cirurgias"){
+        partes.push(`Pacientes: ${numeroProd(prod,"numPacientes")}`);
+        partes.push(`Proced./Cirurgias: ${numeroProd(prod,"numProcedimentos") + numeroProd(prod,"numCirurgias")}`);
+      }else if(cat==="hemodialise"){
+        partes.push(`Sessões HD: ${numeroProd(prod,"numSessoesHD")}`);
+        partes.push(`Cateter: ${numeroProd(prod,"numInsercaoCateter")}`);
+        partes.push(`Pacientes: ${numeroProd(prod,"numPacientes")}`);
+      }else if(cat==="laboratorio"){
+        const itens=(Array.isArray(prod.examesLaboratorio)&&prod.examesLaboratorio.length?prod.examesLaboratorio:normalizarExamesLaboratorio(contrato).map(e=>({nome:e.nome,realizados:0,quantidadeContrato:e.quantidadeContrato,estimadoMes:e.estimadoMes})));
+        const realizados=itens.reduce((s,e)=>s+(parseInt(e.realizados||e.numTestesRealizados||0,10)||0),0) || numeroProd(prod,"numTestesRealizados");
+        const contratoPrev=itens.reduce((s,e)=>s+(parseInt(e.quantidadeContrato||0,10)||0),0) || numeroProd(prod,"numTestesContrato") || somarTestesContratoLaboratorio(contrato);
+        const estimado=itens.reduce((s,e)=>s+(parseInt(e.estimadoMes||0,10)||0),0) || numeroProd(prod,"numTestesEstimadoMes") || somarEstimadoMesLaboratorio(contrato);
+        partes.push(`Testes realizados: ${realizados}`);
+        if(contratoPrev) partes.push(`Contrato: ${contratoPrev}`);
+        if(estimado) partes.push(`Estimado/mês: ${estimado}`);
+        itens.filter(e=>e.nome).slice(0,3).forEach(e=>partes.push(`${e.nome}: ${parseInt(e.realizados||0,10)||0}/${parseInt(e.estimadoMes||0,10)||0}`));
+        if(estimado) partes.push(`${Math.round((realizados/Math.max(estimado,1))*100)}% do estimado`);
+      }else if(cat==="opme_urologia" || cat==="opme_ortopedia"){
+        partes.push(`Pacientes: ${numeroProd(prod,"numPacientes")}`);
+        partes.push(`Procedimentos: ${numeroProd(prod,"numProcedimentos")}`);
+      }else if(cat==="telemedicina"){
+        partes.push(`Pacientes: ${numeroProd(prod,"numPacientes")}`);
+        partes.push(`Laudos: ${numeroProd(prod,"numLaudos")}`);
+        partes.push(`Tomografias: ${numeroProd(prod,"numTomografias")}`);
+      }else{
+        if(prod.dadosComuns) partes.push("Dados informados");
+      }
+      return partes.filter(Boolean).join(" • ") || "Produção registrada";
+    }
+
+
+    function renderIndicadoresConsolidadosProducao(pagamentosBase=[], producoesFiltradas=[]){
+      const producaoPorPagamento=new Map((producoesFiltradas||[]).map(pr=>[String(pr.pagamento_id),pr]));
+      const categoriasAtivas=new Map();
+      (pagamentosBase||[]).forEach(p=>{
+        const contrato=allContratos.find(c=>String(c.id)===String(p.contrato_id))||{};
+        const cat=obterCategoriaProducao(contrato.servicoTipo||p.servicoTipo||"");
+        if(!categoriasAtivas.has(cat)) categoriasAtivas.set(cat,{pagamentos:[],contratos:new Map(),producoes:[]});
+        const grupo=categoriasAtivas.get(cat);
+        grupo.pagamentos.push(p);
+        if(contrato.id) grupo.contratos.set(String(contrato.id),contrato);
+        const prod=producaoPorPagamento.get(String(p.id));
+        if(prod) grupo.producoes.push(prod);
+      });
+
+      const ordem=["cirurgias","hemodialise","laboratorio","opme_urologia","opme_ortopedia","telemedicina","outros"];
+      const titulo={
+        cirurgias:"Cirurgias eletivas",
+        hemodialise:"Hemodiálise",
+        laboratorio:"Laboratórios",
+        opme_urologia:"OPME Urologia",
+        opme_ortopedia:"OPME Ortopedia",
+        telemedicina:"Telemedicina",
+        outros:"Outros serviços"
+      };
+      const chip=(label,valor)=>`
+        <div class="rounded-xl border border-slate-200 bg-white px-3 py-2 min-w-[120px]">
+          <p class="text-[10px] uppercase tracking-wide font-black text-steel-500">${label}</p>
+          <p class="text-base font-black text-navy-900 mt-0.5">${valor}</p>
+        </div>`;
+
+      const cards=[];
+      ordem.forEach(cat=>{
+        const grupo=categoriasAtivas.get(cat);
+        if(!grupo || !grupo.pagamentos.length) return;
+        const prods=grupo.producoes||[];
+        let chips="";
+        if(cat==="cirurgias"){
+          chips+=chip("Pacientes",prods.reduce((s,p)=>s+numeroProd(p,"numPacientes"),0));
+          chips+=chip("Proced./Cirurgias",prods.reduce((s,p)=>s+numeroProd(p,"numProcedimentos")+numeroProd(p,"numCirurgias"),0));
+        }else if(cat==="hemodialise"){
+          chips+=chip("Pacientes",prods.reduce((s,p)=>s+numeroProd(p,"numPacientes"),0));
+          chips+=chip("Sessões HD",prods.reduce((s,p)=>s+numeroProd(p,"numSessoesHD"),0));
+          chips+=chip("Cateter",prods.reduce((s,p)=>s+numeroProd(p,"numInsercaoCateter"),0));
+        }else if(cat==="laboratorio"){
+          const realizados=prods.reduce((s,p)=>s+numeroProd(p,"numTestesRealizados"),0);
+          const testesContrato=[...grupo.contratos.values()].reduce((s,c)=>s+somarTestesContratoLaboratorio(c),0);
+          const estimadoMes=[...grupo.contratos.values()].reduce((s,c)=>s+somarEstimadoMesLaboratorio(c),0);
+          const pct=estimadoMes?`${Math.round((realizados/Math.max(estimadoMes,1))*100)}%`:"—";
+          chips+=chip("Testes realizados",realizados);
+          chips+=chip("Previsto contrato",testesContrato||"—");
+          chips+=chip("Estimado/mês",estimadoMes||"—");
+          chips+=chip("Execução mensal",pct);
+        }else if(cat==="opme_urologia" || cat==="opme_ortopedia"){
+          chips+=chip("Pacientes",prods.reduce((s,p)=>s+numeroProd(p,"numPacientes"),0));
+          chips+=chip("Procedimentos",prods.reduce((s,p)=>s+numeroProd(p,"numProcedimentos"),0));
+        }else if(cat==="telemedicina"){
+          chips+=chip("Pacientes",prods.reduce((s,p)=>s+numeroProd(p,"numPacientes"),0));
+          chips+=chip("Laudos",prods.reduce((s,p)=>s+numeroProd(p,"numLaudos"),0));
+          chips+=chip("Tomografias",prods.reduce((s,p)=>s+numeroProd(p,"numTomografias"),0));
+        }else{
+          chips+=chip("Produções",prods.length);
+        }
+        cards.push(`
+          <div class="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <p class="text-xs font-black uppercase tracking-wide text-navy-900">${titulo[cat]||"Serviço"}</p>
+              <span class="badge bg-blue-100 text-blue-700">${grupo.pagamentos.length} processo(s)</span>
+            </div>
+            <div class="flex flex-wrap gap-2">${chips}</div>
+          </div>`);
+      });
+
+      return cards.length?cards.join(""):`
+        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-steel-600">
+          Nenhum indicador disponível. Os dados serão alimentados conforme novos processos de pagamento forem cadastrados e a produção for registrada.
+        </div>`;
+    }
+
+
+    function obterDadosProducaoAbaFiltrados(){
+      reidratarListasPrincipais();
+
+      const contratosBase=aplicarFiltroLeitorContratos(allContratos)
+        .filter(c=>!c.anoExercicio || String(c.anoExercicio)===String(exercicioAtivo))
+        .filter(c=>{
+          if(currentProfile==="tecnico" && usuarioAutenticado?.servicos){
+            return usuarioAutenticado.servicos.includes(c.servicoTipo);
+          }
+          return true;
+        });
+
+      const contratosIdsPermitidos=new Set(contratosBase.map(c=>String(c.id)));
+      let pagamentosBase=aplicarFiltroLeitorPagamentos(allPagamentos)
+        .filter(p=>!p.anoExercicio || String(p.anoExercicio)===String(exercicioAtivo))
+        .filter(p=>contratosIdsPermitidos.has(String(p.contrato_id)));
+
+      if(filtroProducaoCompetencia) pagamentosBase=pagamentosBase.filter(p=>String(p.competencia||"")===String(filtroProducaoCompetencia));
+      if(filtroProducaoContrato) pagamentosBase=pagamentosBase.filter(p=>String(p.contrato_id||"")===String(filtroProducaoContrato));
+      if(filtroProducaoUH) pagamentosBase=pagamentosBase.filter(p=>String(p.uh||"")===String(filtroProducaoUH));
+
+      if(filtroProducaoEmpresa || filtroProducaoServico){
+        pagamentosBase=pagamentosBase.filter(p=>{
+          const contrato=allContratos.find(c=>String(c.id)===String(p.contrato_id));
+          if(!contrato) return false;
+          if(filtroProducaoEmpresa && String(contrato.empresa||"")!==String(filtroProducaoEmpresa)) return false;
+          if(filtroProducaoServico && String(contrato.servicoTipo||"")!==String(filtroProducaoServico)) return false;
+          return true;
+        });
+      }
+
+      const producoesFiltradas=(allProducao||[]).filter(pr=>pagamentosBase.some(p=>String(p.id)===String(pr.pagamento_id)));
+      const linhas=pagamentosBase.map(p=>{
+        const contrato=allContratos.find(c=>String(c.id)===String(p.contrato_id))||{};
+        const prod=obterProducaoPorPagamento(p.id);
+        const notas=extrairNFsPagamento(p).map(n=>n.numero).filter(Boolean).join(", ") || p.nfNumero || "—";
+        const indicadores=prod?montarIndicadoresProducao(prod,contrato):"Pendente";
+        return {p,contrato,prod,notas,indicadores};
+      });
+
+      return {contratosBase,pagamentosBase,producoesFiltradas,linhas};
+    }
+
+    function obterRotuloFiltrosProducao(){
+      const partes=[];
+      if(filtroProducaoCompetencia) partes.push(`Competência: ${formatarCompetenciaBR(filtroProducaoCompetencia)}`);
+      if(filtroProducaoContrato){
+        const c=allContratos.find(ct=>String(ct.id)===String(filtroProducaoContrato));
+        partes.push(`Contrato: ${c?.nContrato||filtroProducaoContrato}`);
+      }
+      if(filtroProducaoEmpresa) partes.push(`Empresa: ${filtroProducaoEmpresa}`);
+      if(filtroProducaoUH) partes.push(`Unidade: ${filtroProducaoUH}`);
+      if(filtroProducaoServico) partes.push(`Serviço: ${servicoLabel(filtroProducaoServico)}`);
+      return partes.length?partes.join(" • "):"Sem filtros específicos";
+    }
+
+    function montarTabelaProducaoAba(){
+      const {linhas}=obterDadosProducaoAbaFiltrados();
+      const cab=["Processo SEI","NF(s)","Contrato","Empresa","Unidade","Serviço","Competência","Valor","Status","Indicadores da Produção","Observações"];
+      const rows=linhas.map(({p,contrato,prod,notas,indicadores})=>[
+        obterProcessoSEIPagamento(p),
+        notas,
+        contrato.nContrato||"—",
+        contrato.empresa||"—",
+        p.uh||"—",
+        servicoLabel(contrato.servicoTipo||""),
+        formatarCompetenciaBR(p.competencia),
+        fmtM(p.nfValor),
+        prod?"Registrada":"Pendente",
+        indicadores,
+        prod?.observacoes||p.observacoes||""
+      ]);
+      return {cab,rows,linhas};
+    }
+
+    function baixarProducaoFiltradaCSV(){
+      const dados=montarTabelaProducaoAba();
+      if(!dados.rows.length){
+        showInlineAlert("Não há dados de produção para baixar com os filtros atuais.","error");
+        return;
+      }
+      baixarCSV(`producao_filtrada_SIGECON_${new Date().toISOString().slice(0,10)}.csv`,dados.cab,dados.rows);
+      showInlineAlert("✅ Produção filtrada baixada em CSV/Excel.","info");
+    }
+
+    function baixarProducaoFiltradaPDF(){
+      const {pagamentosBase,producoesFiltradas,linhas}=obterDadosProducaoAbaFiltrados();
+      if(!linhas.length){
+        showInlineAlert("Não há dados de produção para baixar com os filtros atuais.","error");
+        return;
+      }
+      const data=new Date().toLocaleString("pt-BR");
+      const totalValor=pagamentosBase.reduce((s,p)=>s+parseValorBR(p.nfValor),0);
+      const pendentes=pagamentosBase.filter(p=>!obterProducaoPorPagamento(p.id)).length;
+      const perc=pagamentosBase.length?Math.round((producoesFiltradas.length/pagamentosBase.length)*100):0;
+      const indicadoresHTML=renderIndicadoresConsolidadosProducao(pagamentosBase,producoesFiltradas);
+      const linhasHTML=linhas.map(({p,contrato,prod,notas,indicadores})=>`
+        <tr>
+          <td><strong>${escapeHtml(obterProcessoSEIPagamento(p))}</strong><br><span>NF(s): ${escapeHtml(notas)}</span></td>
+          <td><strong>${escapeHtml(contrato.nContrato||"—")}</strong><br><span>${escapeHtml(servicoLabel(contrato.servicoTipo||""))}</span></td>
+          <td><strong>${escapeHtml(contrato.empresa||"—")}</strong><br><span>${escapeHtml(p.uh||"—")}</span></td>
+          <td>${escapeHtml(formatarCompetenciaBR(p.competencia))}</td>
+          <td>${escapeHtml(fmtM(p.nfValor))}</td>
+          <td><strong>${prod?"Registrada":"Pendente"}</strong><br><span>${escapeHtml(indicadores)}</span></td>
+        </tr>`).join("");
+
+      const html=`<!doctype html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Relatório de Produção</title>
+        <style>
+          body{font-family:Arial, sans-serif;color:#0f172a;padding:24px;background:#fff;}
+          h1{font-size:22px;margin:0 0 4px;color:#0f2f56;}
+          .sub{font-size:12px;color:#64748b;margin-bottom:14px;}
+          .header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px;}
+          .brand{font-weight:900;color:#123B6B;font-size:12px;text-transform:uppercase;letter-spacing:.08em;}
+          .filters{font-size:11px;color:#334155;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px;margin-bottom:14px;}
+          .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0;}
+          .kpi{border:1px solid #dbe3ef;border-radius:12px;padding:12px;background:#f8fafc;}
+          .kpi small{display:block;color:#64748b;text-transform:uppercase;font-weight:800;font-size:9px;}
+          .kpi strong{display:block;font-size:18px;margin-top:4px;color:#0f2f56;}
+          .section-title{font-size:13px;font-weight:900;color:#0f2f56;margin:18px 0 8px;text-transform:uppercase;letter-spacing:.04em;}
+          .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px;}
+          .rounded-2xl{border:1px solid #dbe3ef;border-radius:14px;background:#f8fafc;padding:12px;break-inside:avoid;}
+          .rounded-xl{border:1px solid #dbe3ef;border-radius:10px;background:#fff;padding:8px;display:inline-block;margin:3px;min-width:90px;}
+          .text-xs,.text-[10px]{font-size:10px;color:#64748b;text-transform:uppercase;font-weight:800;}
+          .text-base{font-size:14px;font-weight:900;color:#0f172a;}
+          .badge{display:inline-block;border-radius:999px;background:#dbeafe;color:#1d4ed8;padding:4px 8px;font-size:10px;font-weight:800;}
+          table{width:100%;border-collapse:collapse;font-size:10px;margin-top:8px;}
+          th{background:#123B6B;color:#fff;text-align:left;padding:8px;border:1px solid #dbe3ef;}
+          td{padding:8px;border:1px solid #dbe3ef;vertical-align:top;}
+          td span{color:#64748b;font-size:9px;}
+          button{background:#123B6B;color:white;border:0;border-radius:8px;padding:8px 12px;font-weight:800;}
+          @media print{button{display:none}.grid{grid-template-columns:repeat(2,1fr)}body{padding:12px}}
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div>
+            <div class="brand">SIGECON • SESAP RN</div>
+            <h1>Relatório de Produção</h1>
+            <div class="sub">Segue o mesmo modelo visual da aba Produção • Exercício ${exercicioAtivo} • Gerado em ${escapeHtml(data)}</div>
+          </div>
+          <button onclick="window.print()">Imprimir / Salvar em PDF</button>
+        </div>
+        <div class="filters"><strong>Filtros aplicados:</strong> ${escapeHtml(obterRotuloFiltrosProducao())}</div>
+        <div class="kpis">
+          <div class="kpi"><small>Processos de pagamento</small><strong>${pagamentosBase.length}</strong></div>
+          <div class="kpi"><small>Produções registradas</small><strong>${producoesFiltradas.length}</strong></div>
+          <div class="kpi"><small>Pendentes</small><strong>${pendentes}</strong></div>
+          <div class="kpi"><small>Valor vinculado</small><strong>${escapeHtml(fmtM(totalValor))}</strong><small>${perc}% com produção</small></div>
+        </div>
+        <div class="section-title">Indicadores por tipo de serviço</div>
+        <div class="grid">${indicadoresHTML}</div>
+        <div class="section-title">Processos de pagamento e produção</div>
+        <table>
+          <thead><tr><th>Processo / NF</th><th>Contrato</th><th>Empresa / Unidade</th><th>Competência</th><th>Valor</th><th>Produção</th></tr></thead>
+          <tbody>${linhasHTML}</tbody>
+        </table>
+      </body>
+      </html>`;
+      const win=window.open("","_blank");
+      if(!win){
+        showInlineAlert("❌ O navegador bloqueou a janela do PDF. Autorize pop-ups para o SIGECON.","error");
+        return;
+      }
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
+      setTimeout(()=>win.print(),500);
+    }
+
+    function renderFiscaisUnidadesHTML(prefixo, unidadesSelecionadas=[], fiscaisPorUnidade={}){
+      const unidadesBase=listas.unidades||[];
+      return `
+        <div class="bg-emerald-50 rounded-lg p-4 border border-emerald-200/50">
+          <div class="flex items-start justify-between gap-3 mb-3">
+            <div>
+              <label class="block text-xs font-black text-navy-900">👥 Fiscalização e gestão por unidade</label>
+              <p class="text-[10px] text-steel-600 mt-1">Preencha titular, suplente e gestor para cada unidade vinculada ao contrato. Serão salvas apenas as unidades selecionadas acima.</p>
+            </div>
+          </div>
+          <div class="space-y-3 max-h-80 overflow-y-auto pr-1">
+            ${unidadesBase.map(uh=>{
+              const info=fiscaisPorUnidade?.[uh]||{};
+              const ativo=unidadesSelecionadas.includes(uh);
+              const blocoPessoa=(papel,label)=>{
+                const dados=info[papel]||{};
+                return `
+                  <div class="bg-white rounded-xl border border-emerald-100 p-3">
+                    <p class="text-[10px] font-black text-emerald-700 uppercase mb-2">${label}</p>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
+                      <input data-fiscal-uh="${escapeHtml(uh)}" data-fiscal-papel="${papel}" data-fiscal-campo="nome" class="input-field w-full text-xs" placeholder="Nome" value="${escapeHtml(dados.nome||"")}">
+                      <input data-fiscal-uh="${escapeHtml(uh)}" data-fiscal-papel="${papel}" data-fiscal-campo="matricula" class="input-field w-full text-xs" placeholder="Matrícula" value="${escapeHtml(dados.matricula||"")}">
+                      <input data-fiscal-uh="${escapeHtml(uh)}" data-fiscal-papel="${papel}" data-fiscal-campo="email" class="input-field w-full text-xs" placeholder="E-mail" value="${escapeHtml(dados.email||"")}">
+                      <input data-fiscal-uh="${escapeHtml(uh)}" data-fiscal-papel="${papel}" data-fiscal-campo="telefone" class="input-field w-full text-xs" placeholder="Telefone" value="${escapeHtml(dados.telefone||"")}">
+                    </div>
+                  </div>`;
+              };
+              return `
+                <div class="rounded-2xl border ${ativo?"border-emerald-300 bg-emerald-50":"border-slate-200 bg-slate-50"} p-3" data-fiscal-bloco-unidade="${escapeHtml(uh)}">
+                  <div class="flex items-center justify-between mb-2">
+                    <p class="font-black text-navy-900">${escapeHtml(uh)}</p>
+                    <span class="text-[10px] px-2 py-1 rounded-full ${ativo?"bg-emerald-100 text-emerald-700":"bg-slate-200 text-slate-500"}">${ativo?"Unidade selecionada":"Selecione a unidade para salvar"}</span>
+                  </div>
+                  <div class="space-y-2">
+                    ${blocoPessoa("fiscalTitular","Fiscal titular")}
+                    ${blocoPessoa("fiscalSuplente","Fiscal suplente")}
+                    ${blocoPessoa("gestorContrato","Gestor")}
+                  </div>
+                </div>`;
+            }).join("")}
+          </div>
+        </div>`;
+    }
+
+    function coletarFiscaisContrato(unidadesSelecionadas=[]){
+      const saida={};
+      unidadesSelecionadas.forEach(uh=>{
+        saida[uh]={
+          fiscalTitular:{nome:"",matricula:"",email:"",telefone:""},
+          fiscalSuplente:{nome:"",matricula:"",email:"",telefone:""},
+          gestorContrato:{nome:"",matricula:"",email:"",telefone:""}
+        };
+      });
+      document.querySelectorAll("[data-fiscal-uh][data-fiscal-papel][data-fiscal-campo]").forEach(el=>{
+        const uh=el.getAttribute("data-fiscal-uh");
+        if(!unidadesSelecionadas.includes(uh)) return;
+        const papel=el.getAttribute("data-fiscal-papel");
+        const campo=el.getAttribute("data-fiscal-campo");
+        if(!saida[uh]) saida[uh]={};
+        if(!saida[uh][papel]) saida[uh][papel]={};
+        saida[uh][papel][campo]=el.value.trim();
+      });
+      return saida;
+    }
+
+    function renderFiscaisContratoView(c){
+      const fiscais=c?.fiscaisPorUnidade||{};
+      const unidades=contratoUnidadesArray(c);
+      if(!unidades.length) return "";
+      const pessoa=(dados,label)=>`
+        <div class="rounded-lg bg-white border border-emerald-100 p-2">
+          <p class="text-[10px] font-black text-emerald-700 uppercase">${label}</p>
+          <p class="font-bold text-navy-900">${escapeHtml(dados?.nome||"—")}</p>
+          <p class="text-[10px] text-steel-600">Matrícula: ${escapeHtml(dados?.matricula||"—")}</p>
+          <p class="text-[10px] text-steel-600">E-mail: ${escapeHtml(dados?.email||"—")}</p>
+          <p class="text-[10px] text-steel-600">Telefone: ${escapeHtml(dados?.telefone||"—")}</p>
+        </div>`;
+      return `
+        <div class="col-span-2">
+          <p class="text-[10px] text-steel-600 mb-2">Fiscais e gestores por unidade</p>
+          <div class="grid grid-cols-1 gap-2 bg-emerald-50 border border-emerald-200 rounded p-2">
+            ${unidades.map(uh=>{
+              const info=fiscais[uh]||{};
+              return `<div class="rounded-xl bg-white/70 border border-emerald-100 p-3">
+                <p class="font-black text-navy-900 mb-2">${escapeHtml(uh)}</p>
+                <div class="grid md:grid-cols-3 gap-2">
+                  ${pessoa(info.fiscalTitular,"Fiscal titular")}
+                  ${pessoa(info.fiscalSuplente,"Fiscal suplente")}
+                  ${pessoa(info.gestorContrato,"Gestor")}
+                </div>
+              </div>`;
+            }).join("")}
+          </div>
+        </div>`;
     }
 
     function renderListaConfigCard({key,titulo,icone="list",cor="text-navy-600",inputId,placeholder}){
@@ -3222,19 +5097,13 @@ function renderListaAlertasVigencia(alertas){
 
     function renderVigenciaResumoContrato(c){
       const atual=obterResumoVigenteContrato(c);
-      const dias=calcularDiasRestantes(atual.vigFim);
-
-      let cls="bg-emerald-50 text-emerald-800 border-emerald-200"; // acima de 90
-      if(dias!==null && dias>=1 && dias<=30){
-        cls="bg-red-50 text-red-800 border-red-200";
-      }else if(dias!==null && dias>=31 && dias<=90){
-        cls="bg-amber-50 text-amber-800 border-amber-200";
-      }
+      const dias=atual.vigFim?calcularDiasRestantes(atual.vigFim):null;
+      const escala=obterEscalaVigencia(dias);
 
       return `
-        <div class="inline-flex flex-col px-3 py-2 rounded-xl border ${cls}">
+        <div class="inline-flex flex-col px-3 py-2 rounded-xl border ${escala.classe}">
           <span class="font-black">${formatarDataBR(atual.vigIni)} até ${formatarDataBR(atual.vigFim)}</span>
-          <span class="text-[10px]">${dias!==null?`${dias} dia(s) restantes`:"Vigência não informada"} ${atual.temAditivo?"• aditivo vigente":"• contrato inicial"}</span>
+          <span class="text-[10px]">${escala.legenda} ${atual.temAditivo?"• aditivo vigente":"• contrato inicial"}</span>
         </div>
       `;
     }
@@ -3749,7 +5618,7 @@ function openNovoContratoModal(){
         <form onsubmit="salvarContrato(event)" class="space-y-4 max-h-96 overflow-y-auto">
           <div class="bg-navy-50 rounded-lg p-4 border border-navy-200/30">
             <label class="block text-xs font-bold text-navy-900 mb-2 flex items-center gap-2"><i data-lucide="briefcase" class="w-4 h-4"></i>TIPO DE SERVIÇO *</label>
-            <select id="form-servico" class="input-field w-full" required>
+            <select id="form-servico" class="input-field w-full" required onchange="atualizarVisibilidadeParametrosLaboratorio('form')">
               ${renderServicoOptions("",true)}
             </select>
           </div>
@@ -3761,7 +5630,10 @@ function openNovoContratoModal(){
             </div>
           </div>
 
+          ${renderFiscaisUnidadesHTML("form", [], {})}
+
           <div class="grid grid-cols-2 gap-3">
+
             <div>
               <label class="block text-xs font-bold text-navy-900 mb-1">Nº Processo *</label>
               <input id="form-nprocesso" type="text" class="input-field w-full" placeholder="PROC-001" required>
@@ -3786,21 +5658,42 @@ function openNovoContratoModal(){
             </div>
             <div>
               <label class="block text-xs font-bold text-navy-900 mb-1">Vigência Inicial *</label>
-              <input id="form-vigini" type="date" class="input-field w-full" required onchange="atualizarValorMensalContrato('form')">
+              <input id="form-vigini" type="date" class="input-field w-full" required onchange="atualizarValorMensalContrato('form');atualizarTodosEstimadosLab('form')">
             </div>
             <div>
               <label class="block text-xs font-bold text-navy-900 mb-1">Vigência Final *</label>
-              <input id="form-vigfim" type="date" class="input-field w-full" required onchange="atualizarValorMensalContrato('form')">
+              <input id="form-vigfim" type="date" class="input-field w-full" required onchange="atualizarValorMensalContrato('form');atualizarTodosEstimadosLab('form')">
             </div>
             <div>
               <label class="block text-xs font-bold text-navy-900 mb-1">Valor do Contrato *</label>
-              <input id="form-valor-contrato" type="text" inputmode="decimal" class="input-field w-full" placeholder="R$ 1.000.000,00" required oninput="atualizarValorMensalContrato('form')" onblur="aplicarMascaraMoedaBR(this);atualizarValorMensalContrato('form')">
+              <input id="form-valor-contrato" type="text" inputmode="decimal" class="input-field w-full" placeholder="R$ 1.000.000,00" required oninput="atualizarValorMensalContrato('form')" onchange="atualizarValorMensalContrato('form')" onkeyup="atualizarValorMensalContrato('form')" onblur="aplicarMascaraMoedaBR(this);atualizarValorMensalContrato('form')">
             </div>
             <div>
               <label class="block text-xs font-bold text-navy-900 mb-1">Valor Estimado Mensal</label>
               <input id="form-valor-mensal" type="text" class="input-field w-full bg-slate-100" placeholder="Calculado automaticamente" readonly required>
               <p id="form-valor-mensal-info" class="text-[10px] text-steel-500 mt-1">Informe valor total e vigência para calcular automaticamente.</p>
             </div>
+          </div>
+
+          <div id="form-parametros-lab" class="bg-violet-50 rounded-lg p-4 border border-violet-200/40 hidden">
+            <datalist id="lista-exames-lab">
+              <option value="D-Dímero"></option>
+              <option value="Troponina"></option>
+              <option value="Locação/Interfaceamento"></option>
+              <option value="Gasometria"></option>
+              <option value="Teste laboratorial"></option>
+            </datalist>
+            <div class="flex items-start justify-between gap-3 mb-3">
+              <div>
+                <label class="block text-xs font-bold text-navy-900">🧪 Parâmetros de Laboratórios por exame/item</label>
+                <p class="text-[10px] text-steel-600 mt-1">Campo exclusivo para contratos de Laboratórios. Cadastre cada exame/item, o nº de testes contratados e o estimado/mês será calculado automaticamente pela vigência do contrato.</p>
+              </div>
+              <button type="button" onclick="adicionarLinhaExameLaboratorio('form-lista-exames-lab','form')" class="btn-secondary px-3 py-2 rounded-lg text-xs">+ Exame/item</button>
+            </div>
+            <div id="form-lista-exames-lab" class="space-y-2">
+              ${renderExamesLaboratorioRowsHTML([],"form")}
+            </div>
+            <div id="form-lab-resumo" class="mt-3 text-[11px] text-violet-800 bg-white/80 border border-violet-100 rounded-lg p-2">Total previsto: 0 • Estimado/mês: 0 • Vigência: —</div>
           </div>
 
           <div class="bg-blue-50 rounded-lg p-4 border border-blue-200/40">
@@ -3836,6 +5729,8 @@ function openNovoContratoModal(){
           </div>
         </form>`;
       openModal("Novo Contrato (Multi-Unidade)",content);
+      atualizarVisibilidadeParametrosLaboratorio("form");
+      instalarAutoCalculoValorMensalContrato("form");
     }
 
     async function salvarContrato(e){
@@ -3873,6 +5768,7 @@ function openNovoContratoModal(){
         tipo:"contrato",
         nProcesso:document.getElementById("form-nprocesso").value,
         unidades:unidades.join(","),
+        fiscaisPorUnidade:coletarFiscaisContrato(unidades),
         empresa:document.getElementById("form-empresa").value,
         nContrato:document.getElementById("form-ncontrato").value,
         objeto:document.getElementById("form-objeto").value.trim(),
@@ -3883,6 +5779,9 @@ function openNovoContratoModal(){
         valorContrato:valorContrato,
         valorEstimadoMensal:valorMensal,
         servicoTipo:document.getElementById("form-servico").value,
+        examesLaboratorio:obterExamesLaboratorioSeAplicavel("form"),
+        numTestesContrato:obterExamesLaboratorioSeAplicavel("form").reduce((s,e)=>s+(parseInt(e.quantidadeContrato||0,10)||0),0),
+        numTestesEstimadoMes:obterExamesLaboratorioSeAplicavel("form").reduce((s,e)=>s+(parseInt(e.estimadoMes||0,10)||0),0),
         anoExercicio:exercicioAtivo,
         status:"Ativo",
         valorEmpenho2026:calcularValorEmpenhadoContrato({empenhos}),
@@ -3958,8 +5857,10 @@ function openNovoContratoModal(){
             <div><p class="text-[10px] text-steel-600">Executado</p><p class="font-bold text-emerald-600">${fmtM(calcularValorExecutadoContrato(c))}</p></div>
             <div><p class="text-[10px] text-steel-600">Saldo</p><p class="font-mono text-navy-900">${fmtM(totalEmpenhadoContrato-calcularValorExecutadoContrato(c))}</p></div>
             <div><p class="text-[10px] text-steel-600">Status</p><p class="badge bg-emerald-100 text-emerald-700">${escapeHtml(c.status||"Ativo")}</p></div>
+            ${renderFiscaisContratoView(c)}
             <div class="col-span-2"><p class="text-[10px] text-steel-600">Objeto do contrato</p><p class="font-semibold text-navy-900 whitespace-pre-wrap">${escapeHtml(c.objeto||"—")}</p></div>
             <div class="col-span-2"><p class="text-[10px] text-steel-600 mb-2">Empenhos / Fontes de recurso do contrato inicial</p><div class="grid grid-cols-1 gap-2 bg-yellow-50 border border-yellow-200 rounded p-2">${listaEmpenhos}</div></div>
+            ${renderMemoriaIndenizatoriaContrato(c)}
             <div class="col-span-2"><p class="text-[10px] text-steel-600 mb-2">Histórico de aditivos</p><div class="grid grid-cols-1 gap-2 bg-blue-50 border border-blue-200 rounded p-2">${listaAditivos}</div></div>
           </div>
 
@@ -3987,7 +5888,7 @@ function editarContrato(id){
         <form onsubmit="atualizarContrato(event,'${id}')" class="space-y-4 max-h-96 overflow-y-auto">
           <div class="bg-navy-50 rounded-lg p-4 border border-navy-200/30">
             <label class="block text-xs font-semibold text-navy-900 mb-1">Tipo de Serviço</label>
-            <select id="edit-servico" class="input-field w-full" required>
+            <select id="edit-servico" class="input-field w-full" required onchange="atualizarVisibilidadeParametrosLaboratorio('edit')">
               ${renderServicoOptions(c.servicoTipo,true)}
             </select>
           </div>
@@ -3999,7 +5900,10 @@ function editarContrato(id){
             </div>
           </div>
 
+          ${renderFiscaisUnidadesHTML("edit", unidadesSelecionadas, c.fiscaisPorUnidade||{})}
+
           <div class="grid grid-cols-2 gap-4">
+
             <div>
               <label class="block text-xs font-semibold text-navy-900 mb-1">Nº Processo</label>
               <input id="edit-nprocesso" type="text" class="input-field w-full" value="${escapeHtml(c.nProcesso||"")}" required>
@@ -4024,21 +5928,42 @@ function editarContrato(id){
             </div>
             <div>
               <label class="block text-xs font-semibold text-navy-900 mb-1">Vigência Inicial</label>
-              <input id="edit-vigini" type="date" class="input-field w-full" value="${c.vigIni||""}" required onchange="atualizarValorMensalContrato('edit')">
+              <input id="edit-vigini" type="date" class="input-field w-full" value="${c.vigIni||""}" required onchange="atualizarValorMensalContrato('edit');atualizarTodosEstimadosLab('edit')">
             </div>
             <div>
               <label class="block text-xs font-semibold text-navy-900 mb-1">Vigência Final</label>
-              <input id="edit-vigfim" type="date" class="input-field w-full" value="${c.vigFim||""}" required onchange="atualizarValorMensalContrato('edit')">
+              <input id="edit-vigfim" type="date" class="input-field w-full" value="${c.vigFim||""}" required onchange="atualizarValorMensalContrato('edit');atualizarTodosEstimadosLab('edit')">
             </div>
             <div>
               <label class="block text-xs font-semibold text-navy-900 mb-1">Valor do Contrato</label>
-              <input id="edit-valor-contrato" type="text" inputmode="decimal" class="input-field w-full" value="${formatarMoedaBR(c.valorContrato||0)}" required oninput="atualizarValorMensalContrato('edit')" onblur="aplicarMascaraMoedaBR(this);atualizarValorMensalContrato('edit')">
+              <input id="edit-valor-contrato" type="text" inputmode="decimal" class="input-field w-full" value="${formatarMoedaBR(c.valorContrato||0)}" required oninput="atualizarValorMensalContrato('edit')" onchange="atualizarValorMensalContrato('edit')" onkeyup="atualizarValorMensalContrato('edit')" onblur="aplicarMascaraMoedaBR(this);atualizarValorMensalContrato('edit')">
             </div>
             <div>
               <label class="block text-xs font-semibold text-navy-900 mb-1">Valor Estimado Mensal</label>
               <input id="edit-valor-mensal" type="text" class="input-field w-full bg-slate-100" value="${formatarMoedaBR(c.valorEstimadoMensal||0)}" readonly required>
               <p id="edit-valor-mensal-info" class="text-[10px] text-steel-500 mt-1">Calculado automaticamente a partir da vigência e do valor total.</p>
             </div>
+          </div>
+
+          <div id="edit-parametros-lab" class="bg-violet-50 rounded-lg p-4 border border-violet-200/40 hidden">
+            <datalist id="lista-exames-lab">
+              <option value="D-Dímero"></option>
+              <option value="Troponina"></option>
+              <option value="Locação/Interfaceamento"></option>
+              <option value="Gasometria"></option>
+              <option value="Teste laboratorial"></option>
+            </datalist>
+            <div class="flex items-start justify-between gap-3 mb-3">
+              <div>
+                <label class="block text-xs font-semibold text-navy-900">🧪 Parâmetros de Laboratórios por exame/item</label>
+                <p class="text-[10px] text-steel-600 mt-1">Campo exclusivo para contratos de Laboratórios. Cadastre cada exame/item, o nº de testes contratados e o estimado/mês será calculado automaticamente pela vigência do contrato.</p>
+              </div>
+              <button type="button" onclick="adicionarLinhaExameLaboratorio('edit-lista-exames-lab','edit')" class="btn-secondary px-3 py-2 rounded-lg text-xs">+ Exame/item</button>
+            </div>
+            <div id="edit-lista-exames-lab" class="space-y-2">
+              ${renderExamesLaboratorioRowsHTML(normalizarExamesLaboratorio(c),"edit")}
+            </div>
+            <div id="edit-lab-resumo" class="mt-3 text-[11px] text-violet-800 bg-white/80 border border-violet-100 rounded-lg p-2">Total previsto: ${somarTestesContratoLaboratorio(c)||0} • Estimado/mês: ${somarEstimadoMesLaboratorio(c)||0} • Vigência: ${calcularMesesVigencia(c.vigIni,c.vigFim).toFixed(1)} mês(es)</div>
           </div>
 
           <div class="bg-blue-50 rounded-lg p-4 border border-blue-200/40">
@@ -4067,7 +5992,8 @@ function editarContrato(id){
           </div>
         </form>`;
       openModal("Editar Contrato",content);
-      setTimeout(()=>atualizarValorMensalContrato('edit'),50);
+      atualizarVisibilidadeParametrosLaboratorio("edit");
+      instalarAutoCalculoValorMensalContrato("edit");
     }
 
     async function atualizarContrato(e,id){
@@ -4090,20 +6016,29 @@ function editarContrato(id){
       const aditivos=coletarAditivos("edit-lista-aditivos");
       const empenhosTexto=montarTextoEmpenhos(empenhos);
 
+      const valorContratoEdit=obterValorMoedaInput("edit-valor-contrato");
+      const vigIniEdit=document.getElementById("edit-vigini").value;
+      const vigFimEdit=document.getElementById("edit-vigfim").value;
+      const valorMensalEdit=atualizarValorMensalContrato("edit") || calcularValorMensalContrato(valorContratoEdit,vigIniEdit,vigFimEdit);
+
       const contratoAtualizado={
         ...contratoBase,
         nProcesso:document.getElementById("edit-nprocesso").value,
         unidades:unidades.join(","),
+        fiscaisPorUnidade:coletarFiscaisContrato(unidades),
         empresa:document.getElementById("edit-empresa").value,
         nContrato:document.getElementById("edit-ncontrato").value,
         objeto:document.getElementById("edit-objeto").value.trim(),
         aditivo:aditivos.map(a=>a.numero).filter(Boolean).join(", ")||"—",
         aditivos:aditivos,
-        vigIni:document.getElementById("edit-vigini").value,
-        vigFim:document.getElementById("edit-vigfim").value,
-        valorContrato:obterValorMoedaInput("edit-valor-contrato"),
-        valorEstimadoMensal:calcularValorMensalContrato(obterValorMoedaInput("edit-valor-contrato"),document.getElementById("edit-vigini").value,document.getElementById("edit-vigfim").value),
+        vigIni:vigIniEdit,
+        vigFim:vigFimEdit,
+        valorContrato:valorContratoEdit,
+        valorEstimadoMensal:valorMensalEdit,
         servicoTipo:document.getElementById("edit-servico").value,
+        examesLaboratorio:obterExamesLaboratorioSeAplicavel("edit"),
+        numTestesContrato:obterExamesLaboratorioSeAplicavel("edit").reduce((s,e)=>s+(parseInt(e.quantidadeContrato||0,10)||0),0),
+        numTestesEstimadoMes:obterExamesLaboratorioSeAplicavel("edit").reduce((s,e)=>s+(parseInt(e.estimadoMes||0,10)||0),0),
         empenhos:empenhos,
         empenhosTexto:empenhosTexto,
         valorEmpenho2026:calcularValorEmpenhadoContrato({empenhos}),
@@ -4651,6 +6586,58 @@ async function alterarSetorPagamentoRapido(id,novoSetor){
       if(box) box.classList.toggle("hidden", tipo!=="indenizatorio");
     }
 
+    function obterEmpenhoIndenizatorio(prefix){
+      return {
+        numero:(document.getElementById(`${prefix}-empenho-indenizatorio-pag`)?.value||"").trim(),
+        valor:parseValorBR(document.getElementById(`${prefix}-valor-indenizatorio-pag`)?.value||0),
+        elementoDespesa:(document.getElementById(`${prefix}-elemento-indenizatorio-pag`)?.value||"").trim(),
+        fonte:(document.getElementById(`${prefix}-fonte-indenizatoria-pag`)?.value||"").trim()
+      };
+    }
+
+    function validarEmpenhoIndenizatorio(prefix){
+      const emp=obterEmpenhoIndenizatorio(prefix);
+      if(!emp.valor) return "Informe o valor do empenho indenizatório.";
+      if(!emp.numero) return "Informe o número do empenho indenizatório.";
+      if(!emp.elementoDespesa) return "Informe o elemento de despesa do empenho indenizatório.";
+      if(!emp.fonte) return "Informe a fonte de recurso do empenho indenizatório.";
+      return "";
+    }
+
+    function renderSelectFontesIndenizatorias(id, selecionada=""){
+      const fontes=[...new Set([...(listas.fontes||[]), selecionada].filter(Boolean))];
+      return `<select id="${id}" class="input-field w-full" required>
+        <option value="">— Fonte de recurso —</option>
+        ${fontes.map(f=>`<option value="${escapeHtml(f)}" ${String(f)===String(selecionada)?"selected":""}>${escapeHtml(f)}</option>`).join("")}
+      </select>`;
+    }
+
+    function renderMemoriaIndenizatoriaContrato(c){
+      const itens=(allPagamentos||[]).filter(p=>String(p.contrato_id)===String(c.id) && String(p.tipoProcessoPagamento||"")==="indenizatorio");
+      if(!itens.length) return "";
+      const cards=itens.map(p=>{
+        const emp=p.empenhoIndenizatorioObj || {
+          numero:p.empenhoIndenizatorio||"—",
+          valor:p.valorIndenizatorio||0,
+          elementoDespesa:p.elementoDespesaIndenizatorio||"—",
+          fonte:p.fonteIndenizatoria||"—"
+        };
+        return `<div class="border border-red-200 bg-white rounded-lg p-3">
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <p class="font-bold text-red-800">Processo ${escapeHtml(obterProcessoSEIPagamento(p)||"—")}</p>
+            <span class="badge bg-red-50 text-red-700 border border-red-200">Indenizatório</span>
+          </div>
+          <div class="grid md:grid-cols-4 gap-2 mt-2 text-xs">
+            <p><strong>Empenho:</strong> ${escapeHtml(emp.numero||"—")}</p>
+            <p><strong>Valor:</strong> ${fmtM(emp.valor||0)}</p>
+            <p><strong>Fonte:</strong> ${escapeHtml(resumirFonteRecurso(emp.fonte||"—"))}</p>
+            <p><strong>Elemento:</strong> ${escapeHtml(emp.elementoDespesa||"—")}</p>
+          </div>
+          <p class="text-[10px] text-steel-600 mt-2">Memória vinculada ao contrato por extrapolação de saldo contratual na respectiva vigência.</p>
+        </div>`;
+      }).join("");
+      return `<div class="col-span-2"><p class="text-[10px] text-red-700 mb-2 font-bold">Memória de empenhos indenizatórios vinculados ao contrato</p><div class="grid grid-cols-1 gap-2 bg-red-50 border border-red-200 rounded p-2">${cards}</div></div>`;
+    }
 
     function garantirIdsPagamentos(){
       let alterou=false;
@@ -4715,6 +6702,156 @@ async function alterarSetorPagamentoRapido(id,novoSetor){
       return p?.fonteRecurso||"—";
     }
 
+    function obterEmpenhosContratoPagamento(p){
+      const contrato=obterContratoPagamento(p);
+      return extrairEmpenhosContrato(contrato||{});
+    }
+
+    function obterEmpenhoPrincipalPagamento(p){
+      const empenhosPag=Array.isArray(p?.empenhos)?p.empenhos:[];
+      if(empenhosPag.length && empenhosPag[0]?.numero) return String(empenhosPag[0].numero);
+      const texto=String(p?.empenho||"").split(",").map(x=>x.trim()).filter(Boolean);
+      return texto[0]||"";
+    }
+
+    function obterEmpenhoSelecionadoNoContratoPagamento(p){
+      const empenhosContrato=obterEmpenhosContratoPagamento(p);
+      const atual=obterEmpenhoPrincipalPagamento(p);
+      let selecionado=empenhosContrato.find(e=>String(e.numero||"")===String(atual||""));
+      if(!selecionado && empenhosContrato.length===1) selecionado=empenhosContrato[0];
+      return selecionado||null;
+    }
+
+    function textoFonteEmpenho(e){
+      const fonte=String(e?.fonte||"").trim();
+      const numero=String(e?.numero||"").trim();
+      const codigo=resumirFonteRecurso(fonte);
+      if(codigo && codigo!=="—" && numero) return `${codigo} · NE ${numero}`;
+      if(codigo && codigo!=="—") return codigo;
+      if(numero) return `NE ${numero}`;
+      return "Empenho sem fonte";
+    }
+
+    function obterFontesDistintasPagamento(p){
+      const fontes=[];
+      const adicionar=(fonte,origem="")=>{
+        const codigo=resumirFonteRecurso(fonte||"");
+        if(!codigo || codigo==="—") return;
+        if(!fontes.some(f=>String(f.codigo)===String(codigo))){
+          fontes.push({codigo,fonte:fonte||codigo,origem});
+        }
+      };
+
+      const itensFinanceiros=[
+        ...normalizarListaFinanceira(p?.notasLancamento||[]).map(i=>({...i,tipo:"NL"})),
+        ...normalizarListaFinanceira(p?.ordensBancarias||[]).map(i=>({...i,tipo:"OB"}))
+      ];
+
+      itensFinanceiros.forEach(item=>{
+        if(item.empenho){
+          adicionar(obterFontePorEmpenhoPagamento(p,item.empenho),`${item.tipo} ${item.numero||""} • NE ${item.empenho}`);
+        }
+      });
+
+      const empenhosPag=Array.isArray(p?.empenhos)?p.empenhos:[];
+      empenhosPag.forEach(e=>{
+        adicionar(e.fonte || obterFontePorEmpenhoPagamento(p,e.numero),`NE ${e.numero||""}`);
+      });
+
+      const empenhosTexto=String(p?.empenho||"").split(",").map(x=>x.trim()).filter(Boolean);
+      empenhosTexto.forEach(ne=>adicionar(obterFontePorEmpenhoPagamento(p,ne),`NE ${ne}`));
+
+      const selecionado=obterEmpenhoSelecionadoNoContratoPagamento(p);
+      if(selecionado) adicionar(selecionado.fonte,`NE ${selecionado.numero||""}`);
+      adicionar(p?.fonteRecurso||"","Fonte registrada no pagamento");
+      return fontes;
+    }
+
+    function obterCodigoFontePagamento(p){
+      const fontes=obterFontesDistintasPagamento(p);
+      return fontes[0]?.codigo || "—";
+    }
+
+    function renderFontePagamentoResumo(p){
+      const fontes=obterFontesDistintasPagamento(p);
+      if(!fontes.length){
+        return `<span class="fonte-vazio-compacto" title="Cadastre uma NE no contrato e vincule a NL/OB ao empenho para puxar a fonte">Sem NE</span>`;
+      }
+      const titulo=fontes.map(f=>`${f.codigo}${f.origem?` (${f.origem})`:""}`).join(" | ");
+      if(fontes.length===1){
+        return `<span class="fonte-codigo-chip" title="${escapeHtml(titulo)}">${escapeHtml(fontes[0].codigo)}</span>`;
+      }
+      const visiveis=fontes.slice(0,2);
+      const resto=fontes.length-2;
+      return `
+        <div class="fonte-chips-list" title="${escapeHtml(titulo)}">
+          ${visiveis.map((f,i)=>`<span class="fonte-codigo-chip ${i>0?"secundaria":""}">${escapeHtml(f.codigo)}</span>`).join("")}
+          ${resto>0?`<span class="fonte-multiplas-indicador">+${resto}</span>`:""}
+        </div>
+      `;
+    }
+
+    function renderSelectFonteEmpenhoPagamento(p,bloqueio=""){
+      // A fonte na tabela é apenas informativa e automática.
+      // Ela vem do empenho já vinculado ao pagamento/contrato, sem lista suspensa na visualização principal.
+      const empenhosContrato=obterEmpenhosContratoPagamento(p);
+      const selecionadoObj=obterEmpenhoSelecionadoNoContratoPagamento(p);
+
+      // Se o contrato possui apenas um empenho e o pagamento antigo ainda não guardou a fonte,
+      // a exibição já usa a fonte desse empenho automaticamente.
+      if(!selecionadoObj && empenhosContrato.length===1){
+        const e=empenhosContrato[0];
+        const codigo=resumirFonteRecurso(e.fonte||p?.fonteRecurso||"");
+        return `<div class="fonte-empenho-box" title="Fonte automática do empenho cadastrado no contrato: ${escapeHtml(e.numero||"—")}"><span class="fonte-codigo-chip">${escapeHtml(codigo||"—")}</span></div>`;
+      }
+
+      return `
+        <div class="fonte-empenho-box" title="Fonte automática vinculada ao empenho cadastrado no contrato">
+          ${renderFontePagamentoResumo(p)}
+        </div>
+      `;
+    }
+
+    function alterarFonteEmpenhoPagamentoRapido(id,numeroEmpenho){
+      if(bloquearAcaoLeitor()) return;
+      garantirIdsPagamentos();
+
+      const idx=allPagamentos.findIndex(x=>String(x.id)===String(id));
+      if(idx<0){
+        showInlineAlert("❌ Pagamento não encontrado.","error");
+        return;
+      }
+
+      const pagamento=allPagamentos[idx];
+      const empenhoSelecionado=obterEmpenhosContratoPagamento(pagamento).find(e=>String(e.numero||"")===String(numeroEmpenho||""));
+      if(!empenhoSelecionado){
+        showInlineAlert("❌ Selecione um empenho cadastrado no contrato.","error");
+        renderPagamentos(document.getElementById("content-area"));
+        return;
+      }
+
+      const atualizado={
+        ...pagamento,
+        empenhos:[{
+          numero:empenhoSelecionado.numero||"",
+          fonte:empenhoSelecionado.fonte||"",
+          valor:parseValorBR(empenhoSelecionado.valor||0),
+          elementoDespesa:empenhoSelecionado.elementoDespesa||""
+        }],
+        empenho:empenhoSelecionado.numero||"",
+        fonteRecurso:empenhoSelecionado.fonte||"",
+        valorEmpenhoVinculado:parseValorBR(empenhoSelecionado.valor||0),
+        atualizadoEm:new Date().toISOString()
+      };
+
+      allPagamentos[idx]=atualizado;
+      registrarAuditoria("Alteração de fonte/empenho", "pagamentos", atualizado, `Fonte vinculada ao empenho ${empenhoSelecionado.numero||"—"} do contrato.`);
+      salvarDepoisDeAlterar();
+      renderPagamentos(document.getElementById("content-area"));
+      showInlineAlert("✅ Fonte do pagamento atualizada pelo empenho vinculado ao contrato.","info");
+    }
+
+
     function obterValoresPorFontePagamento(p){
       const mapa=new Map();
       const obs=normalizarListaFinanceira(p?.ordensBancarias||[]);
@@ -4744,12 +6881,15 @@ async function alterarSetorPagamentoRapido(id,novoSetor){
       const mapa=new Map();
       (allPagamentos||[]).forEach(p=>{
         if(String(p.tipoProcessoPagamento||"convencional")!=="indenizatorio") return;
-        const emp=String(p.empenhoIndenizatorio||"").trim() || "Empenho indenizatório não informado";
-        const valor=parseValorBR(p.valorIndenizatorio||p.nfValor||0);
-        if(!mapa.has(emp)){
-          mapa.set(emp,{empenho:emp,fonte:"500",valor:0,processos:0});
+        const empObj=p.empenhoIndenizatorioObj || {};
+        const emp=String(empObj.numero||p.empenhoIndenizatorio||"").trim() || "Empenho indenizatório não informado";
+        const valor=parseValorBR(empObj.valor||p.valorIndenizatorio||p.nfValor||0);
+        const fonte=resumirFonteRecurso(empObj.fonte||p.fonteIndenizatoria||"Fonte não informada");
+        const chave=`${emp}|${fonte}`;
+        if(!mapa.has(chave)){
+          mapa.set(chave,{empenho:emp,fonte,valor:0,processos:0});
         }
-        const item=mapa.get(emp);
+        const item=mapa.get(chave);
         item.valor+=valor;
         item.processos+=1;
       });
@@ -4765,7 +6905,7 @@ async function alterarSetorPagamentoRapido(id,novoSetor){
           <div class="flex items-center justify-between gap-3 mb-3">
             <div>
               <p class="font-black text-red-800">Execução Indenizatória por Empenho</p>
-              <p class="text-xs text-red-700">Fonte fixa: 500 - Estadual</p>
+              <p class="text-xs text-red-700">Fontes conforme empenho indenizatório cadastrado</p>
             </div>
             <span class="badge bg-red-100 text-red-700">${itens.length} empenho(s)</span>
           </div>
@@ -4777,7 +6917,7 @@ async function alterarSetorPagamentoRapido(id,novoSetor){
                   <p class="text-xs font-black text-red-700">${fmtM(i.valor)}</p>
                 </div>
                 <div class="bar-track"><div class="bar-fill" style="width:${Math.max(3,Math.round((i.valor/max)*100))}%;background:linear-gradient(90deg,#dc2626,#fb7185)"></div></div>
-                <p class="text-[10px] text-steel-500 mt-1">${i.processos} processo(s) • Fonte 500</p>
+                <p class="text-[10px] text-steel-500 mt-1">${i.processos} processo(s) • Fonte ${escapeHtml(i.fonte||"—")}</p>
               </div>
             `).join("")}
           </div>
@@ -4785,7 +6925,7 @@ async function alterarSetorPagamentoRapido(id,novoSetor){
       `;
     }
 
-function renderFontePagamentoResumo(p){
+function renderFontePagamentoResumoFinanceiro(p){
       const itens=obterValoresPorFontePagamento(p);
       if(!itens.length) return `<p class="font-bold text-navy-900 mt-1">—</p>`;
       return itens.map(i=>`
@@ -4853,7 +6993,7 @@ function obterPagamentosFiltrados(){
       }
       if(filtroPagamentosFonte){
         pagamentosFiltrados=pagamentosFiltrados.filter(p=>{
-          const fontes=obterValoresPorFontePagamento(p).map(i=>String(i.fonte||"").toLowerCase());
+          const fontes=obterFontesDistintasPagamento(p).map(i=>String(i.codigo||"").toLowerCase());
           const filtro=String(resumirFonteRecurso(filtroPagamentosFonte)).toLowerCase();
           return fontes.some(f=>f===filtro || f.includes(filtro));
         });
@@ -4944,6 +7084,9 @@ function obterPagamentosFiltrados(){
     }
 
 function renderPagamentos(el){
+      currentTab="pagamentos";
+      localStorage.setItem("sigecon_ultima_aba","pagamentos");
+      if(usuarioAutenticado) salvarSessao();
       garantirIdsPagamentos();
       const bloqueioLeitor = isPerfilSomenteLeitura() ? "disabled title='Somente leitura'" : "";
 
@@ -5012,7 +7155,7 @@ function renderPagamentos(el){
           </div>
 
           <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 space-y-3">
-            <div class="grid grid-cols-1 md:grid-cols-[1.4fr_repeat(6,1fr)] gap-3 items-end">
+            <div class="grid grid-cols-1 md:grid-cols-[1.4fr_repeat(7,1fr)] gap-3 items-end">
               <div>
                 <label class="block text-[10px] font-bold text-navy-900 mb-1">Buscar</label>
                 <input class="input-field w-full text-sm" placeholder="Buscar em processo, contrato ou empresa..." oninput="filtroPagamentosBusca=this.value;renderPagamentos(document.getElementById('content-area'))" value="${escapeHtml(window.filtroPagamentosBusca||"")}">
@@ -5038,8 +7181,8 @@ function renderPagamentos(el){
                 </select>
               </div>
               <div>
-                <label class="block text-[10px] font-bold text-navy-900 mb-1">Fonte</label>
-                <select class="input-field w-full text-xs" onchange="filtroPagamentosFonte=this.value;renderPagamentos(document.getElementById('content-area'))">
+                <label class="block text-[10px] font-bold text-navy-900 mb-1">Fonte de Recurso</label>
+                <select class="input-field w-full text-xs" onchange="filtroPagamentosFonte=this.value;renderPagamentos(document.getElementById('content-area'))" title="Filtra pela fonte cadastrada no empenho vinculado ao contrato">
                   ${renderSelectOptions(obterFontesDisponiveis(allContratos), filtroPagamentosFonte, "Todas")}
                 </select>
               </div>
@@ -5102,7 +7245,7 @@ function renderPagamentos(el){
                           </div>
                           <div class="flex items-center gap-2 flex-wrap text-xs">
                             <span class="pag-chip"><strong>Contrato(s):</strong> ${[...new Set(lista.map(x=>x.__contrato))].join(", ")}</span>
-                            <span class="pag-chip"><strong>Fonte(s):</strong> ${[...new Set(lista.map(x=>x.fonteRecurso||"—"))].join(", ")}</span>
+                            <span class="pag-chip pag-chip-fonte"><strong>Fonte(s):</strong> ${[...new Set(lista.map(x=>obterCodigoFontePagamento(x)).filter(Boolean))].join(", ")||"—"}</span>
                           </div>
                         </div>
 
@@ -5116,7 +7259,7 @@ function renderPagamentos(el){
                                 <th class="col-situacao">Situação</th>
                                 <th class="col-fonte">Fonte</th>
                                 <th class="col-setor">Setor</th>
-                                <th style="width:170px;">Observações</th>
+                                <th class="col-observacoes">Observações</th>
                                 <th class="col-acoes">Ações</th>
                               </tr>
                             </thead>
@@ -5148,18 +7291,17 @@ function renderPagamentos(el){
                                     <p class="text-lg font-black text-navy-900">${fmtM(p.nfValor)}</p>
                                   </td>
                                   <td class="col-situacao">
-                                    <div class="rounded-xl border ${situacaoClasseDestaque(p.situacao)} p-2">
-                                      <select ${bloqueioLeitor} onchange="alterarSituacaoPagamentoRapido('${p.id}',this.value)" class="input-field w-full text-xs font-bold bg-white/95 border-current">
-                                        ${(listas.situacoes||["A liquidar","Liquidado","Pago","Na unidade"]).map(s=>`<option value="${escapeHtml(s)}" ${String(p.situacao)===String(s)?"selected":""}>${escapeHtml(s)}</option>`).join("")}
-                                      </select>
-                                      <div class="mt-2">${statusBadge(p.situacao)}</div>
+                                    <div class="situacao-clean-card border ${situacaoClasseDestaque(p.situacao)}" title="Situação atual. Use a seta para alterar.">
+                                      <div>${statusBadge(p.situacao)}</div>
+                                      <div class="situacao-arrow-wrap" title="Alterar situação">
+                                        <select ${bloqueioLeitor} onchange="alterarSituacaoPagamentoRapido('${p.id}',this.value)" class="situacao-arrow-select" aria-label="Alterar situação do pagamento">
+                                          ${(listas.situacoes||["A liquidar","Liquidado","Pago","Na unidade"]).map(s=>`<option value="${escapeHtml(s)}" ${String(p.situacao)===String(s)?"selected":""}>${escapeHtml(s)}</option>`).join("")}
+                                        </select>
+                                      </div>
                                     </div>
                                   </td>
                                   <td class="col-fonte">
-                                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-2">
-                                      <p class="text-[10px] uppercase tracking-wide text-steel-500 font-black">Fonte</p>
-                                      ${renderFontePagamentoResumo(p)}
-                                    </div>
+                                    ${renderSelectFonteEmpenhoPagamento(p,bloqueioLeitor)}
                                   </td>
                                   <td class="col-setor">
                                     <select ${bloqueioLeitor} onchange="alterarSetorPagamentoRapido('${p.id}',this.value)" class="input-field w-full text-xs">
@@ -5167,7 +7309,7 @@ function renderPagamentos(el){
                                       ${obterSetoresPagamento().map(setor=>`<option value="${escapeHtml(setor)}" ${String(p.setor||"")===String(setor)?"selected":""}>${escapeHtml(setor)}</option>`).join("")}
                                     </select>
                                   </td>
-                                  <td style="min-width:170px;">
+                                  <td class="col-observacoes">
                                     <textarea
                                       class="input-field w-full text-xs min-h-[70px]"
                                       placeholder="Inserir observações"
@@ -5236,7 +7378,7 @@ function viewPagamento(id){
             <div class="rounded-xl border ${tipoProcessoPagamentoClasse(p.tipoProcessoPagamento)} p-3">
               <p class="text-[10px] font-black uppercase tracking-wide">Tipo do processo</p>
               <p class="font-bold mt-1">${tipoProcessoPagamentoLabel(p.tipoProcessoPagamento)}</p>
-              ${String(p.tipoProcessoPagamento||"convencional")==="indenizatorio"?`<p class="text-xs mt-1">Valor indenizatório: <strong>${fmtM(p.valorIndenizatorio||0)}</strong> • Empenho específico: <strong>${escapeHtml(p.empenhoIndenizatorio||"—")}</strong></p>`:""}
+              ${String(p.tipoProcessoPagamento||"convencional")==="indenizatorio"?`<p class="text-xs mt-1">Empenho indenizatório: <strong>${escapeHtml(p.empenhoIndenizatorio||"—")}</strong> • ${fmtM(p.valorIndenizatorio||0)} • Fonte <strong>${escapeHtml(resumirFonteRecurso(p.fonteIndenizatoria||"—"))}</strong> • Elemento <strong>${escapeHtml(p.elementoDespesaIndenizatorio||"—")}</strong></p>`:""}
             </div>
             <div class="rounded-xl border border-slate-200 p-3">
               <p class="text-[10px] text-steel-600 uppercase font-black">Setor / Fonte</p>
@@ -5362,18 +7504,26 @@ function editarPagamento(id){
               </select>
             </div>
             <div id="edit-indenizatorio-box" class="${String(p.tipoProcessoPagamento||"convencional")==="indenizatorio"?"":"hidden"} col-span-2 bg-red-50 border border-red-100 rounded-xl p-4">
-              <p class="font-bold text-red-700 mb-2">Dados do pagamento indenizatório</p>
-              <div class="grid md:grid-cols-2 gap-3">
+              <p class="font-bold text-red-700 mb-1">Dados do empenho indenizatório</p>
+              <p class="text-[10px] text-red-700 mb-3">Use quando o processo extrapolar o saldo contratual. Este empenho é específico do processo de pagamento e ficará registrado como memória no contrato.</p>
+              <div class="grid md:grid-cols-4 gap-3">
                 <div>
-                  <label class="block text-xs font-semibold text-navy-900 mb-1">Valor indenizatório</label>
-                  <input type="text" inputmode="decimal" id="edit-valor-indenizatorio-pag" class="input-field w-full" value="${formatarMoedaBR(p.valorIndenizatorio||0)}" placeholder="R$ 0,00" onblur="aplicarMascaraMoedaBR(this)">
+                  <label class="block text-xs font-semibold text-navy-900 mb-1">Nº do empenho</label>
+                  <input type="text" id="edit-empenho-indenizatorio-pag" class="input-field w-full" value="${escapeHtml((p.empenhoIndenizatorioObj&&p.empenhoIndenizatorioObj.numero)||p.empenhoIndenizatorio||"")}" placeholder="Ex: NE-IND-2026-0001">
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-navy-900 mb-1">Empenho específico indenizatório</label>
-                  <input type="text" id="edit-empenho-indenizatorio-pag" class="input-field w-full" value="${escapeHtml(p.empenhoIndenizatorio||"")}" placeholder="Ex: NE-IND-2026-0001">
+                  <label class="block text-xs font-semibold text-navy-900 mb-1">Valor</label>
+                  <input type="text" inputmode="decimal" id="edit-valor-indenizatorio-pag" class="input-field w-full" value="${formatarMoedaBR((p.empenhoIndenizatorioObj&&p.empenhoIndenizatorioObj.valor)||p.valorIndenizatorio||0)}" placeholder="R$ 0,00" onblur="aplicarMascaraMoedaBR(this)">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-navy-900 mb-1">Elemento de despesa</label>
+                  <input type="text" id="edit-elemento-indenizatorio-pag" class="input-field w-full" value="${escapeHtml((p.empenhoIndenizatorioObj&&p.empenhoIndenizatorioObj.elementoDespesa)||p.elementoDespesaIndenizatorio||"")}" placeholder="Ex: 339039">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-navy-900 mb-1">Fonte de recurso</label>
+                  ${renderSelectFontesIndenizatorias("edit-fonte-indenizatoria-pag", (p.empenhoIndenizatorioObj&&p.empenhoIndenizatorioObj.fonte)||p.fonteIndenizatoria||"")}
                 </div>
               </div>
-              <p class="text-[10px] text-red-700 mt-2">Use quando o processo extrapolar o saldo contratual da respectiva vigência. A fonte indenizatória será automaticamente <strong>500 - Estadual</strong>.</p>
             </div>
           </div>
 
@@ -5442,14 +7592,9 @@ function editarPagamento(id){
 
       const tipoProcessoPagamento=document.getElementById("edit-tipo-processo-pag")?.value||"convencional";
       if(tipoProcessoPagamento==="indenizatorio"){
-        const valorInd=parseValorBR(document.getElementById("edit-valor-indenizatorio-pag")?.value||0);
-        const empInd=(document.getElementById("edit-empenho-indenizatorio-pag")?.value||"").trim();
-        if(!valorInd){
-          showInlineAlert("❌ Informe o valor indenizatório.","error");
-          return;
-        }
-        if(!empInd){
-          showInlineAlert("❌ Informe o empenho específico indenizatório.","error");
+        const erroInd=validarEmpenhoIndenizatorio("edit");
+        if(erroInd){
+          showInlineAlert("❌ "+erroInd,"error");
           return;
         }
       }
@@ -5469,6 +7614,8 @@ function editarPagamento(id){
         if(!vob.ok){ showInlineAlert(vob.mensagem,"error"); return; }
       }
 
+      const empIndenizatorioAtualizado=obterEmpenhoIndenizatorio("edit");
+
       const pagamentoAtualizado={
         ...pagamentoBase,
         uh:document.getElementById("edit-uh-pag").value,
@@ -5487,9 +7634,11 @@ function editarPagamento(id){
         situacao:situacaoEdit,
         setor:document.getElementById("edit-setor-pag")?.value||"",
         tipoProcessoPagamento:document.getElementById("edit-tipo-processo-pag")?.value||"convencional",
-        valorIndenizatorio:parseValorBR(document.getElementById("edit-valor-indenizatorio-pag")?.value||0),
-        empenhoIndenizatorio:(document.getElementById("edit-empenho-indenizatorio-pag")?.value||"").trim(),
-        fonteIndenizatoria:"500",
+        valorIndenizatorio:empIndenizatorioAtualizado.valor,
+        empenhoIndenizatorio:empIndenizatorioAtualizado.numero,
+        elementoDespesaIndenizatorio:empIndenizatorioAtualizado.elementoDespesa,
+        fonteIndenizatoria:empIndenizatorioAtualizado.fonte,
+        empenhoIndenizatorioObj:empIndenizatorioAtualizado,
         notasLancamento:linhasNLEdit,
         ordensBancarias:linhasOBEdit,
         atualizadoEm:new Date().toISOString()
@@ -5594,18 +7743,26 @@ function editarPagamento(id){
               </select>
             </div>
             <div id="form-indenizatorio-box" class="hidden col-span-2 bg-red-50 border border-red-100 rounded-xl p-4">
-              <p class="font-bold text-red-700 mb-2">Dados do pagamento indenizatório</p>
-              <div class="grid md:grid-cols-2 gap-3">
+              <p class="font-bold text-red-700 mb-1">Dados do empenho indenizatório</p>
+              <p class="text-[10px] text-red-700 mb-3">Use quando o processo extrapolar o saldo contratual. Este empenho é específico do processo de pagamento e ficará registrado como memória no contrato.</p>
+              <div class="grid md:grid-cols-4 gap-3">
                 <div>
-                  <label class="block text-xs font-semibold text-navy-900 mb-1">Valor indenizatório</label>
+                  <label class="block text-xs font-semibold text-navy-900 mb-1">Nº do empenho</label>
+                  <input type="text" id="form-empenho-indenizatorio-pag" class="input-field w-full" placeholder="Ex: NE-IND-2026-0001">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-navy-900 mb-1">Valor</label>
                   <input type="text" inputmode="decimal" id="form-valor-indenizatorio-pag" class="input-field w-full" placeholder="R$ 0,00" onblur="aplicarMascaraMoedaBR(this)">
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-navy-900 mb-1">Empenho específico indenizatório</label>
-                  <input type="text" id="form-empenho-indenizatorio-pag" class="input-field w-full" placeholder="Ex: NE-IND-2026-0001">
+                  <label class="block text-xs font-semibold text-navy-900 mb-1">Elemento de despesa</label>
+                  <input type="text" id="form-elemento-indenizatorio-pag" class="input-field w-full" placeholder="Ex: 339039">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-navy-900 mb-1">Fonte de recurso</label>
+                  ${renderSelectFontesIndenizatorias("form-fonte-indenizatoria-pag")}
                 </div>
               </div>
-              <p class="text-[10px] text-red-700 mt-2">Use quando o processo extrapolar o saldo contratual da respectiva vigência. A fonte indenizatória será automaticamente <strong>500 - Estadual</strong>.</p>
             </div>
           </div>
 
@@ -5721,14 +7878,9 @@ function editarPagamento(id){
 
         const tipoProcessoPagamento=document.getElementById("form-tipo-processo-pag")?.value||"convencional";
         if(tipoProcessoPagamento==="indenizatorio"){
-          const valorInd=parseValorBR(document.getElementById("form-valor-indenizatorio-pag")?.value||0);
-          const empInd=(document.getElementById("form-empenho-indenizatorio-pag")?.value||"").trim();
-          if(!valorInd){
-            showInlineAlert("❌ Informe o valor indenizatório.","error");
-            return false;
-          }
-          if(!empInd){
-            showInlineAlert("❌ Informe o empenho específico indenizatório.","error");
+          const erroInd=validarEmpenhoIndenizatorio("form");
+          if(erroInd){
+            showInlineAlert("❌ "+erroInd,"error");
             return false;
           }
         }
@@ -5791,6 +7943,8 @@ function editarPagamento(id){
           if(!vob.ok){ showInlineAlert(vob.mensagem,"error"); return false; }
         }
 
+        const empIndenizatorioNovo=obterEmpenhoIndenizatorio("form");
+
         const novoPagamento={
           id:`pag_${Date.now()}_${Math.random().toString(16).slice(2)}`,
           tipo:"pagamento",
@@ -5809,9 +7963,11 @@ function editarPagamento(id){
           situacao:situacao,
           setor:document.getElementById("form-setor-pag")?.value||"",
           tipoProcessoPagamento:document.getElementById("form-tipo-processo-pag")?.value||"convencional",
-          valorIndenizatorio:parseValorBR(document.getElementById("form-valor-indenizatorio-pag")?.value||0),
-          empenhoIndenizatorio:(document.getElementById("form-empenho-indenizatorio-pag")?.value||"").trim(),
-          fonteIndenizatoria:"500",
+          valorIndenizatorio:empIndenizatorioNovo.valor,
+          empenhoIndenizatorio:empIndenizatorioNovo.numero,
+          elementoDespesaIndenizatorio:empIndenizatorioNovo.elementoDespesa,
+          fonteIndenizatoria:empIndenizatorioNovo.fonte,
+          empenhoIndenizatorioObj:empIndenizatorioNovo,
           notasLancamento:linhasNLForm,
           ordensBancarias:linhasOBForm,
           tipoNF:notas.map(n=>n.tipo).join(","),
@@ -5878,51 +8034,95 @@ function editarPagamento(id){
       return allProducao.find(pr=>pr.pagamento_id===pagamentoId);
     }
 
-    function renderCamposProducaoServico(servico, dados={}){
-      const svc=String(servico||"").toLowerCase();
+    function renderCamposProducaoServico(servico, dados={}, contrato={}){
+      const cat=obterCategoriaProducao(servico);
+      const titulo={
+        cirurgias:"Cirurgias eletivas",
+        hemodialise:"Hemodiálise",
+        laboratorio:"Laboratórios",
+        opme_urologia:"OPME Urologia",
+        opme_ortopedia:"OPME Ortopedia",
+        telemedicina:"Telemedicina"
+      }[cat] || "Produção do serviço";
 
-      if(svc.includes("cirurgia") || svc.includes("cirurgias") || svc.includes("eletiva")){
-        return `
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div>
-              <label class="block text-xs font-semibold text-navy-900 mb-1">Nº de Procedimentos</label>
-              <input id="form-prod-procedimentos" type="number" min="0" class="input-field w-full" value="${dados.numProcedimentos||""}" placeholder="0">
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-navy-900 mb-1">Nº de Cirurgias</label>
-              <input id="form-prod-cirurgias" type="number" min="0" class="input-field w-full" value="${dados.numCirurgias||""}" placeholder="0">
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-navy-900 mb-1">Nº de Pacientes Atendidos</label>
-              <input id="form-prod-pacientes" type="number" min="0" class="input-field w-full" value="${dados.numPacientes||""}" placeholder="0">
-            </div>
-          </div>
-        `;
-      }
-
-      if(svc.includes("hemodialise") || svc.includes("hemodiálise")){
-        return `
+      let campos="";
+      if(cat==="cirurgias"){
+        campos=`
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            ${renderCampoNumeroProducao("form-prod-pacientes","Nº de pacientes",dados.numPacientes)}
+            ${renderCampoNumeroProducao("form-prod-procedimentos","Nº de procedimentos e/ou cirurgias",(dados.numProcedimentos||dados.numCirurgias||""))}
+          </div>`;
+      }else if(cat==="hemodialise"){
+        campos=`
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            ${renderCampoNumeroProducao("form-prod-sessoes-hd","Nº de sessões de hemodiálise",dados.numSessoesHD)}
+            ${renderCampoNumeroProducao("form-prod-cateter","Nº de cateter",dados.numInsercaoCateter)}
+            ${renderCampoNumeroProducao("form-prod-pacientes","Nº de pacientes",dados.numPacientes)}
+          </div>`;
+      }else if(cat==="laboratorio"){
+        const itensContrato=normalizarExamesLaboratorio(contrato);
+        const itensDados=Array.isArray(dados.examesLaboratorio)?dados.examesLaboratorio:[];
+        const linhas=(itensContrato.length?itensContrato:[{nome:"Testes laboratoriais",quantidadeContrato:numeroProd(contrato,"numTestesContrato"),estimadoMes:numeroProd(contrato,"numTestesEstimadoMes")}]).map((item,idx)=>{
+          const salvo=itensDados.find(x=>String(x.nome||"").toLowerCase()===String(item.nome||"").toLowerCase())||itensDados[idx]||{};
+          return `
+            <div class="grid grid-cols-12 gap-2 items-end border border-violet-100 rounded-xl p-3 bg-white">
+              <div class="col-span-12 md:col-span-4">
+                <label class="block text-[10px] font-bold text-slate-600 mb-1">Exame/item</label>
+                <input type="text" class="input-field w-full bg-slate-100 prod-lab-nome" value="${escapeHtml(item.nome||'Teste laboratorial')}" readonly>
+              </div>
+              <div class="col-span-4 md:col-span-2">
+                <label class="block text-[10px] font-bold text-slate-600 mb-1">Realizados</label>
+                <input type="number" min="0" class="input-field w-full prod-lab-realizados" value="${parseInt(salvo.realizados||0,10)||''}" placeholder="0">
+              </div>
+              <div class="col-span-4 md:col-span-3">
+                <label class="block text-[10px] font-bold text-slate-600 mb-1">Previsto contrato</label>
+                <input type="number" min="0" class="input-field w-full bg-slate-100 prod-lab-contrato" value="${parseInt(item.quantidadeContrato||0,10)||0}" readonly>
+              </div>
+              <div class="col-span-4 md:col-span-3">
+                <label class="block text-[10px] font-bold text-slate-600 mb-1">Nº de testes estimados/mês</label>
+                <input type="number" min="0" class="input-field w-full bg-slate-100 prod-lab-estimado" value="${parseInt(item.estimadoMes||0,10)||0}" readonly>
+              </div>
+            </div>`;
+        }).join("");
+        campos=`
+          <div class="space-y-2">
+            <div class="text-[11px] text-violet-800 bg-violet-50 border border-violet-100 rounded-lg p-2">Os exames/itens abaixo vêm automaticamente do cadastro do contrato. Informe apenas o realizado no processo.</div>
+            <div id="form-prod-lab-itens" class="space-y-2">${linhas}</div>
+            <input id="form-prod-testes-contrato" type="hidden" value="${somarTestesContratoLaboratorio(contrato)}">
+            <input id="form-prod-testes-estimado-mes" type="hidden" value="${somarEstimadoMesLaboratorio(contrato)}">
+            <input id="form-prod-testes-realizados" type="hidden" value="${numeroProd(dados,"numTestesRealizados")}">
+          </div>`;
+      }else if(cat==="opme_urologia" || cat==="opme_ortopedia"){
+        campos=`
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            ${renderCampoNumeroProducao("form-prod-pacientes","Nº de pacientes",dados.numPacientes)}
+            ${renderCampoNumeroProducao("form-prod-procedimentos","Nº de procedimentos",dados.numProcedimentos)}
+          </div>`;
+      }else if(cat==="telemedicina"){
+        campos=`
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            ${renderCampoNumeroProducao("form-prod-pacientes","Nº de pacientes",dados.numPacientes)}
+            ${renderCampoNumeroProducao("form-prod-laudos","Nº de laudos",dados.numLaudos)}
+            ${renderCampoNumeroProducao("form-prod-tomografias","Nº de tomografias",dados.numTomografias)}
+          </div>`;
+      }else{
+        campos=`
+          <div class="grid grid-cols-1 gap-3">
             <div>
-              <label class="block text-xs font-semibold text-navy-900 mb-1">Nº Sessões HD</label>
-              <input id="form-prod-sessoes-hd" type="number" min="0" class="input-field w-full" value="${dados.numSessoesHD||""}" placeholder="0">
+              <label class="block text-xs font-semibold text-navy-900 mb-1">Dados comuns da produção</label>
+              <textarea id="form-prod-dados-comuns" class="input-field w-full" rows="3" placeholder="Registre aqui os dados comuns do pagamento/produção.">${escapeHtml(dados.dadosComuns||"")}</textarea>
             </div>
-            <div>
-              <label class="block text-xs font-semibold text-navy-900 mb-1">Nº Inserções de Cateter</label>
-              <input id="form-prod-cateter" type="number" min="0" class="input-field w-full" value="${dados.numInsercaoCateter||""}" placeholder="0">
-            </div>
-          </div>
-        `;
+          </div>`;
       }
 
       return `
-        <div class="grid grid-cols-1 gap-3">
-          <div>
-            <label class="block text-xs font-semibold text-navy-900 mb-1">Dados comuns da produção</label>
-            <textarea id="form-prod-dados-comuns" class="input-field w-full" rows="3" placeholder="Registre aqui os dados comuns do pagamento/produção até definir as variáveis específicas deste serviço.">${escapeHtml(dados.dadosComuns||"")}</textarea>
+        <div class="space-y-3">
+          <div class="rounded-xl bg-navy-50 border border-navy-100 p-3">
+            <p class="text-xs font-black text-navy-900 uppercase">Indicadores exigidos para ${escapeHtml(titulo)}</p>
+            <p class="text-[10px] text-steel-600 mt-1">Os campos abaixo mudam conforme o tipo de serviço do contrato.</p>
           </div>
-        </div>
-      `;
+          ${campos}
+        </div>`;
     }
 
     function atualizarFormularioProducao(){
@@ -5957,7 +8157,7 @@ function editarPagamento(id){
       }
 
       if(campos){
-        campos.innerHTML=renderCamposProducaoServico(contrato.servicoTipo,producaoExistente);
+        campos.innerHTML=renderCamposProducaoServico(contrato.servicoTipo,producaoExistente,contrato);
       }
       lucide.createIcons();
     }
@@ -6014,10 +8214,13 @@ function editarPagamento(id){
         const pendentes=pagamentosSemProducao.length;
         const percComProducao=totalProcessosPagamento?Math.round((totalProducoes/totalProcessosPagamento)*100):0;
 
-        const totalProcedimentos=producoesFiltradas.reduce((s,p)=>s+(parseInt(p.numProcedimentos)||0)+(parseInt(p.numCirurgias)||0),0);
-        const totalPacientes=producoesFiltradas.reduce((s,p)=>s+(parseInt(p.numPacientes)||0),0);
-        const totalSessoesHD=producoesFiltradas.reduce((s,p)=>s+(parseInt(p.numSessoesHD)||0),0);
-        const totalCateter=producoesFiltradas.reduce((s,p)=>s+(parseInt(p.numInsercaoCateter)||0),0);
+        const totalProcedimentos=producoesFiltradas.reduce((s,p)=>s+numeroProd(p,"numProcedimentos")+numeroProd(p,"numCirurgias"),0);
+        const totalPacientes=producoesFiltradas.reduce((s,p)=>s+numeroProd(p,"numPacientes"),0);
+        const totalSessoesHD=producoesFiltradas.reduce((s,p)=>s+numeroProd(p,"numSessoesHD"),0);
+        const totalCateter=producoesFiltradas.reduce((s,p)=>s+numeroProd(p,"numInsercaoCateter"),0);
+        const totalTestes=producoesFiltradas.reduce((s,p)=>s+numeroProd(p,"numTestesRealizados"),0);
+        const totalLaudos=producoesFiltradas.reduce((s,p)=>s+numeroProd(p,"numLaudos"),0);
+        const totalTomografias=producoesFiltradas.reduce((s,p)=>s+numeroProd(p,"numTomografias"),0);
 
         const linhas=pagamentosBase.map(p=>{
           const contrato=allContratos.find(c=>String(c.id)===String(p.contrato_id))||{};
@@ -6025,13 +8228,7 @@ function editarPagamento(id){
           const notas=extrairNFsPagamento(p).map(n=>n.numero).filter(Boolean).join(", ") || p.nfNumero || "—";
           let indicadores="Pendente";
           if(prod){
-            const partes=[];
-            if(parseInt(prod.numProcedimentos)||parseInt(prod.numCirurgias)) partes.push(`Proced./Cirurgias: ${(parseInt(prod.numProcedimentos)||0)+(parseInt(prod.numCirurgias)||0)}`);
-            if(parseInt(prod.numPacientes)) partes.push(`Pacientes: ${parseInt(prod.numPacientes)||0}`);
-            if(parseInt(prod.numSessoesHD)) partes.push(`Sessões HD: ${parseInt(prod.numSessoesHD)||0}`);
-            if(parseInt(prod.numInsercaoCateter)) partes.push(`Cateter: ${parseInt(prod.numInsercaoCateter)||0}`);
-            if(prod.dadosComuns) partes.push("Dados comuns informados");
-            indicadores=partes.join(" • ") || "Produção registrada";
+            indicadores=montarIndicadoresProducao(prod,contrato);
           }
 
           return {p,contrato,prod,notas,indicadores};
@@ -6044,9 +8241,17 @@ function editarPagamento(id){
               <h2 class="text-2xl font-bold text-navy-900">📈 Produção</h2>
               <p class="text-sm text-steel-500 mt-1">Produção vinculada aos processos de pagamento cadastrados</p>
             </div>
-            <button onclick="openNovaProducaoModal()" class="btn-primary px-4 py-2 rounded-lg flex items-center gap-2 hidden-btn" style="display:${hasPermission("create")?"flex":"none"}">
-              <i data-lucide="plus" class="w-4 h-4"></i>Registrar Produção
-            </button>
+            <div class="flex flex-wrap items-center gap-2">
+              <button onclick="baixarProducaoFiltradaPDF()" class="btn-secondary px-4 py-2 rounded-lg flex items-center gap-2">
+                <i data-lucide="file-down" class="w-4 h-4"></i>Baixar PDF
+              </button>
+              <button onclick="baixarProducaoFiltradaCSV()" class="btn-secondary px-4 py-2 rounded-lg flex items-center gap-2">
+                <i data-lucide="download" class="w-4 h-4"></i>Baixar Excel/CSV
+              </button>
+              <button onclick="openNovaProducaoModal()" class="btn-primary px-4 py-2 rounded-lg flex items-center gap-2 hidden-btn" style="display:${hasPermission("create")?"flex":"none"}">
+                <i data-lucide="plus" class="w-4 h-4"></i>Registrar Produção
+              </button>
+            </div>
           </div>
 
           <div class="glass rounded-xl p-5 grid grid-cols-1 md:grid-cols-5 gap-3">
@@ -6104,9 +8309,21 @@ function editarPagamento(id){
               <p class="text-xs text-steel-500 mt-1">sem produção registrada</p>
             </div>
             <div class="glass rounded-xl p-5">
-              <p class="text-xs font-bold text-steel-500 uppercase">Indicadores</p>
-              <p class="text-sm font-bold text-navy-900 mt-1">Proced./Cirurgias: ${totalProcedimentos}</p>
-              <p class="text-xs text-steel-600">Pacientes: ${totalPacientes} • HD: ${totalSessoesHD} • Cateter: ${totalCateter}</p>
+              <p class="text-xs font-bold text-steel-500 uppercase">Indicadores consolidados</p>
+              <p class="text-2xl font-black text-navy-900 mt-1">${producoesFiltradas.length}</p>
+              <p class="text-xs text-steel-500 mt-1">produções alimentadas</p>
+            </div>
+          </div>
+
+          <div class="glass rounded-xl p-5">
+            <div class="flex items-center justify-between gap-3 mb-4">
+              <div>
+                <p class="text-xs font-bold text-steel-500 uppercase">Indicadores por tipo de serviço</p>
+                <p class="text-xs text-steel-500 mt-1">Exibe apenas serviços com contratos e processos de pagamento cadastrados. A produção alimenta os indicadores conforme novos processos forem incluídos.</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-3">
+              ${renderIndicadoresConsolidadosProducao(pagamentosBase, producoesFiltradas)}
             </div>
           </div>
 
@@ -6240,11 +8457,23 @@ function openNovaProducaoModal(pagamentoIdSelecionado=""){
         nContrato:contrato.nContrato,
         nfNumero:pagamento.nfNumero,
         nfValor:parseValorBR(pagamento.nfValor),
+        categoriaProducao:obterCategoriaProducao(contrato.servicoTipo),
         numProcedimentos:parseInt(document.getElementById("form-prod-procedimentos")?.value||0),
         numCirurgias:parseInt(document.getElementById("form-prod-cirurgias")?.value||0),
         numPacientes:parseInt(document.getElementById("form-prod-pacientes")?.value||0),
         numSessoesHD:parseInt(document.getElementById("form-prod-sessoes-hd")?.value||0),
         numInsercaoCateter:parseInt(document.getElementById("form-prod-cateter")?.value||0),
+        examesLaboratorio:[...document.querySelectorAll("#form-prod-lab-itens .grid")].map(row=>({
+          nome:row.querySelector(".prod-lab-nome")?.value||"",
+          realizados:parseInt(row.querySelector(".prod-lab-realizados")?.value||0,10)||0,
+          quantidadeContrato:parseInt(row.querySelector(".prod-lab-contrato")?.value||0,10)||0,
+          estimadoMes:parseInt(row.querySelector(".prod-lab-estimado")?.value||0,10)||0
+        })).filter(e=>e.nome||e.realizados||e.quantidadeContrato||e.estimadoMes),
+        numTestesRealizados:[...document.querySelectorAll("#form-prod-lab-itens .prod-lab-realizados")].reduce((s,input)=>s+(parseInt(input.value||0,10)||0),0) || parseInt(document.getElementById("form-prod-testes-realizados")?.value||0),
+        numTestesContrato:parseInt(document.getElementById("form-prod-testes-contrato")?.value||0),
+        numTestesEstimadoMes:parseInt(document.getElementById("form-prod-testes-estimado-mes")?.value||0),
+        numLaudos:parseInt(document.getElementById("form-prod-laudos")?.value||0),
+        numTomografias:parseInt(document.getElementById("form-prod-tomografias")?.value||0),
         dadosComuns:document.getElementById("form-prod-dados-comuns")?.value||"",
         observacoes:document.getElementById("form-prod-obs").value,
         anoExercicio:exercicioAtivo,
@@ -6550,7 +8779,7 @@ function openNovaProducaoModal(pagamentoIdSelecionado=""){
           <p class="text-steel-500 font-semibold">Nenhum exercício cadastrado. Clique em "Novo Exercício" para criar.</p>
         </div>
         `:`
-        <div class="grid md:grid-cols-3 gap-5">
+        <div class="grid md:grid-cols-2 xl:grid-cols-4 gap-5">
           ${exerciciosFiltrados.map((ex,idx)=>`
           <div class="glass rounded-xl p-6 card-hover fade-in" style="animation-delay:${idx*60}ms">
             <div class="flex items-center justify-between mb-4">
@@ -6765,14 +8994,57 @@ function openNovaProducaoModal(pagamentoIdSelecionado=""){
     }
 
     function exportarBaseCompletaJSON(){
-      baixarJSON(`base_SIGECON_${new Date().toISOString().slice(0,10)}.json`,{
-        exercicioAtivo,
-        contratos:allContratos,
-        pagamentos:allPagamentos,
-        producao:allProducao,
-        tecnicos:allTecnicos,
-        auditoria:carregarAuditoria()
-      });
+      const banco=montarBancoCompletoSnapshot();
+      baixarJSON(`backup_COMPLETO_SIGECON_${new Date().toISOString().slice(0,10)}.json`,banco);
+      if(typeof showInlineAlert==="function") showInlineAlert("✅ Backup completo baixado com sucesso.","info");
+    }
+
+    function acionarImportacaoBackup(){
+      const input=document.getElementById("input-backup-sigecon");
+      if(input) input.click();
+    }
+
+    function importarBaseCompletaJSON(event){
+      const arquivo=event?.target?.files?.[0];
+      if(!arquivo) return;
+      const leitor=new FileReader();
+      leitor.onload=async function(){
+        try{
+          const banco=JSON.parse(String(leitor.result||"{}"));
+          if(!banco || typeof banco!=="object" || (!Array.isArray(banco.contratos) && !Array.isArray(banco.pagamentos) && !Array.isArray(banco.tecnicos))){
+            throw new Error("Arquivo de backup inválido.");
+          }
+          const ok=confirm("Deseja importar este backup para o SIGECON? Os dados serão mesclados com a base atual.");
+          if(!ok){ event.target.value=""; return; }
+          const aplicado=aplicarBancoCompletoSnapshot(banco,"backup_importado");
+          if(!aplicado) throw new Error("Não foi possível aplicar o backup.");
+          salvarBancoLocal();
+          if(sigeconNuvemAtiva) await salvarBancoNuvemAgora(montarBancoCompletoSnapshot());
+          if(typeof renderContent==="function") renderContent();
+          if(typeof showInlineAlert==="function") showInlineAlert("✅ Backup importado e salvo com sucesso.","info");
+        }catch(e){
+          console.error(e);
+          alert("Não foi possível importar o backup. Verifique se o arquivo JSON é do SIGECON.");
+        }finally{
+          event.target.value="";
+        }
+      };
+      leitor.readAsText(arquivo,"utf-8");
+    }
+
+    async function sincronizarNuvemManual(){
+      salvarBancoLocal();
+      if(!firebaseConfigurado()){
+        showInlineAlert("⚠️ Firebase ainda não configurado. Use o botão Configurar Firebase ou crie firebase-config.json no GitHub.","error");
+        return;
+      }
+      if(!sigeconNuvemAtiva) await inicializarNuvemSigec();
+      if(!sigeconNuvemAtiva){
+        showInlineAlert("⚠️ Não foi possível conectar à nuvem: "+(sigeconUltimoErroNuvem||"verifique Firebase e regras do banco."),"error");
+        return;
+      }
+      const ok=await salvarBancoNuvemAgora(montarBancoCompletoSnapshot());
+      if(ok) showInlineAlert("☁️ Dados sincronizados com a nuvem. Abra em outro dispositivo e atualize a página.","info");
     }
 
 function renderAuditoria(el){
@@ -6975,9 +9247,129 @@ function renderAuditoria(el){
     }
 
 
+    function obterPeriodoRelatorio(){
+      const inicio=document.getElementById("relatorio-periodo-inicial")?.value || `${exercicioAtivo}-01-01`;
+      const fim=document.getElementById("relatorio-periodo-final")?.value || `${exercicioAtivo}-12-31`;
+      return {inicio,fim};
+    }
+
+    function dataEstaNoPeriodo(data, inicio, fim){
+      if(!data) return true;
+      const d=String(data).slice(0,10);
+      if(inicio && d < inicio) return false;
+      if(fim && d > fim) return false;
+      return true;
+    }
+
+    function contratoEstaNoPeriodoRelatorio(c,inicio,fim){
+      // Considera contrato dentro do período quando há intersecção entre a vigência e o período escolhido.
+      const ini=String(c?.vigIni||"").slice(0,10);
+      const fimVig=String(c?.vigFim||"").slice(0,10);
+      if(!ini && !fimVig) return true;
+      if(fim && ini && ini > fim) return false;
+      if(inicio && fimVig && fimVig < inicio) return false;
+      return true;
+    }
+
+    function obterContratosRelatorioFiltrados(){
+      const {inicio,fim}=obterPeriodoRelatorio();
+      let lista=aplicarFiltroLeitorContratos(allContratos).filter(c=>!c.anoExercicio || String(c.anoExercicio)===String(exercicioAtivo));
+      lista=lista.filter(c=>contratoEstaNoPeriodoRelatorio(c,inicio,fim));
+
+      if(relFiltroContratosEmpresa) lista=lista.filter(c=>String(c.empresa||"")===String(relFiltroContratosEmpresa));
+      if(relFiltroContratosServico) lista=lista.filter(c=>String(c.servicoTipo||"")===String(relFiltroContratosServico));
+      if(relFiltroContratosUH) lista=lista.filter(c=>contratoUnidadesArray(c).includes(relFiltroContratosUH));
+      if(relFiltroContratosFonte) lista=lista.filter(c=>contratoTemFonte(c,relFiltroContratosFonte));
+      if(relFiltroContratosExecucaoStatus){
+        lista=lista.filter(c=>calcularExecucaoContrato(c).status===relFiltroContratosExecucaoStatus);
+      }
+      return lista;
+    }
+
+    function pagamentoPassaFiltroFonteRelatorio(p){
+      if(!relFiltroPagamentosFonte) return true;
+      const filtro=String(resumirFonteRecurso(relFiltroPagamentosFonte)).toLowerCase();
+      const fontes=obterFontesDistintasPagamento(p).map(i=>String(i.codigo||"").toLowerCase());
+      return fontes.some(f=>f===filtro || f.includes(filtro));
+    }
+
+    function obterPagamentosRelatorioFiltrados(){
+      const {inicio,fim}=obterPeriodoRelatorio();
+      let lista=aplicarFiltroLeitorPagamentos(allPagamentos).filter(p=>!p.anoExercicio || String(p.anoExercicio)===String(exercicioAtivo));
+
+      if(!relFiltroPagamentosMostrarPagos){
+        lista=lista.filter(p=>!pagamentoEstaPago(p));
+      }
+      lista=lista.filter(p=>dataEstaNoPeriodo(p.atualizadoEm||p.criadoEm,inicio,fim));
+
+      if(relFiltroPagamentosSituacao) lista=lista.filter(p=>String(p.situacao||"")===String(relFiltroPagamentosSituacao));
+      if(relFiltroPagamentosCompetencia) lista=lista.filter(p=>String(p.competencia||"")===String(relFiltroPagamentosCompetencia));
+      if(relFiltroPagamentosTipoProcesso) lista=lista.filter(p=>String(p.tipoProcessoPagamento||"convencional")===String(relFiltroPagamentosTipoProcesso));
+      if(relFiltroPagamentosFonte) lista=lista.filter(p=>pagamentoPassaFiltroFonteRelatorio(p));
+      if(relFiltroPagamentosUH) lista=lista.filter(p=>String(p.uh||"")===String(relFiltroPagamentosUH));
+      if(relFiltroPagamentosEmpresa || relFiltroPagamentosServico){
+        lista=lista.filter(p=>{
+          const contrato=allContratos.find(c=>String(c.id)===String(p.contrato_id));
+          if(relFiltroPagamentosEmpresa && String(contrato?.empresa||"")!==String(relFiltroPagamentosEmpresa)) return false;
+          if(relFiltroPagamentosServico && String(contrato?.servicoTipo||"")!==String(relFiltroPagamentosServico)) return false;
+          return true;
+        });
+      }
+      return lista;
+    }
+
+    function limparFiltrosRelatorios(){
+      relFiltroContratosEmpresa="";
+      relFiltroContratosServico="";
+      relFiltroContratosUH="";
+      relFiltroContratosFonte="";
+      relFiltroContratosExecucaoStatus="";
+      relFiltroPagamentosSituacao="";
+      relFiltroPagamentosCompetencia="";
+      relFiltroPagamentosTipoProcesso="";
+      relFiltroPagamentosFonte="";
+      relFiltroPagamentosEmpresa="";
+      relFiltroPagamentosUH="";
+      relFiltroPagamentosServico="";
+      relFiltroPagamentosMostrarPagos=true;
+      renderRelatorios(document.getElementById("content-area"));
+    }
+
+    function obterPagamentosProducaoRelatorioFiltrados(){
+      // A produção é sempre vinculada ao processo de pagamento.
+      // Assim, os mesmos filtros de pagamentos da aba Relatórios também refinam o relatório de produção.
+      return obterPagamentosRelatorioFiltrados().filter(p=>{
+        const contrato=allContratos.find(c=>String(c.id)===String(p.contrato_id));
+        if(!contrato) return false;
+        if(relFiltroContratosEmpresa && String(contrato.empresa||"")!==String(relFiltroContratosEmpresa)) return false;
+        if(relFiltroContratosServico && String(contrato.servicoTipo||"")!==String(relFiltroContratosServico)) return false;
+        if(relFiltroContratosUH && !contratoUnidadesArray(contrato).includes(relFiltroContratosUH)) return false;
+        if(relFiltroContratosFonte && !contratoTemFonte(contrato,relFiltroContratosFonte)) return false;
+        return true;
+      });
+    }
+
+    function obterProducaoRelatorioFiltrada(){
+      const pagamentos=obterPagamentosProducaoRelatorioFiltrados();
+      const ids=new Set(pagamentos.map(p=>String(p.id)));
+      return (allProducao||[]).filter(pr=>ids.has(String(pr.pagamento_id)));
+    }
+
+    function resumoExamesLaboratorioRelatorio(pr){
+      const exames=Array.isArray(pr?.examesLaboratorio)?pr.examesLaboratorio:[];
+      if(!exames.length) return "";
+      return exames.map(e=>{
+        const nome=e.nome||"Exame/item";
+        const realizados=parseInt(e.realizados||0,10)||0;
+        const contratado=parseInt(e.quantidadeContrato||0,10)||0;
+        const estimado=parseInt(e.estimadoMes||0,10)||0;
+        return `${nome}: realizados ${realizados}; contratados ${contratado}; estimado/mês ${estimado}`;
+      }).join(" | ");
+    }
+
     function montarDadosRelatorio(tipo){
-      const contratos=aplicarFiltroLeitorContratos(allContratos).filter(c=>!c.anoExercicio || String(c.anoExercicio)===String(exercicioAtivo));
-      const pagamentos=obterPagamentosFiltrados ? obterPagamentosFiltrados() : aplicarFiltroLeitorPagamentos(allPagamentos);
+      const contratos=obterContratosRelatorioFiltrados();
+      const pagamentos=obterPagamentosRelatorioFiltrados();
       const auditoria=carregarAuditoria();
 
       if(tipo==="pagamentos"){
@@ -6992,12 +9384,36 @@ function renderAuditoria(el){
             formatarCompetenciaBR(p.competencia),
             fmtM(p.nfValor),
             p.situacao||"—",
-            p.fonteRecurso||"—",
+            obterCodigoFontePagamento(p)||p.fonteRecurso||"—",
             empenhos||"—",
             p.observacoes||""
           ];
         });
         return {titulo:"Relatório de Processos de Pagamento",cab,linhas};
+      }
+
+      if(tipo==="producao"){
+        const pagamentosProd=obterPagamentosProducaoRelatorioFiltrados();
+        const cab=["Processo SEI","NF(s)","Contrato","Empresa","Unidade","Serviço","Competência","Valor","Status","Indicadores da Produção","Observações"];
+        const linhas=pagamentosProd.map(p=>{
+          const c=allContratos.find(ct=>String(ct.id)===String(p.contrato_id))||{};
+          const pr=(allProducao||[]).find(x=>String(x.pagamento_id)===String(p.id));
+          const notas=extrairNFsPagamento(p).map(n=>n.numero).filter(Boolean).join(", ") || p.nfNumero || "—";
+          return [
+            obterProcessoSEIPagamento(p),
+            notas,
+            c.nContrato||"—",
+            c.empresa||"—",
+            p.uh||pr?.uh||"—",
+            servicoLabel(c.servicoTipo||pr?.servicoTipo||""),
+            formatarCompetenciaBR(p.competencia||pr?.competencia),
+            fmtM(p.nfValor||pr?.nfValor),
+            pr?.id?"Registrada":"Pendente",
+            pr?.id?montarIndicadoresProducao(pr,c):"Pendente",
+            pr?.observacoes||p.observacoes||""
+          ];
+        });
+        return {titulo:"Relatório de Produção",cab,linhas};
       }
 
       if(tipo==="auditoria"){
@@ -7092,11 +9508,27 @@ function renderAuditoria(el){
     }
 
 function renderRelatorios(el){
+      currentTab="relatorios";
+      localStorage.setItem("sigecon_ultima_aba","relatorios");
+      if(usuarioAutenticado) salvarSessao();
+
       const relatorios=[
         {id:"contratos",nome:"Execução Orçamentária",desc:"Consolidado de contratos, empenhos, execução e saldo",icone:"bar-chart-3"},
         {id:"pagamentos",nome:"Processos de Pagamento",desc:"Relação de processos, competência, situação, fonte e valores",icone:"credit-card"},
+        {id:"producao",nome:"Produção",desc:"Produção vinculada aos processos de pagamento cadastrados",icone:"activity"},
         {id:"auditoria",nome:"Auditoria Mensal",desc:"Rastreabilidade de alterações e indicadores auditáveis",icone:"search"},
       ];
+
+      const contratosBase=aplicarFiltroLeitorContratos(allContratos).filter(c=>!c.anoExercicio || String(c.anoExercicio)===String(exercicioAtivo));
+      const pagamentosBase=aplicarFiltroLeitorPagamentos(allPagamentos).filter(p=>!p.anoExercicio || String(p.anoExercicio)===String(exercicioAtivo));
+      const competenciasRel=[...new Set(pagamentosBase.map(p=>p.competencia).filter(Boolean))].sort().reverse();
+      const fontesRel=obterFontesDisponiveis(contratosBase);
+      const empresasRel=obterEmpresasDisponiveis(contratosBase);
+      const servicosRel=obterServicosDisponiveisPorContratos(contratosBase);
+      const unidadesRel=[...new Set([...(listas.unidades||[]),...contratosBase.flatMap(c=>contratoUnidadesArray(c)),...pagamentosBase.map(p=>p.uh).filter(Boolean)])].filter(Boolean).sort((a,b)=>a.localeCompare(b,"pt-BR"));
+      const totalContratosRel=obterContratosRelatorioFiltrados().length;
+      const totalPagamentosRel=obterPagamentosRelatorioFiltrados().length;
+      const totalProducaoRel=obterProducaoRelatorioFiltrada().length;
 
       el.innerHTML=`
       <div class="fade-in space-y-6">
@@ -7106,15 +9538,26 @@ function renderRelatorios(el){
         </div>
 
         <div class="glass rounded-xl p-6">
-          <h3 class="font-bold text-navy-900 mb-4">Configurações de Relatório</h3>
+          <div class="flex items-start justify-between gap-3 flex-wrap mb-4">
+            <div>
+              <h3 class="font-bold text-navy-900">Configurações e Filtros de Relatório</h3>
+              <p class="text-xs text-steel-500 mt-1">Os filtros abaixo espelham Contratos e Pagamentos para gerar PDF/CSV já refinado.</p>
+            </div>
+            <div class="flex gap-2 flex-wrap">
+              <span class="soft-badge">Contratos: ${totalContratosRel}</span>
+              <span class="soft-badge">Pagamentos: ${totalPagamentosRel}</span>
+              <span class="soft-badge">Produção: ${totalProducaoRel}</span>
+            </div>
+          </div>
+
           <div class="grid md:grid-cols-3 gap-4 mb-6">
             <div>
               <label class="block text-xs font-bold text-navy-900 mb-2">Período Inicial</label>
-              <input id="relatorio-periodo-inicial" type="date" class="input-field w-full" value="${exercicioAtivo}-01-01">
+              <input id="relatorio-periodo-inicial" type="date" class="input-field w-full" value="${document.getElementById('relatorio-periodo-inicial')?.value||`${exercicioAtivo}-01-01`}" onchange="renderRelatorios(document.getElementById('content-area'))">
             </div>
             <div>
               <label class="block text-xs font-bold text-navy-900 mb-2">Período Final</label>
-              <input id="relatorio-periodo-final" type="date" class="input-field w-full" value="${exercicioAtivo}-12-31">
+              <input id="relatorio-periodo-final" type="date" class="input-field w-full" value="${document.getElementById('relatorio-periodo-final')?.value||`${exercicioAtivo}-12-31`}" onchange="renderRelatorios(document.getElementById('content-area'))">
             </div>
             <div>
               <label class="block text-xs font-bold text-navy-900 mb-2">Formato preferencial</label>
@@ -7124,7 +9567,99 @@ function renderRelatorios(el){
               </select>
             </div>
           </div>
-          <button onclick="const tipo=document.getElementById('relatorio-formato').value; tipo==='pdf'?baixarRelatorioPDF('contratos'):baixarRelatorioCSV('contratos')" class="btn-primary px-4 py-2 rounded-lg">🔄 Gerar Relatório Geral</button>
+
+          <div class="grid lg:grid-cols-2 gap-4">
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div class="flex items-center gap-2 mb-3">
+                <i data-lucide="file-signature" class="w-4 h-4 text-navy-700"></i>
+                <p class="font-black text-navy-900 text-sm uppercase tracking-wide">Filtros de Contratos</p>
+              </div>
+              <div class="grid md:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[10px] font-bold text-navy-900 mb-1">Empresa</label>
+                  <select class="input-field w-full text-xs" onchange="relFiltroContratosEmpresa=this.value;renderRelatorios(document.getElementById('content-area'))">${renderSelectOptions(empresasRel, relFiltroContratosEmpresa, "Todas")}</select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-navy-900 mb-1">Serviço</label>
+                  <select class="input-field w-full text-xs" onchange="relFiltroContratosServico=this.value;renderRelatorios(document.getElementById('content-area'))">
+                    <option value="">Todos</option>${servicosRel.map(s=>`<option value="${escapeHtml(s)}" ${String(relFiltroContratosServico)===String(s)?"selected":""}>${escapeHtml(servicoLabel(s))}</option>`).join("")}
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-navy-900 mb-1">Unidade</label>
+                  <select class="input-field w-full text-xs" onchange="relFiltroContratosUH=this.value;renderRelatorios(document.getElementById('content-area'))">${renderSelectOptions(unidadesRel, relFiltroContratosUH, "Todas")}</select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-navy-900 mb-1">Fonte de Recurso</label>
+                  <select class="input-field w-full text-xs" onchange="relFiltroContratosFonte=this.value;renderRelatorios(document.getElementById('content-area'))">${renderSelectOptions(fontesRel, relFiltroContratosFonte, "Todas")}</select>
+                </div>
+                <div class="md:col-span-2">
+                  <label class="block text-[10px] font-bold text-navy-900 mb-1">Status de Execução</label>
+                  <select class="input-field w-full text-xs" onchange="relFiltroContratosExecucaoStatus=this.value;renderRelatorios(document.getElementById('content-area'))">
+                    <option value="" ${!relFiltroContratosExecucaoStatus?"selected":""}>Todos</option>
+                    <option value="abaixo" ${relFiltroContratosExecucaoStatus==="abaixo"?"selected":""}>Abaixo do esperado</option>
+                    <option value="dentro" ${relFiltroContratosExecucaoStatus==="dentro"?"selected":""}>Dentro do esperado</option>
+                    <option value="acima" ${relFiltroContratosExecucaoStatus==="acima"?"selected":""}>Acima do esperado</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div class="flex items-center gap-2 mb-3">
+                <i data-lucide="wallet-cards" class="w-4 h-4 text-navy-700"></i>
+                <p class="font-black text-navy-900 text-sm uppercase tracking-wide">Filtros de Pagamentos</p>
+              </div>
+              <div class="grid md:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[10px] font-bold text-navy-900 mb-1">Situação</label>
+                  <select class="input-field w-full text-xs" onchange="relFiltroPagamentosSituacao=this.value;renderRelatorios(document.getElementById('content-area'))">${renderSelectOptions(listas.situacoes||["A liquidar","Liquidado","Pago","Na unidade"], relFiltroPagamentosSituacao, "Todas")}</select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-navy-900 mb-1">Competência</label>
+                  <select class="input-field w-full text-xs" onchange="relFiltroPagamentosCompetencia=this.value;renderRelatorios(document.getElementById('content-area'))">${renderSelectOptions(competenciasRel, relFiltroPagamentosCompetencia, "Todas")}</select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-navy-900 mb-1">Tipo</label>
+                  <select class="input-field w-full text-xs" onchange="relFiltroPagamentosTipoProcesso=this.value;renderRelatorios(document.getElementById('content-area'))">
+                    <option value="" ${!relFiltroPagamentosTipoProcesso?"selected":""}>Todos</option>
+                    <option value="convencional" ${relFiltroPagamentosTipoProcesso==="convencional"?"selected":""}>Convencional</option>
+                    <option value="indenizatorio" ${relFiltroPagamentosTipoProcesso==="indenizatorio"?"selected":""}>Indenizatório</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-navy-900 mb-1">Fonte de Recurso</label>
+                  <select class="input-field w-full text-xs" onchange="relFiltroPagamentosFonte=this.value;renderRelatorios(document.getElementById('content-area'))">${renderSelectOptions(fontesRel, relFiltroPagamentosFonte, "Todas")}</select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-navy-900 mb-1">Empresa</label>
+                  <select class="input-field w-full text-xs" onchange="relFiltroPagamentosEmpresa=this.value;renderRelatorios(document.getElementById('content-area'))">${renderSelectOptions(empresasRel, relFiltroPagamentosEmpresa, "Todas")}</select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-navy-900 mb-1">Unidade</label>
+                  <select class="input-field w-full text-xs" onchange="relFiltroPagamentosUH=this.value;renderRelatorios(document.getElementById('content-area'))">${renderSelectOptions(unidadesRel, relFiltroPagamentosUH, "Todas")}</select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-navy-900 mb-1">Serviço</label>
+                  <select class="input-field w-full text-xs" onchange="relFiltroPagamentosServico=this.value;renderRelatorios(document.getElementById('content-area'))">
+                    <option value="">Todos</option>${servicosRel.map(s=>`<option value="${escapeHtml(s)}" ${String(relFiltroPagamentosServico)===String(s)?"selected":""}>${escapeHtml(servicoLabel(s))}</option>`).join("")}
+                  </select>
+                </div>
+                <div class="flex items-end">
+                  <button onclick="relFiltroPagamentosMostrarPagos=!relFiltroPagamentosMostrarPagos;renderRelatorios(document.getElementById('content-area'))" class="${relFiltroPagamentosMostrarPagos?'bg-emerald-100 text-emerald-700':'bg-white text-navy-700 border border-slate-200'} w-full px-3 py-3 rounded-lg text-xs font-bold">
+                    ${relFiltroPagamentosMostrarPagos?'Incluindo pagos':'Ocultando pagos'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex gap-2 flex-wrap mt-5">
+            <button onclick="const tipo=document.getElementById('relatorio-formato').value; tipo==='pdf'?baixarRelatorioPDF('contratos'):baixarRelatorioCSV('contratos')" class="btn-primary px-4 py-2 rounded-lg">Gerar Relatório de Contratos</button>
+            <button onclick="const tipo=document.getElementById('relatorio-formato').value; tipo==='pdf'?baixarRelatorioPDF('pagamentos'):baixarRelatorioCSV('pagamentos')" class="btn-primary px-4 py-2 rounded-lg">Gerar Relatório de Pagamentos</button>
+            <button onclick="const tipo=document.getElementById('relatorio-formato').value; tipo==='pdf'?baixarRelatorioPDF('producao'):baixarRelatorioCSV('producao')" class="btn-primary px-4 py-2 rounded-lg">Gerar Relatório de Produção</button>
+            <button onclick="limparFiltrosRelatorios()" class="btn-secondary px-4 py-2 rounded-lg">Limpar filtros</button>
+          </div>
         </div>
 
         <div class="grid md:grid-cols-3 gap-5">
@@ -7153,9 +9688,22 @@ function renderRelatorios(el){
         </div>
 
         <div class="glass rounded-xl p-5">
-          <h3 class="font-bold text-navy-900 mb-2">Backup do Sistema</h3>
-          <p class="text-sm text-steel-600 mb-4">Exporta a base completa em JSON para guarda de segurança.</p>
-          <button onclick="exportarBaseCompletaJSON()" class="btn-secondary px-4 py-2 rounded-lg">Baixar Backup JSON</button>
+          <div class="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <h3 class="font-bold text-navy-900 mb-2">Backup e Sincronização do Sistema</h3>
+              <p class="text-sm text-steel-600 mb-1">Use o backup JSON como segurança. Para aparecer automaticamente em qualquer celular/navegador, use Firebase.</p>
+              <p id="sigecon-cloud-detail" class="text-xs text-steel-500">Sincronização pronta. O GitHub abre o sistema; o Firebase guarda os dados.</p>
+            </div>
+            <span id="sigecon-cloud-status-card" class="badge bg-blue-100 text-blue-700">${statusSincronizacaoNuvem()}</span>
+          </div>
+          <input id="input-backup-sigecon" type="file" accept="application/json,.json" class="hidden" onchange="importarBaseCompletaJSON(event)">
+          <div class="grid md:grid-cols-5 gap-3 mt-4">
+            <button onclick="exportarBaseCompletaJSON()" class="btn-secondary px-4 py-2 rounded-lg">💾 Baixar Backup JSON</button>
+            <button onclick="acionarImportacaoBackup()" class="btn-secondary px-4 py-2 rounded-lg">📤 Importar Backup JSON</button>
+            <button onclick="salvarConfigFirebasePorPrompt()" class="btn-secondary px-4 py-2 rounded-lg">🔑 Configurar Firebase</button>
+            <button onclick="testarConexaoFirebaseManual()" class="btn-secondary px-4 py-2 rounded-lg">🧪 Testar Nuvem</button>
+            <button onclick="sincronizarNuvemManual()" class="btn-primary px-4 py-2 rounded-lg">☁️ Sincronizar Nuvem</button>
+          </div>
         </div>
       </div>`;
       lucide.createIcons();
@@ -8166,8 +10714,6 @@ async function salvarConfiguracoes(){
 
         if(!txt.includes("excluir") && !title.includes("excluir")) return;
 
-        // Se for botão de remover linha de empenho/NF, deixa executar normalmente.
-        if(btn.closest(".linha-empenho") || btn.closest(".nf-row")) return;
       },true);
     }
 
@@ -8177,17 +10723,36 @@ async function salvarConfiguracoes(){
     window.confirmarExclusaoTecnico=confirmarExclusaoTecnico;
     window.confirmarExclusaoExercicio=confirmarExclusaoExercicio;
     window.confirmarExclusaoProducao=typeof confirmarExclusaoProducao!=="undefined"?confirmarExclusaoProducao:null;
+    window.salvarConfigFirebasePorPrompt=salvarConfigFirebasePorPrompt;
+    window.testarConexaoFirebaseManual=testarConexaoFirebaseManual;
+    window.sincronizarNuvemManual=sincronizarNuvemManual;
+    window.exportarBaseCompletaJSON=exportarBaseCompletaJSON;
+    window.importarBaseCompletaJSON=importarBaseCompletaJSON;
+    window.acionarImportacaoBackup=acionarImportacaoBackup;
 
 // ─── INIT ───
     async function initializeApp(){
+      await inicializarNuvemSigec();
       carregarConfiguracoesLocais();
       aplicarBancoLocal();
       reidratarListasPrincipais();
+
+      const bancoInicialNuvem=await carregarBancoNuvem();
+      if(bancoInicialNuvem){
+        aplicarBancoCompletoSnapshot(bancoInicialNuvem,"nuvem");
+      }else if(sigeconNuvemAtiva && typeof contarBancoLocalAtual==="function" && Object.values(contarBancoLocalAtual()).some(v=>v>0)){
+        await salvarBancoNuvemAgora(montarBancoCompletoSnapshot());
+      }
+
       allTecnicos=mesclarExerciciosLocais(allTecnicos);
       carregarExerciciosCadastrados();
 
       // Restaura imediatamente a sessão salva antes de qualquer espera do SDK.
-      aplicarSessaoSalva();
+      // Se houver sessão, atualizar/F5 não volta para o login.
+      const sessaoRestauradaInicialmente=aplicarSessaoSalva();
+      if(!sessaoRestauradaInicialmente){
+        exibirTelaLogin();
+      }
       let attempts=0;
       while(!window.dataSdk && attempts<100){
         await new Promise(r=>setTimeout(r,50));
@@ -8225,10 +10790,19 @@ async function salvarConfiguracoes(){
       
       aplicarBancoLocal();
       reidratarListasPrincipais();
+      ativarEscutaNuvem();
+      atualizarIndicadorNuvem();
       lucide.createIcons();
 
       // Reforço final: após SDK e ícones carregarem, mantém a sessão aberta.
-      aplicarSessaoSalva();
+      if(existeSessaoSalva()){
+        const restaurou = aplicarSessaoSalva();
+        if(restaurou){
+          exibirTelaAutenticada();
+        }
+      } else {
+        exibirTelaLogin();
+      }
     }
 
     if(document.readyState==="loading"){
@@ -8273,5 +10847,8 @@ async function salvarConfiguracoes(){
       e.stopPropagation();
       confirmarExclusaoTecnico(btn.getAttribute("data-id"),btn.getAttribute("data-matricula")||"");
     });
-</script></body>
+</script>
+  <div id="sigecon-cloud-status" style="position:fixed;right:14px;bottom:12px;z-index:9999;background:rgba(255,255,255,.94);border:1px solid #dbeafe;color:#123b6b;padding:8px 12px;border-radius:999px;font:800 11px DM Sans,Arial,sans-serif;box-shadow:0 8px 22px rgba(15,52,97,.12)">💾 Modo local</div>
+  <script>setInterval(function(){try{if(typeof atualizarIndicadorNuvem==='function') atualizarIndicadorNuvem(); var c=document.getElementById('sigecon-cloud-status-card'); if(c && typeof statusSincronizacaoNuvem==='function') c.textContent=statusSincronizacaoNuvem();}catch(e){}},1200);</script>
+</body>
 </html>
